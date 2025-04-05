@@ -131,10 +131,10 @@ const Employees = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-12 px-4">
-                        <Checkbox
-                          checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
-                          onCheckedChange={handleSelectAll}
-                          className="border-gray-300"
+                          <Checkbox
+                              checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
+                              onCheckedChange={handleSelectAll}
+                              className="border-gray-300"
                         />
                       </TableHead>
                       <TableHead onClick={() => handleSort('name')} className="cursor-pointer">Name <SortIndicator column="name" /></TableHead>
@@ -157,10 +157,10 @@ const Employees = () => {
                       filteredEmployees.map(employee => (
                         <TableRow key={employee.id} data-state={selectedEmployees.includes(employee.id) ? 'selected' : undefined}>
                           <TableCell className="w-12 px-4">
-                            <Checkbox
-                              checked={selectedEmployees.includes(employee.id)}
-                              onCheckedChange={() => handleCheckboxChange(employee.id)}
-                              className="border-gray-300"
+                              <Checkbox
+                                checked={selectedEmployees.includes(employee.id)}
+                                onCheckedChange={() => handleCheckboxChange(employee.id)}
+                                className="border-gray-300"
                             />
                           </TableCell>
                           <TableCell className="font-medium">

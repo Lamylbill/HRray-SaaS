@@ -5,6 +5,7 @@ export default {
 	darkMode: ["class"],
 
 	safelist: [
+		'data-[state=checked]',
 		'data-[state=open]',
 		'data-[state=closed]',
 		'data-[side=bottom]',

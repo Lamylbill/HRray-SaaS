@@ -103,10 +103,8 @@ const Employees = () => {
               <p className="mt-1 text-gray-600">Manage your employee directory</p>
             </div>
             <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={handleSelectAllToggle}>
-    {selectedEmployees.length === filteredEmployees.length ? 'Unselect All' : 'Select All'}
-  </Button>
-  <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
+  <Button variant="outline" size="sm" onClick={handleSelectAllToggle}>Select All</Button>
+  <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>Delete Selected</Button>
     Delete Selected
   </Button>
   <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>

@@ -118,10 +118,9 @@ const Employees = () => {
             </div>
             <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
               <Button
-                variant={isMultiSelectMode ? "secondary" : "outline"} 
+                variant={isMultiSelectMode ? "primary" : "outline"} 
                 size="sm"
                 onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
-                className={isMultiSelectMode ? "bg-gray-200 text-gray-800" : ""}
               >
                 {isMultiSelectMode ? "Exit Selection" : "Select Multiple"}
               </Button>

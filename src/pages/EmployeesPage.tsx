@@ -250,7 +250,6 @@ const EmployeesPage = () => {
       setSelectedEmployeeIds([]);
       setDeleteConfirmText('');
       
-      // Exit multi-select mode after deletion
       setIsMultiSelectMode(false);
     } catch (error: any) {
       toast({
@@ -294,9 +293,10 @@ const EmployeesPage = () => {
 
         <div className="flex gap-2">
           <Button 
-            variant={isMultiSelectMode ? "primary" : "outline"} 
+            variant="outline" 
             size="sm" 
             onClick={toggleMultiSelectMode}
+            className={isMultiSelectMode ? "bg-hrflow-blue text-white hover:bg-hrflow-blue/90" : ""}
           >
             <CheckSquare className="h-4 w-4 mr-2" /> 
             {isMultiSelectMode ? "Exit Selection" : "Select Multiple"}
@@ -322,7 +322,7 @@ const EmployeesPage = () => {
         </div>
       )}
 
-      {isMultiSelectMode && selectedEmployeeIds.length > 0 && (
+      {isMultiSelectMode && (
         <div className="mb-4 p-3 bg-gray-50 border rounded-md flex items-center justify-between">
           <div className="text-sm">
             <span className="font-medium">{selectedEmployeeIds.length}</span> employees selected

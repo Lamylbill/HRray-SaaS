@@ -85,6 +85,7 @@ export default {
 				hrflow: {
 					'primary': '#6C63FF',
 					'secondary': '#9D94FF',
+					'blue': '#6C63FF',
 					'accent': '#FF64DA',
 					'dark': '#2D2B55',
 					'light': '#F8F7FF',

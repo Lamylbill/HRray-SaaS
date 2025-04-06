@@ -118,9 +118,10 @@ const Employees = () => {
             </div>
             <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
               <Button
-                variant={isMultiSelectMode ? "hrflow" : "outline"} 
+                variant="outline" 
                 size="sm"
                 onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
+                className={isMultiSelectMode ? "bg-hrflow-blue text-white hover:bg-hrflow-blue/90" : ""}
               >
                 {isMultiSelectMode ? "Exit Selection" : "Select Multiple"}
               </Button>

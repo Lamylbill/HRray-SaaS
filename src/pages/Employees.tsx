@@ -1,11 +1,15 @@
+// src/pages/Employees.tsx
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Search, UserPlus, Filter, Download, MoreHorizontal,
+  PlusCircle, Search, UserPlus, Filter, Download, MoreHorizontal,
   SortAsc, SortDesc
 } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
-import { PremiumCard, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui-custom/Card';
+import {
+  PremiumCard, CardContent, CardHeader, CardTitle, CardDescription
+} from '@/components/ui-custom/Card';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext';
 import { AnimatedSection } from '@/components/ui-custom/AnimatedSection';
@@ -41,21 +45,12 @@ const Employees = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
-  const [selectedEmployees, setSelectedEmployees] = useState([]);
+  const [selectedEmployees, setSelectedEmployees] = useState<number[]>([]);
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate('/login');
   }, [isAuthenticated, isLoading, navigate]);
-
-  const handleSort = (key) => {
-    if (sortBy === key) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(key);
-      setSortDirection('asc');
-    }
-  };
 
   const filteredEmployees = employees
     .filter(e => e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -64,11 +59,22 @@ const Employees = () => {
       e.position.toLowerCase().includes(searchTerm.toLowerCase()))
     .sort((a, b) => sortFunctions[sortBy](a, b, sortDirection));
 
-  const handleCheckboxChange = (id) => {
-    setSelectedEmployees(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  const handleSort = (key: string) => {
+    if (sortBy === key) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(key);
+      setSortDirection('asc');
+    }
   };
 
-  const handleSelectAllToggle = () => {
+  const handleCheckboxChange = (id: number) => {
+    setSelectedEmployees(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
     if (selectedEmployees.length === filteredEmployees.length) {
       setSelectedEmployees([]);
     } else {
@@ -80,12 +86,14 @@ const Employees = () => {
     alert(`Delete: ${selectedEmployees.join(', ')}`);
   };
 
-  const SortIndicator = ({ column }) => {
+  const SortIndicator = ({ column }: { column: string }) => {
     if (sortBy !== column) return null;
-    return sortDirection === 'asc' ? <SortAsc className="inline h-4 w-4 ml-1" /> : <SortDesc className="inline h-4 w-4 ml-1" />;
+    return sortDirection === 'asc'
+      ? <SortAsc className="inline h-4 w-4 ml-1" />
+      : <SortDesc className="inline h-4 w-4 ml-1" />;
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'Active': return 'bg-green-100 text-green-800';
       case 'On Leave': return 'bg-yellow-100 text-yellow-800';
@@ -104,24 +112,29 @@ const Employees = () => {
               <p className="mt-1 text-gray-600">Manage your employee directory</p>
             </div>
             <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
-              {!isMultiSelectMode ? (
-                <Button variant="outline" size="sm" onClick={() => setIsMultiSelectMode(true)}>Select Multiple</Button>
-              ) : (
-                <Button variant="ghost" size="sm" onClick={() => { setIsMultiSelectMode(false); setSelectedEmployees([]); }}>Cancel</Button>
+              {selectedEmployees.length >= 0 && (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleSelectAll}>
+                    Select All
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
+                    Delete Selected
+                  </Button>
+                </>
               )}
+              <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
+              <Button
+    variant="outline"
+    size="sm"
+    onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
+  >
+    {isMultiSelectMode ? "Exit Selection" : "Select Multiple"}
+  </Button>
+  <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" /> Export</Button>
               <Button variant="primary" size="sm"><UserPlus className="mr-2 h-4 w-4" /> Add Employee</Button>
             </div>
           </div>
         </AnimatedSection>
-
-        {isMultiSelectMode && (
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex gap-2">
-              <Button onClick={handleSelectAllToggle} variant="outline" size="sm">Select All</Button>
-              <Button onClick={handleDeleteSelected} variant="destructive" size="sm">Delete Selected</Button>
-            </div>
-          </div>
-        )}
 
         <AnimatedSection delay={100}>
           <PremiumCard className="mb-6">
@@ -148,13 +161,10 @@ const Employees = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-12 px-4">
-                        {isMultiSelectMode && (
-                          <Checkbox
-                            checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
-                            onCheckedChange={handleSelectAllToggle}
-                            className="border-gray-300"
-                          />
-                        )}
+                        <Checkbox
+                          checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
+                          onCheckedChange={handleSelectAll}
+                        />
                       </TableHead>
                       <TableHead onClick={() => handleSort('name')} className="cursor-pointer">Name <SortIndicator column="name" /></TableHead>
                       <TableHead>Email</TableHead>
@@ -176,13 +186,11 @@ const Employees = () => {
                       filteredEmployees.map(employee => (
                         <TableRow key={employee.id} data-state={selectedEmployees.includes(employee.id) ? 'selected' : undefined}>
                           <TableCell className="w-12 px-4">
-                            {isMultiSelectMode && (
-                              <Checkbox
-                                checked={selectedEmployees.includes(employee.id)}
-                                onCheckedChange={() => handleCheckboxChange(employee.id)}
-                                className="border-gray-300"
-                              />
-                            )}
+                            <Checkbox
+                              checked={selectedEmployees.includes(employee.id)}
+                              onCheckedChange={() => handleCheckboxChange(employee.id)}
+                              className="border-gray-300"
+                            />
                           </TableCell>
                           <TableCell className="font-medium">
                             <div className="flex items-center">

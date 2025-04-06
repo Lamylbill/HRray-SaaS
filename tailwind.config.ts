@@ -5,8 +5,12 @@ export default {
 	darkMode: ["class"],
 
 	safelist: [
-		"data-[state=checked]",
-		"data-[state=unchecked]",
+		'data-[state=checked]:bg-hrflow-blue',
+		'data-[state=checked]:border-hrflow-blue',
+		'data-[state=checked]:text-white',
+		'data-[state=unchecked]:bg-white',
+		'data-[state=unchecked]:border-gray-300',
+		'data-[state=unchecked]:text-transparent',
 		'data-[state=open]',
 		'data-[state=closed]',
 		'data-[side=bottom]',

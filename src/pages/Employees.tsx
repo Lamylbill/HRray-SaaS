@@ -68,10 +68,10 @@ const Employees = () => {
   };
 
   const handleSelectAllToggle = () => {
-    if (selectedEmployees.length === filteredEmployees.length) {
-      setSelectedEmployees([]);
-    } else {
-      setSelectedEmployees(filteredEmployees.map(emp => emp.id));
+  if (selectedEmployees.length === filteredEmployees.length) {
+    setSelectedEmployees([]);
+  } else {
+    setSelectedEmployees(filteredEmployees.map(emp => emp.id));
     }
   };
 
@@ -102,14 +102,30 @@ const Employees = () => {
               <h1 className="text-3xl font-bold text-gray-900">Employees</h1>
               <p className="mt-1 text-gray-600">Manage your employee directory</p>
             </div>
-            <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
-  <Button variant="outline" size="sm" onClick={handleSelectAllToggle}>Select All</Button>
-  <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>Delete Selected</Button>
+            <div className="mt-4 sm:mt-0 flex flex-wrap gap-2 justify-end">
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={handleSelectAllToggle}
+  >
+    Select All
+  </Button>
+  <Button
+    variant="destructive"
+    size="sm"
+    onClick={handleDeleteSelected}
+  >
     Delete Selected
   </Button>
-  <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
-  <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" /> Export</Button>
-  <Button variant="primary" size="sm"><UserPlus className="mr-2 h-4 w-4" /> Add Employee</Button>
+  <Button variant="outline" size="sm">
+    <Filter className="mr-2 h-4 w-4" /> Filter
+  </Button>
+  <Button variant="outline" size="sm">
+    <Download className="mr-2 h-4 w-4" /> Export
+  </Button>
+  <Button variant="primary" size="sm">
+    <UserPlus className="mr-2 h-4 w-4" /> Add Employee
+  </Button>
             </div>
           </div>
         </AnimatedSection>

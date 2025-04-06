@@ -1,7 +1,9 @@
+// src/pages/Employees.tsx
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  PlusCircle, Search, UserPlus, Filter, Download, MoreHorizontal,
+  Search, UserPlus, Filter, Download, MoreHorizontal,
   SortAsc, SortDesc
 } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
@@ -84,6 +86,13 @@ const Employees = () => {
     alert(`Delete: ${selectedEmployees.join(', ')}`);
   };
 
+  const SortIndicator = ({ column }: { column: string }) => {
+    if (sortBy !== column) return null;
+    return sortDirection === 'asc'
+      ? <SortAsc className="inline h-4 w-4 ml-1" />
+      : <SortDesc className="inline h-4 w-4 ml-1" />;
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Active': return 'bg-green-100 text-green-800';
@@ -91,13 +100,6 @@ const Employees = () => {
       case 'Inactive': return 'bg-gray-100 text-gray-800';
       default: return 'bg-blue-100 text-blue-800';
     }
-  };
-
-  const SortIndicator = ({ column }: { column: string }) => {
-    if (sortBy !== column) return null;
-    return sortDirection === 'asc'
-      ? <SortAsc className="inline h-4 w-4 ml-1" />
-      : <SortDesc className="inline h-4 w-4 ml-1" />;
   };
 
   return (
@@ -115,7 +117,7 @@ const Employees = () => {
                 size="sm"
                 onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
               >
-                {isMultiSelectMode ? 'Exit Selection' : 'Select Multiple'}
+                {isMultiSelectMode ? "Exit Selection" : "Select Multiple"}
               </Button>
               <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
               <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" /> Export</Button>
@@ -125,9 +127,16 @@ const Employees = () => {
         </AnimatedSection>
 
         {isMultiSelectMode && (
-          <div className="mb-4 flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleSelectAll}>Select All</Button>
-            <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>Delete Selected</Button>
+          <div className="flex justify-between items-center mb-4 bg-white border rounded-lg p-4 shadow-sm">
+            <span className="text-sm text-gray-600">{selectedEmployees.length} selected</span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleSelectAll}>
+                Select All
+              </Button>
+              <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
+                Delete Selected
+              </Button>
+            </div>
           </div>
         )}
 

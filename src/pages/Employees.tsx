@@ -101,6 +101,10 @@ const Employees = () => {
             <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-2">
               <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
               <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" /> Export</Button>
+              <Button variant="outline" size="sm" disabled={selectedEmployees.length === 0}>Delete Selected</Button>
+              <Button variant="outline" size="sm" onClick={handleSelectAll}>
+                {selectedEmployees.length === filteredEmployees.length ? "Unselect All" : "Select All"}
+              </Button>
               <Button variant="primary" size="sm"><UserPlus className="mr-2 h-4 w-4" /> Add Employee</Button>
             </div>
           </div>
@@ -130,13 +134,7 @@ const Employees = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12 px-4">
-                          <Checkbox
-                              checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
-                              onCheckedChange={handleSelectAll}
-                              className="border-gray-300"
-                        />
-                      </TableHead>
+                      <TableHead className="w-12 px-4"></TableHead>
                       <TableHead onClick={() => handleSort('name')} className="cursor-pointer">Name <SortIndicator column="name" /></TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead onClick={() => handleSort('department')} className="cursor-pointer">Department <SortIndicator column="department" /></TableHead>
@@ -157,10 +155,10 @@ const Employees = () => {
                       filteredEmployees.map(employee => (
                         <TableRow key={employee.id} data-state={selectedEmployees.includes(employee.id) ? 'selected' : undefined}>
                           <TableCell className="w-12 px-4">
-                              <Checkbox
-                                checked={selectedEmployees.includes(employee.id)}
-                                onCheckedChange={() => handleCheckboxChange(employee.id)}
-                                className="border-gray-300"
+                            <Checkbox
+                              checked={selectedEmployees.includes(employee.id)}
+                              onCheckedChange={() => handleCheckboxChange(employee.id)}
+                              className="border-gray-300"
                             />
                           </TableCell>
                           <TableCell className="font-medium">

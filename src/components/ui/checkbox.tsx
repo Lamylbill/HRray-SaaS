@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import { cn } from "@/lib/utils";
@@ -21,11 +22,10 @@ const Checkbox = React.forwardRef<
     {...props}
   >
     <CheckboxPrimitive.Indicator
-  className={cn(
-    "h-2.5 w-2.5 rounded-full bg-white dark:bg-white",        // default
-    "data-[state=checked]:bg-white",                          // for unselected
-    "peer-data-[state=checked]:bg-white",                     // fallback
-    "bg-white data-[state=checked]:bg-blue-600"               // ✅ blue dot
+      className={cn(
+        "flex items-center justify-center",
+        "data-[state=checked]:bg-white",
+        "h-2.5 w-2.5 rounded-full bg-hrflow-blue"
       )}
     />
   </CheckboxPrimitive.Root>

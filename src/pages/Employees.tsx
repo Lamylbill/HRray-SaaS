@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  PlusCircle, Search, UserPlus, Filter, Download, MoreHorizontal,
+  Search, UserPlus, Filter, Download, MoreHorizontal,
   SortAsc, SortDesc
 } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
@@ -106,36 +106,30 @@ const Employees = () => {
     <div className="min-h-screen pt-20 pb-12 bg-gray-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
         <AnimatedSection>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Employees</h1>
               <p className="mt-1 text-gray-600">Manage your employee directory</p>
             </div>
             <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
-              >
-                {isMultiSelectMode ? "Exit Selection" : "Select Multiple"}
+              <Button variant="outline" size="sm" onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}>
+                {isMultiSelectMode ? 'Exit Selection' : 'Select Multiple'}
               </Button>
               <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
               <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" /> Export</Button>
               <Button variant="primary" size="sm"><UserPlus className="mr-2 h-4 w-4" /> Add Employee</Button>
             </div>
           </div>
-
-          {isMultiSelectMode && (
-            <div className="flex flex-wrap gap-2 justify-start mb-4">
-              <Button variant="outline" size="sm" onClick={handleSelectAll}>
-                Select All
-              </Button>
-              <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
-                Delete Selected
-              </Button>
-            </div>
-          )}
         </AnimatedSection>
+
+        {isMultiSelectMode && (
+          <div className="flex items-center justify-between mb-4 px-2">
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleSelectAll}>Select All</Button>
+              <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>Delete Selected</Button>
+            </div>
+          </div>
+        )}
 
         <AnimatedSection delay={100}>
           <PremiumCard className="mb-6">
@@ -177,56 +171,48 @@ const Employees = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredEmployees.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                          No employees found. Try adjusting your search.
+                    {filteredEmployees.map(employee => (
+                      <TableRow key={employee.id} data-state={selectedEmployees.includes(employee.id) ? 'selected' : undefined}>
+                        <TableCell className="w-12 px-4">
+                          <Checkbox
+                            checked={selectedEmployees.includes(employee.id)}
+                            onCheckedChange={() => handleCheckboxChange(employee.id)}
+                            className="border-gray-300"
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center">
+                            <div className="h-9 w-9 rounded-full bg-hrflow-blue/10 flex items-center justify-center text-hrflow-blue font-medium mr-2">
+                              {employee.name.split(' ').map(n => n[0]).join('')}
+                            </div>
+                            {employee.name}
+                          </div>
+                        </TableCell>
+                        <TableCell>{employee.email}</TableCell>
+                        <TableCell>{employee.department}</TableCell>
+                        <TableCell>{employee.position}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(employee.status)}`}>{employee.status}</span>
+                        </TableCell>
+                        <TableCell>{new Date(employee.joinDate).toLocaleDateString()}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem>View Profile</DropdownMenuItem>
+                              <DropdownMenuItem>Edit Details</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem>Change Status</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
-                    ) : (
-                      filteredEmployees.map(employee => (
-                        <TableRow key={employee.id} data-state={selectedEmployees.includes(employee.id) ? 'selected' : undefined}>
-                          <TableCell className="w-12 px-4">
-                            <Checkbox
-                              checked={selectedEmployees.includes(employee.id)}
-                              onCheckedChange={() => handleCheckboxChange(employee.id)}
-                              className="border-gray-300"
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            <div className="flex items-center">
-                              <div className="h-9 w-9 rounded-full bg-hrflow-blue/10 flex items-center justify-center text-hrflow-blue font-medium mr-2">
-                                {employee.name.split(' ').map(n => n[0]).join('')}
-                              </div>
-                              {employee.name}
-                            </div>
-                          </TableCell>
-                          <TableCell>{employee.email}</TableCell>
-                          <TableCell>{employee.department}</TableCell>
-                          <TableCell>{employee.position}</TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(employee.status)}`}>{employee.status}</span>
-                          </TableCell>
-                          <TableCell>{new Date(employee.joinDate).toLocaleDateString()}</TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem>View Profile</DropdownMenuItem>
-                                <DropdownMenuItem>Edit Details</DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem>Change Status</DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
+                    ))}
                   </TableBody>
                 </Table>
               </div>

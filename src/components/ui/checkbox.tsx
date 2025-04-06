@@ -21,9 +21,11 @@ const Checkbox = React.forwardRef<
     {...props}
   >
     <CheckboxPrimitive.Indicator
-      className={cn(
-        "h-2.5 w-2.5 rounded-full bg-white",
-        "transition-transform duration-200 scale-100"
+  className={cn(
+    "h-2.5 w-2.5 rounded-full bg-white dark:bg-white",        // default
+    "data-[state=checked]:bg-white",                          // for unselected
+    "peer-data-[state=checked]:bg-white",                     // fallback
+    "bg-white data-[state=checked]:bg-blue-600"               // ✅ blue dot
       )}
     />
   </CheckboxPrimitive.Root>

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Search, UserPlus, Filter, Download, MoreHorizontal,
+  PlusCircle, Search, UserPlus, Filter, Download, MoreHorizontal,
   SortAsc, SortDesc
 } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
@@ -112,8 +112,12 @@ const Employees = () => {
               <p className="mt-1 text-gray-600">Manage your employee directory</p>
             </div>
             <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}>
-                {isMultiSelectMode ? 'Exit Selection' : 'Select Multiple'}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
+              >
+                {isMultiSelectMode ? "Exit Selection" : "Select Multiple"}
               </Button>
               <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
               <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" /> Export</Button>
@@ -123,10 +127,15 @@ const Employees = () => {
         </AnimatedSection>
 
         {isMultiSelectMode && (
-          <div className="flex items-center justify-between mb-4 px-2">
+          <div className="flex items-center justify-between bg-white border rounded-md p-4 mb-4 shadow-sm">
+            <span className="text-sm font-medium text-gray-700">{selectedEmployees.length} employees selected</span>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleSelectAll}>Select All</Button>
-              <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>Delete Selected</Button>
+              <Button variant="outline" size="sm" onClick={handleSelectAll}>
+                Select All
+              </Button>
+              <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
+                Delete Selected
+              </Button>
             </div>
           </div>
         )}
@@ -171,48 +180,56 @@ const Employees = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredEmployees.map(employee => (
-                      <TableRow key={employee.id} data-state={selectedEmployees.includes(employee.id) ? 'selected' : undefined}>
-                        <TableCell className="w-12 px-4">
-                          <Checkbox
-                            checked={selectedEmployees.includes(employee.id)}
-                            onCheckedChange={() => handleCheckboxChange(employee.id)}
-                            className="border-gray-300"
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center">
-                            <div className="h-9 w-9 rounded-full bg-hrflow-blue/10 flex items-center justify-center text-hrflow-blue font-medium mr-2">
-                              {employee.name.split(' ').map(n => n[0]).join('')}
-                            </div>
-                            {employee.name}
-                          </div>
-                        </TableCell>
-                        <TableCell>{employee.email}</TableCell>
-                        <TableCell>{employee.department}</TableCell>
-                        <TableCell>{employee.position}</TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(employee.status)}`}>{employee.status}</span>
-                        </TableCell>
-                        <TableCell>{new Date(employee.joinDate).toLocaleDateString()}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>View Profile</DropdownMenuItem>
-                              <DropdownMenuItem>Edit Details</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem>Change Status</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                    {filteredEmployees.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                          No employees found. Try adjusting your search.
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      filteredEmployees.map(employee => (
+                        <TableRow key={employee.id} data-state={selectedEmployees.includes(employee.id) ? 'selected' : undefined}>
+                          <TableCell className="w-12 px-4">
+                            <Checkbox
+                              checked={selectedEmployees.includes(employee.id)}
+                              onCheckedChange={() => handleCheckboxChange(employee.id)}
+                              className="border-gray-300"
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center">
+                              <div className="h-9 w-9 rounded-full bg-hrflow-blue/10 flex items-center justify-center text-hrflow-blue font-medium mr-2">
+                                {employee.name.split(' ').map(n => n[0]).join('')}
+                              </div>
+                              {employee.name}
+                            </div>
+                          </TableCell>
+                          <TableCell>{employee.email}</TableCell>
+                          <TableCell>{employee.department}</TableCell>
+                          <TableCell>{employee.position}</TableCell>
+                          <TableCell>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(employee.status)}`}>{employee.status}</span>
+                          </TableCell>
+                          <TableCell>{new Date(employee.joinDate).toLocaleDateString()}</TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem>View Profile</DropdownMenuItem>
+                                <DropdownMenuItem>Edit Details</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem>Change Status</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>

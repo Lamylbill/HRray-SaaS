@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   PlusCircle, Search, UserPlus, Filter, Download, MoreHorizontal,
-  ChevronDown, SortAsc, SortDesc
+  SortAsc, SortDesc
 } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
 import { PremiumCard, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui-custom/Card';
@@ -67,12 +67,16 @@ const Employees = () => {
     setSelectedEmployees(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
-  const handleSelectAll = () => {
+  const handleSelectAllToggle = () => {
     if (selectedEmployees.length === filteredEmployees.length) {
       setSelectedEmployees([]);
     } else {
       setSelectedEmployees(filteredEmployees.map(emp => emp.id));
     }
+  };
+
+  const handleDeleteSelected = () => {
+    alert(`Delete: ${selectedEmployees.join(', ')}`);
   };
 
   const SortIndicator = ({ column }) => {
@@ -98,13 +102,11 @@ const Employees = () => {
               <h1 className="text-3xl font-bold text-gray-900">Employees</h1>
               <p className="mt-1 text-gray-600">Manage your employee directory</p>
             </div>
-            <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-2">
+            <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={handleSelectAllToggle}>Select All</Button>
+              <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>Delete Selected</Button>
               <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
               <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" /> Export</Button>
-              <Button variant="outline" size="sm" disabled={selectedEmployees.length === 0}>Delete Selected</Button>
-              <Button variant="outline" size="sm" onClick={handleSelectAll}>
-                {selectedEmployees.length === filteredEmployees.length ? "Unselect All" : "Select All"}
-              </Button>
               <Button variant="primary" size="sm"><UserPlus className="mr-2 h-4 w-4" /> Add Employee</Button>
             </div>
           </div>
@@ -134,7 +136,13 @@ const Employees = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12 px-4"></TableHead>
+                      <TableHead className="w-12 px-4">
+                        <Checkbox
+                          checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
+                          onCheckedChange={handleSelectAllToggle}
+                          className="border-gray-300"
+                        />
+                      </TableHead>
                       <TableHead onClick={() => handleSort('name')} className="cursor-pointer">Name <SortIndicator column="name" /></TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead onClick={() => handleSort('department')} className="cursor-pointer">Department <SortIndicator column="department" /></TableHead>

@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -24,6 +23,7 @@ const buttonVariants = cva(
         success: "bg-green-600 text-white hover:bg-green-700 shadow-sm border border-transparent",
         premium: "bg-gradient-to-r from-blue-600 to-indigo-600 hover:to-indigo-700 text-white font-medium shadow-lg",
         glass: "backdrop-blur-xl bg-white/30 hover:bg-white/40 border border-white/40 text-white font-medium shadow-md",
+        hrflow: "bg-hrflow-primary text-white hover:bg-hrflow-secondary shadow-sm border border-transparent font-medium",
       },
       size: {
         default: "h-11 px-5 py-2.5",
@@ -51,7 +51,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, style, isLoading, children, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
     
-    // Enhanced styling with proper typing
     const enhancedStyle: React.CSSProperties = {
       fontWeight: 500,
       letterSpacing: '0.01em',

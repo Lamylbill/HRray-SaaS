@@ -18,9 +18,8 @@ const Checkbox = React.forwardRef<
     {...props}
   >
     <CheckboxPrimitive.Indicator className="flex items-center justify-center">
-      {/* White dot instead of checkmark */}
-      <div className="h-2.5 w-2.5 rounded-full bg-white" />
-    </CheckboxPrimitive.Indicator>
+  <div className="h-2.5 w-2.5 rounded-full bg-white shadow shadow-gray-400" />
+</CheckboxPrimitive.Indicator>
   </CheckboxPrimitive.Root>
 ));
 

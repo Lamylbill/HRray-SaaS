@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Search, UserPlus, Filter, Download, MoreHorizontal,
+  PlusCircle, Search, UserPlus, Filter, Download, MoreHorizontal,
   SortAsc, SortDesc
 } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
@@ -106,7 +106,7 @@ const Employees = () => {
     <div className="min-h-screen pt-20 pb-12 bg-gray-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
         <AnimatedSection>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Employees</h1>
               <p className="mt-1 text-gray-600">Manage your employee directory</p>
@@ -124,12 +124,9 @@ const Employees = () => {
               <Button variant="primary" size="sm"><UserPlus className="mr-2 h-4 w-4" /> Add Employee</Button>
             </div>
           </div>
-        </AnimatedSection>
 
-        {isMultiSelectMode && (
-          <div className="flex justify-between items-center mb-4 bg-white border rounded-lg p-4 shadow-sm">
-            <span className="text-sm text-gray-600">{selectedEmployees.length} selected</span>
-            <div className="flex gap-2">
+          {isMultiSelectMode && (
+            <div className="flex flex-wrap gap-2 justify-start mb-4">
               <Button variant="outline" size="sm" onClick={handleSelectAll}>
                 Select All
               </Button>
@@ -137,8 +134,8 @@ const Employees = () => {
                 Delete Selected
               </Button>
             </div>
-          </div>
-        )}
+          )}
+        </AnimatedSection>
 
         <AnimatedSection delay={100}>
           <PremiumCard className="mb-6">

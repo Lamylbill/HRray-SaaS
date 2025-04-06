@@ -1,3 +1,4 @@
+
 // src/pages/Employees.tsx
 
 import React, { useEffect, useState } from 'react';
@@ -117,10 +118,10 @@ const Employees = () => {
             </div>
             <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
               <Button
-                variant={isMultiSelectMode ? "primary" : "outline"} 
+                variant={isMultiSelectMode ? "secondary" : "outline"} 
                 size="sm"
                 onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
-                className={isMultiSelectMode ? "text-white" : ""}
+                className={isMultiSelectMode ? "bg-gray-200 text-gray-800" : ""}
               >
                 {isMultiSelectMode ? "Exit Selection" : "Select Multiple"}
               </Button>

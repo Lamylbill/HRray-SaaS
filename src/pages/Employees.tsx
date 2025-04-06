@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  PlusCircle, Search, UserPlus, Filter, Download, MoreHorizontal,
+  Search, UserPlus, Filter, Download, MoreHorizontal,
   SortAsc, SortDesc
 } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
@@ -68,10 +68,10 @@ const Employees = () => {
   };
 
   const handleSelectAllToggle = () => {
-  if (selectedEmployees.length === filteredEmployees.length) {
-    setSelectedEmployees([]);
-  } else {
-    setSelectedEmployees(filteredEmployees.map(emp => emp.id));
+    if (selectedEmployees.length === filteredEmployees.length) {
+      setSelectedEmployees([]);
+    } else {
+      setSelectedEmployees(filteredEmployees.map(emp => emp.id));
     }
   };
 
@@ -96,53 +96,59 @@ const Employees = () => {
   return (
     <div className="min-h-screen pt-20 pb-12 bg-gray-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+
+        {/* Selection bar */}
+        {selectedEmployees.length > 0 && (
+          <div className="flex items-center justify-between bg-white shadow rounded-md p-4 mb-4">
+            <div className="text-sm font-medium text-gray-700">
+              {selectedEmployees.length} employees selected
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleSelectAllToggle}>
+                Select All
+              </Button>
+              <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
+                Delete Selected
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Page heading */}
         <AnimatedSection>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Employees</h1>
-              <p className="mt-1 text-gray-600">Manage your employee directory</p>
+              <p className="mt-1 text-gray-600">Manage your organization's employees</p>
             </div>
-            <div className="mt-4 sm:mt-0 flex flex-wrap gap-2 justify-end">
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={handleSelectAllToggle}
-  >
-    Select All
-  </Button>
-  <Button
-    variant="destructive"
-    size="sm"
-    onClick={handleDeleteSelected}
-  >
-    Delete Selected
-  </Button>
-  <Button variant="outline" size="sm">
-    <Filter className="mr-2 h-4 w-4" /> Filter
-  </Button>
-  <Button variant="outline" size="sm">
-    <Download className="mr-2 h-4 w-4" /> Export
-  </Button>
-  <Button variant="primary" size="sm">
-    <UserPlus className="mr-2 h-4 w-4" /> Add Employee
-  </Button>
+            <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
+              <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
+              <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" /> Export</Button>
+              <Button variant="primary" size="sm"><UserPlus className="mr-2 h-4 w-4" /> Add Employee</Button>
             </div>
           </div>
         </AnimatedSection>
 
+        {/* Search bar */}
         <AnimatedSection delay={100}>
           <PremiumCard className="mb-6">
             <CardContent className="pt-6">
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="relative flex-grow">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input placeholder="Search employees..." className="pl-10" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                  <Input
+                    placeholder="Search employees..."
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                  />
                 </div>
               </div>
             </CardContent>
           </PremiumCard>
         </AnimatedSection>
 
+        {/* Table */}
         <AnimatedSection delay={200}>
           <PremiumCard>
             <CardHeader className="pb-0">

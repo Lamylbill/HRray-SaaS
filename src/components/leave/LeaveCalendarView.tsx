@@ -11,8 +11,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { LeaveEvent, PublicHoliday, EventStyleProps } from './interfaces';
 
-const safeFormat = (date: Date | null | undefined, fmt: string) =>
-  date instanceof Date && !isNaN(date.getTime()) ? format(date, fmt) : 'Invalid date';
+const safeFormatForDisplay = (date: Date | null | undefined, fmt: string): string =>
+  date instanceof Date && !isNaN(date.getTime()) ? format(date, fmt) : '';
 
 export const LeaveCalendarView = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -143,8 +143,8 @@ export const LeaveCalendarView = () => {
   });
 
   return eventsForDay.map((event, index) => {
-    const isFirstDay = safeFormat(event.start, 'yyyy-MM-dd') === dateStr;
-    const isLastDay = safeFormat(event.end, 'yyyy-MM-dd') === dateStr;
+    const isFirstDay = safeFormatForDisplay(event.start, 'yyyy-MM-dd') === dateStr;
+    const isLastDay = safeFormatForDisplay(event.end, 'yyyy-MM-dd') === dateStr;
     const totalDays = differenceInDays(event.end, event.start) + 1;
     const isMultiDay = totalDays > 1;
 
@@ -275,7 +275,7 @@ export const LeaveCalendarView = () => {
             <ChevronRight className="h-4 w-4" />
           </Button>
           <h3 className="text-lg font-semibold">
-            {safeFormat(currentDate, 'MMMM yyyy')}
+            {format(currentDate, 'MMMM yyyy')}
           </h3>
         </div>
         <div className="flex items-center space-x-2">

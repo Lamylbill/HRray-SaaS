@@ -1,10 +1,11 @@
+
 // src/pages/Employees.tsx
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   PlusCircle, Search, UserPlus, Filter, Download, MoreHorizontal,
-  SortAsc, SortDesc
+  SortAsc, SortDesc, CheckSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
 import {
@@ -113,7 +114,7 @@ const Employees = () => {
             </div>
             <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
               <Button
-                variant="outline"
+                variant={isMultiSelectMode ? "hrflow" : "outline"}
                 size="sm"
                 onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
               >
@@ -134,6 +135,7 @@ const Employees = () => {
                   <span className="text-sm font-medium text-gray-700">{selectedEmployees.length} employees selected</span>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={handleSelectAll}>
+                      <CheckSquare className="mr-2 h-4 w-4" />
                       Select All
                     </Button>
                     <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>

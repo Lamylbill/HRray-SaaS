@@ -1,3 +1,5 @@
+console.log('Raw leave request data:', leaveRequestsData);
+
 import React, { useState, useEffect } from 'react';
 import { addMonths, format, parseISO, differenceInDays, addDays, isWithinInterval } from 'date-fns';
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
@@ -90,18 +92,35 @@ export const LeaveCalendarView = () => {
 
       const formattedLeaveEvents: LeaveEvent[] = (leaveRequestsData || [])
         .map(leave => {
-          if (!leave.start_date || !leave.end_date) {
-            console.warn("Missing date:", leave);
+          const startRaw = leave.start_date;
+          const endRaw = leave.end_date;
+        
+          const start = startRaw ? new Date(startRaw) : null;
+          const end = endRaw ? new Date(endRaw) : null;
+        
+          const isStartValid = start instanceof Date && !isNaN(start.getTime());
+          const isEndValid = end instanceof Date && !isNaN(end.getTime());
+        
+          if (!isStartValid || !isEndValid) {
+            console.warn("⚠️ Skipping invalid leave record due to date issue:", {
+              id: leave.id,
+              start_date: startRaw,
+              end_date: endRaw,
+            });
             return null;
           }
         
-          const start = new Date(leave.start_date);
-          const end = new Date(leave.end_date);
-        
-          if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-            console.warn("Invalid parsed date:", leave);
-            return null;
-          }
+          return {
+            id: leave.id,
+            title: leave.leave_types?.name || 'Leave',
+            start,
+            end,
+            type: leave.leave_types?.name || 'Unknown',
+            employee: leave.employees?.full_name || 'Unknown Employee',
+            status: leave.status as 'Pending' | 'Approved' | 'Rejected',
+            color: leave.leave_types?.color || '#999',
+          };
+        })
         
           return {
             id: leave.id,

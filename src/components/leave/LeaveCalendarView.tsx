@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { addMonths, format, parseISO, differenceInDays, addDays, isWithinInterval } from 'date-fns';
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
@@ -319,7 +318,7 @@ export const LeaveCalendarView = () => {
     return (
       <div 
         {...props}
-        className={`${props.className} relative h-24 overflow-y-auto`}
+        className={`${props.className} relative h-32 overflow-y-auto`}
       >
         <div className="absolute top-1 right-1 text-sm">
           {format(day, 'd')}
@@ -331,7 +330,7 @@ export const LeaveCalendarView = () => {
           </div>
         )}
         
-        <div className="mt-6 space-y-1 overflow-y-auto max-h-16">
+        <div className="mt-6 space-y-1 overflow-y-auto max-h-24">
           {renderLeaveEvents(day)}
         </div>
       </div>
@@ -387,42 +386,49 @@ export const LeaveCalendarView = () => {
         </div>
       </div>
 
-      <PremiumCard>
-        <CardContent className="p-0 md:p-6">
-          {isLoading ? (
-            <div className="flex justify-center items-center h-96">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-            </div>
-          ) : (
-            <div className="calendar-container overflow-x-auto overflow-y-auto" style={{ height: viewMode === '1month' ? '600px' : '900px' }}>
-              <div className="calendar-view">
+      <div className="w-full h-full">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-[700px]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+          </div>
+        ) : (
+          <div className="calendar-container w-full overflow-hidden" style={{ 
+            height: viewMode === '1month' ? 'calc(100vh - 280px)' : 'calc(100vh - 200px)',
+            minHeight: viewMode === '1month' ? '700px' : '900px'
+          }}>
+            <div className="calendar-view">
+              <Calendar
+                mode="range"
+                numberOfMonths={viewMode === '1month' ? 1 : 2}
+                className="w-full border-0 p-0"
+                month={currentDate}
+                onMonthChange={setCurrentDate}
+                disabled={() => false}
+                selected={undefined}
+                onSelect={() => {}}
+                components={{
+                  Day: ({ day, selectedDay, ...props }) => renderCalendarDay(day, selectedDay || [], props)
+                }}
+              />
+              
+              {viewMode === '2months' && (
                 <Calendar
                   mode="range"
-                  numberOfMonths={viewMode === '1month' ? 1 : 2}
-                  className="w-full border-0 p-0"
-                  month={currentDate}
-                  onMonthChange={setCurrentDate}
+                  month={addMonths(currentDate, 1)}
+                  onMonthChange={(date) => setCurrentDate(addMonths(date, -1))}
+                  className="w-full border-0 p-0 mt-6"
                   disabled={() => false}
                   selected={undefined}
                   onSelect={() => {}}
+                  components={{
+                    Day: ({ day, selectedDay, ...props }) => renderCalendarDay(day, selectedDay || [], props)
+                  }}
                 />
-                
-                {viewMode === '2months' && (
-                  <Calendar
-                    mode="range"
-                    month={addMonths(currentDate, 1)}
-                    onMonthChange={(date) => setCurrentDate(addMonths(date, -1))}
-                    className="w-full border-0 p-0"
-                    disabled={() => false}
-                    selected={undefined}
-                    onSelect={() => {}}
-                  />
-                )}
-              </div>
+              )}
             </div>
-          )}
-        </CardContent>
-      </PremiumCard>
+          </div>
+        )}
+      </div>
 
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent className="w-full sm:max-w-md">

@@ -87,9 +87,9 @@ const Leave = () => {
 
   return (
     <div className="min-h-screen pt-20 pb-12 bg-gray-50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-        <AnimatedSection>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl h-full">
+        <AnimatedSection className="h-full flex flex-col">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Leave Management</h1>
               <p className="mt-1 text-gray-600">Manage employee leave, shifts, and attendance</p>
@@ -131,7 +131,7 @@ const Leave = () => {
           </div>
           
           {/* View Toggle Buttons - redesigned to match button group style */}
-          <div className="mb-8">
+          <div className="mb-6">
             <div className="flex flex-wrap gap-2">
               <Button
                 variant={activeTab === 'calendar' ? 'secondary' : 'outline'}
@@ -154,8 +154,8 @@ const Leave = () => {
             </div>
           </div>
           
-          {/* Tab Content */}
-          <div className="mt-0">
+          {/* Tab Content - Now takes full height */}
+          <div className="flex-1 flex flex-col">
             {activeTab === 'calendar' && <LeaveCalendarView />}
             {activeTab === 'records' && <LeaveRecordsView />}
           </div>

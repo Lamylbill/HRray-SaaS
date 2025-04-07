@@ -127,7 +127,13 @@ const Employees = () => {
               {selectedEmployees.length} employees selected
             </span>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleSelectAll}>
+              <Button variant="outline" size="sm"   
+                style={{
+                backgroundColor: 'yellow',
+                color: 'black',
+                zIndex: 9999,
+              }}
+                onClick={handleSelectAll}>
                 Select All
               </Button>
               <Button

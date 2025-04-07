@@ -1,3 +1,4 @@
+
 import React, { Suspense, useEffect } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 
@@ -8,6 +9,7 @@ import Login from "@/pages/Login";
 import SignUp from "@/pages/SignUp";
 import Dashboard from "@/pages/Dashboard";
 import EmployeesPage from "@/pages/EmployeesPage";
+import Leave from "@/pages/Leave";
 import Settings from "@/pages/Settings";
 import NotFound from "@/pages/NotFound";
 
@@ -88,19 +90,18 @@ const AppRoutes = () => {
           </DashboardLayout>
         </ProtectedRoute>
       } />
+      <Route path="/leave" element={
+        <ProtectedRoute>
+          <DashboardLayout>
+            <Leave />
+          </DashboardLayout>
+        </ProtectedRoute>
+      } />
       <Route path="/payroll" element={
         <ProtectedRoute>
           <DashboardLayout>
             <h1 className="text-3xl font-bold mb-6">Payroll</h1>
             <p>Manage employee compensation and payments.</p>
-          </DashboardLayout>
-        </ProtectedRoute>
-      } />
-      <Route path="/leave" element={
-        <ProtectedRoute>
-          <DashboardLayout>
-            <h1 className="text-3xl font-bold mb-6">Leave Management</h1>
-            <p>Track and approve employee time off and absences.</p>
           </DashboardLayout>
         </ProtectedRoute>
       } />

@@ -9,6 +9,62 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      attendance_records: {
+        Row: {
+          break_minutes: number | null
+          clock_in: string | null
+          clock_out: string | null
+          created_at: string
+          created_by: string | null
+          date: string
+          employee_id: string
+          id: string
+          notes: string | null
+          overtime_hours: number | null
+          status: string | null
+          total_hours: number | null
+          updated_at: string
+        }
+        Insert: {
+          break_minutes?: number | null
+          clock_in?: string | null
+          clock_out?: string | null
+          created_at?: string
+          created_by?: string | null
+          date: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          overtime_hours?: number | null
+          status?: string | null
+          total_hours?: number | null
+          updated_at?: string
+        }
+        Update: {
+          break_minutes?: number | null
+          clock_in?: string | null
+          clock_out?: string | null
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          overtime_hours?: number | null
+          status?: string | null
+          total_hours?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_allowances: {
         Row: {
           allowance_type: string
@@ -860,6 +916,156 @@ export type Database = {
           },
         ]
       }
+      leave_quotas: {
+        Row: {
+          adjustment_days: number
+          created_at: string
+          employee_id: string
+          id: string
+          leave_type_id: string
+          quota_days: number
+          reset_date: string
+          taken_days: number
+          updated_at: string
+        }
+        Insert: {
+          adjustment_days?: number
+          created_at?: string
+          employee_id: string
+          id?: string
+          leave_type_id: string
+          quota_days?: number
+          reset_date?: string
+          taken_days?: number
+          updated_at?: string
+        }
+        Update: {
+          adjustment_days?: number
+          created_at?: string
+          employee_id?: string
+          id?: string
+          leave_type_id?: string
+          quota_days?: number
+          reset_date?: string
+          taken_days?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_quotas_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_quotas_leave_type_id_fkey"
+            columns: ["leave_type_id"]
+            isOneToOne: false
+            referencedRelation: "leave_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_requests: {
+        Row: {
+          created_at: string
+          employee_id: string
+          end_date: string
+          half_day: boolean | null
+          half_day_type: string | null
+          id: string
+          leave_type_id: string
+          notes: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          end_date: string
+          half_day?: boolean | null
+          half_day_type?: string | null
+          id?: string
+          leave_type_id: string
+          notes?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          end_date?: string
+          half_day?: boolean | null
+          half_day_type?: string | null
+          id?: string
+          leave_type_id?: string
+          notes?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_leave_type_id_fkey"
+            columns: ["leave_type_id"]
+            isOneToOne: false
+            referencedRelation: "leave_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_types: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          id: string
+          is_paid: boolean
+          name: string
+          requires_approval: boolean
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_paid?: boolean
+          name: string
+          requires_approval?: boolean
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_paid?: boolean
+          name?: string
+          requires_approval?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -920,11 +1126,131 @@ export type Database = {
         }
         Relationships: []
       }
+      public_holidays: {
+        Row: {
+          country: string
+          created_at: string
+          date: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          country?: string
+          created_at?: string
+          date: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          date?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      shift_templates: {
+        Row: {
+          break_duration_minutes: number | null
+          color: string | null
+          created_at: string
+          end_hour: number
+          end_minute: number
+          id: string
+          name: string
+          start_hour: number
+          start_minute: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          break_duration_minutes?: number | null
+          color?: string | null
+          created_at?: string
+          end_hour: number
+          end_minute: number
+          id?: string
+          name: string
+          start_hour: number
+          start_minute: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          break_duration_minutes?: number | null
+          color?: string | null
+          created_at?: string
+          end_hour?: number
+          end_minute?: number
+          id?: string
+          name?: string
+          start_hour?: number
+          start_minute?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      shifts: {
+        Row: {
+          break_duration_minutes: number | null
+          created_at: string
+          employee_id: string
+          end_time: string
+          id: string
+          name: string | null
+          notes: string | null
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          break_duration_minutes?: number | null
+          created_at?: string
+          employee_id: string
+          end_time: string
+          id?: string
+          name?: string | null
+          notes?: string | null
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          break_duration_minutes?: number | null
+          created_at?: string
+          employee_id?: string
+          end_time?: string
+          id?: string
+          name?: string | null
+          notes?: string | null
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shifts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      fetch_public_holidays: {
+        Args: {
+          year: number
+          country: string
+        }
+        Returns: undefined
+      }
       sync_employee_schema: {
         Args: Record<PropertyKey, never>
         Returns: undefined

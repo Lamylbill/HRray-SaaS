@@ -94,16 +94,29 @@ export const LeaveCalendarView = () => {
         throw leaveError;
       }
       
-      const formattedLeaveEvents: LeaveEvent[] = (leaveRequestsData || []).map(leave => ({
-        id: leave.id,
-        title: leave.leave_types.name,
-        start: new Date(leave.start_date),
-        end: new Date(leave.end_date),
-        type: leave.leave_types.name,
-        employee: leave.employees?.full_name || 'Unknown Employee',
-        status: leave.status as 'Pending' | 'Approved' | 'Rejected',
-        color: leave.leave_types.color,
-      }));
+      const formattedLeaveEvents: LeaveEvent[] = (leaveRequestsData || [])
+        .map(leave => {
+          const start = leave.start_date ? new Date(leave.start_date) : null;
+          const end = leave.end_date ? new Date(leave.end_date) : null;
+      
+          if (!start || !end || isNaN(start.getTime()) || isNaN(end.getTime())) {
+            console.warn("Invalid date in leave record:", leave);
+            return null;
+          }
+      
+          return {
+            id: leave.id,
+            title: leave.leave_types.name,
+            start,
+            end,
+            type: leave.leave_types.name,
+            employee: leave.employees?.full_name || 'Unknown Employee',
+            status: leave.status as 'Pending' | 'Approved' | 'Rejected',
+            color: leave.leave_types.color,
+          };
+        })
+        .filter(Boolean); // Remove nulls
+
       
       setLeaveEvents(formattedLeaveEvents);
       setPendingRequests(formattedLeaveEvents.filter(e => e.status === 'Pending'));

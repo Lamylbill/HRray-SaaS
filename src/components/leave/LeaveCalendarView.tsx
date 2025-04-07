@@ -1,14 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
-import { addDays, format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, parseISO } from 'date-fns';
+import { addMonths, format, parseISO, differenceInDays, addDays, isWithinInterval } from 'date-fns';
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
-import { PremiumCard, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui-custom/Card';
+import { PremiumCard, CardContent } from '@/components/ui-custom/Card';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Separator } from '@/components/ui/separator';
+import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 
 interface LeaveEvent {
@@ -29,20 +28,11 @@ interface PublicHoliday {
   country: string;
 }
 
-interface ShiftEvent {
-  id: string;
-  employee: string;
-  start: Date;
-  end: Date;
-  name?: string;
-}
-
 export const LeaveCalendarView = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
+  const [viewMode, setViewMode] = useState<'1month' | '2months'>('1month');
   const [leaveEvents, setLeaveEvents] = useState<LeaveEvent[]>([]);
   const [publicHolidays, setPublicHolidays] = useState<PublicHoliday[]>([]);
-  const [shiftEvents, setShiftEvents] = useState<ShiftEvent[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<LeaveEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,67 +40,96 @@ export const LeaveCalendarView = () => {
 
   useEffect(() => {
     loadCalendarData();
-  }, [currentDate, viewMode]);
+    fetchPublicHolidays();
+  }, [currentDate]);
 
   useEffect(() => {
     loadPendingRequests();
   }, []);
 
+  const fetchPublicHolidays = async () => {
+    try {
+      // Call the Supabase edge function to fetch holidays if needed
+      const year = currentDate.getFullYear();
+      
+      // First check if we already have this year's holidays
+      const { data: existingHolidays, error } = await supabase
+        .from('public_holidays')
+        .select('*')
+        .eq('country', 'SG')
+        .gte('date', `${year}-01-01`)
+        .lte('date', `${year}-12-31`);
+      
+      if (error) {
+        console.error('Error checking for holidays:', error);
+        return;
+      }
+      
+      // If we have holidays for this year, use those
+      if (existingHolidays && existingHolidays.length > 0) {
+        setPublicHolidays(existingHolidays.map(h => ({
+          ...h,
+          date: new Date(h.date)
+        })));
+        return;
+      }
+      
+      // Otherwise fetch from the edge function
+      const { data, error: funcError } = await supabase.functions.invoke('fetch-public-holidays', {
+        body: { year, country: 'SG' }
+      });
+      
+      if (funcError) {
+        console.error('Error fetching holidays:', funcError);
+        return;
+      }
+      
+      if (data && data.data) {
+        setPublicHolidays(data.data.map(h => ({
+          ...h,
+          date: new Date(h.date)
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching public holidays:', error);
+    }
+  };
+
   const loadCalendarData = async () => {
     setIsLoading(true);
     try {
-      // In a real implementation, we would fetch from Supabase
-      // For now, let's use dummy data
-
-      // Mock leave events
-      const mockLeaveEvents: LeaveEvent[] = [
-        {
-          id: '1',
-          title: 'Annual Leave',
-          start: addDays(currentDate, -1),
-          end: addDays(currentDate, 1),
-          type: 'Annual Leave',
-          employee: 'Sarah Johnson',
-          status: 'Approved',
-          color: '#3b82f6',
-        },
-        {
-          id: '2',
-          title: 'Sick Leave',
-          start: addDays(currentDate, 2),
-          end: addDays(currentDate, 3),
-          type: 'Sick Leave',
-          employee: 'Michael Chen',
-          status: 'Pending',
-          color: '#ef4444',
-        },
-      ];
-
-      // Mock holidays
-      const mockHolidays: PublicHoliday[] = [
-        {
-          id: '1',
-          name: 'National Day',
-          date: addDays(currentDate, 5),
-          country: 'SG',
-        },
-      ];
-
-      // Mock shifts
-      const mockShifts: ShiftEvent[] = [
-        {
-          id: '1',
-          employee: 'David Kim',
-          start: new Date(currentDate.setHours(9, 0, 0, 0)),
-          end: new Date(currentDate.setHours(17, 0, 0, 0)),
-          name: 'Morning Shift',
-        },
-      ];
-
-      setLeaveEvents(mockLeaveEvents);
-      setPublicHolidays(mockHolidays);
-      setShiftEvents(mockShifts);
-      setPendingRequests(mockLeaveEvents.filter(e => e.status === 'Pending'));
+      // Fetch leave requests from Supabase
+      const { data: leaveRequestsData, error: leaveError } = await supabase
+        .from('leave_requests')
+        .select(`
+          id,
+          start_date,
+          end_date,
+          status,
+          half_day,
+          half_day_type,
+          employees(id, full_name),
+          leave_types(id, name, color)
+        `);
+      
+      if (leaveError) {
+        throw leaveError;
+      }
+      
+      const formattedLeaveEvents: LeaveEvent[] = (leaveRequestsData || []).map(leave => ({
+        id: leave.id,
+        title: leave.leave_types.name,
+        start: new Date(leave.start_date),
+        end: new Date(leave.end_date),
+        type: leave.leave_types.name,
+        employee: leave.employees?.full_name || 'Unknown Employee',
+        status: leave.status,
+        color: leave.leave_types.color,
+      }));
+      
+      setLeaveEvents(formattedLeaveEvents);
+      setPendingRequests(formattedLeaveEvents.filter(e => e.status === 'Pending'));
+      
     } catch (error) {
       console.error('Error loading calendar data:', error);
       toast({
@@ -154,8 +173,22 @@ export const LeaveCalendarView = () => {
 
   const handleApproveReject = async (id: string, action: 'Approved' | 'Rejected') => {
     try {
-      // In a real implementation, this would update the database
-      // For now, just update the local state
+      // Update the leave request in Supabase
+      const { error } = await supabase
+        .from('leave_requests')
+        .update({ 
+          status: action,
+          reviewed_at: new Date().toISOString(),
+          // In a real app, you'd get the current user's ID here
+          // reviewed_by: user.id
+        })
+        .eq('id', id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Update local state
       setPendingRequests(prev => prev.filter(request => request.id !== id));
       setLeaveEvents(prev => 
         prev.map(event => 
@@ -168,6 +201,10 @@ export const LeaveCalendarView = () => {
         description: `The leave request has been ${action === 'Approved' ? 'approved' : 'rejected'}.`,
         duration: 3000,
       });
+      
+      // Refresh data
+      loadCalendarData();
+      
     } catch (error) {
       console.error(`Error ${action.toLowerCase()} leave request:`, error);
       toast({
@@ -179,64 +216,162 @@ export const LeaveCalendarView = () => {
   };
 
   const navigatePrevious = () => {
-    if (viewMode === 'week') {
-      setCurrentDate(subWeeks(currentDate, 1));
-    } else {
-      // Handle month navigation
-      const newDate = new Date(currentDate);
-      newDate.setMonth(newDate.getMonth() - 1);
-      setCurrentDate(newDate);
-    }
+    setCurrentDate(prev => addMonths(prev, -1));
   };
 
   const navigateNext = () => {
-    if (viewMode === 'week') {
-      setCurrentDate(addWeeks(currentDate, 1));
-    } else {
-      // Handle month navigation
-      const newDate = new Date(currentDate);
-      newDate.setMonth(newDate.getMonth() + 1);
-      setCurrentDate(newDate);
-    }
+    setCurrentDate(prev => addMonths(prev, 1));
   };
 
   const navigateToday = () => {
     setCurrentDate(new Date());
   };
 
-  // Generate days for the current week view
-  const startDate = startOfWeek(currentDate, { weekStartsOn: 1 }); // Start from Monday
-  const endDate = endOfWeek(currentDate, { weekStartsOn: 1 });
-  const days = eachDayOfInterval({ start: startDate, end: endDate });
+  // Modified to render continuous bars for multi-day leave events
+  const renderLeaveEvents = (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const eventsForDay = leaveEvents.filter(event => {
+      return isWithinInterval(date, {
+        start: event.start,
+        end: event.end
+      });
+    });
 
-  const getEventStyle = (event: LeaveEvent) => {
-    switch (event.status) {
-      case 'Approved':
-        return { backgroundColor: event.color, color: 'white', borderRadius: '4px', padding: '1px 6px' };
-      case 'Pending':
-        return { backgroundColor: 'transparent', color: event.color, border: `1px dashed ${event.color}`, borderRadius: '4px', padding: '0px 6px' };
-      case 'Rejected':
-        return { backgroundColor: 'transparent', color: 'gray', border: '1px solid gray', borderRadius: '4px', padding: '0px 6px', textDecoration: 'line-through' };
-      default:
-        return {};
-    }
+    // Sort events to show approved first, then pending, then rejected
+    eventsForDay.sort((a, b) => {
+      const statusPriority = { 'Approved': 0, 'Pending': 1, 'Rejected': 2 };
+      return statusPriority[a.status] - statusPriority[b.status];
+    });
+
+    return eventsForDay.map((event, index) => {
+      // Determine if this is the start, middle, or end day of a multi-day event
+      const isFirstDay = format(event.start, 'yyyy-MM-dd') === dateStr;
+      const isLastDay = format(event.end, 'yyyy-MM-dd') === dateStr;
+      const totalDays = differenceInDays(event.end, event.start) + 1;
+      const isMultiDay = totalDays > 1;
+      
+      // Style based on status and position in multi-day event
+      let style = {
+        backgroundColor: event.status === 'Approved' ? event.color : 'transparent',
+        color: event.status === 'Approved' ? 'white' : event.color,
+        borderRadius: '2px',
+        padding: '1px 4px',
+        fontSize: '0.7rem',
+        whiteSpace: 'nowrap' as 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        marginBottom: '2px',
+        marginTop: index === 0 ? '2px' : '0',
+        border: event.status === 'Approved' ? 'none' : `1px dashed ${event.color}`,
+        position: 'relative' as 'relative',
+        display: 'flex',
+        alignItems: 'center',
+      };
+      
+      // For multi-day events, adjust styling for continuity
+      if (isMultiDay) {
+        if (isFirstDay) {
+          style = {
+            ...style,
+            borderTopLeftRadius: '4px',
+            borderBottomLeftRadius: '4px',
+            borderTopRightRadius: '0',
+            borderBottomRightRadius: '0',
+            borderRight: 'none',
+            paddingLeft: '6px',
+          };
+        } else if (isLastDay) {
+          style = {
+            ...style,
+            borderTopLeftRadius: '0',
+            borderBottomLeftRadius: '0',
+            borderTopRightRadius: '4px',
+            borderBottomRightRadius: '4px',
+            borderLeft: 'none',
+            paddingRight: '6px',
+          };
+        } else {
+          style = {
+            ...style,
+            borderRadius: '0',
+            borderLeft: 'none',
+            borderRight: 'none',
+          };
+        }
+      }
+      
+      // For rejected leaves, add strikethrough
+      if (event.status === 'Rejected') {
+        style = {
+          ...style,
+          textDecoration: 'line-through',
+          opacity: 0.7,
+        };
+      }
+      
+      return (
+        <TooltipProvider key={`${event.id}-${dateStr}`}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div style={style}>
+                {(isFirstDay || !isMultiDay) && (
+                  <span>
+                    {event.employee.split(' ')[0]} - {event.type}
+                    {isMultiDay && ` (${totalDays}d)`}
+                  </span>
+                )}
+                {!isFirstDay && isMultiDay && <span>⬤</span>}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="text-xs">
+                <div className="font-bold">{event.type}</div>
+                <div>Employee: {event.employee}</div>
+                <div>Status: {event.status}</div>
+                <div>
+                  {format(event.start, 'MMM d')} - {format(event.end, 'MMM d, yyyy')}
+                  {` (${totalDays} day${totalDays > 1 ? 's' : ''})`}
+                </div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    });
   };
 
-  const isPublicHoliday = (date: Date) => {
-    return publicHolidays.some(holiday => 
-      format(holiday.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-    );
-  };
-
-  const getPublicHoliday = (date: Date) => {
+  // Helper function to check if a date has a public holiday
+  const getHolidayForDate = (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
     return publicHolidays.find(holiday => 
-      format(holiday.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+      format(holiday.date, 'yyyy-MM-dd') === dateStr
     );
   };
 
-  const isWeekend = (date: Date) => {
-    const day = date.getDay();
-    return day === 0 || day === 6; // 0 is Sunday, 6 is Saturday
+  // Custom day renderer for the calendar
+  const renderCalendarDay = (day: Date, selectedDays: Date[], props: any) => {
+    const holiday = getHolidayForDate(day);
+    
+    return (
+      <div 
+        {...props}
+        className={`${props.className} relative h-24 overflow-y-auto`}
+      >
+        <div className="absolute top-1 right-1 text-sm">
+          {format(day, 'd')}
+        </div>
+        
+        {holiday && (
+          <div className="mt-5 mb-1 text-xs font-medium text-red-700 bg-red-100 rounded px-1 py-0.5 text-center">
+            {holiday.name}
+          </div>
+        )}
+        
+        <div className="mt-6 space-y-1 overflow-y-auto max-h-16">
+          {renderLeaveEvents(day)}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -253,28 +388,26 @@ export const LeaveCalendarView = () => {
             <ChevronRight className="h-4 w-4" />
           </Button>
           <h3 className="text-lg font-semibold">
-            {viewMode === 'week' 
-              ? `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d, yyyy')}`
-              : format(currentDate, 'MMMM yyyy')}
+            {format(currentDate, 'MMMM yyyy')}
           </h3>
         </div>
         <div className="flex items-center space-x-2">
           <div className="flex border rounded-md overflow-hidden">
             <Button 
-              variant={viewMode === 'week' ? 'secondary' : 'ghost'} 
+              variant={viewMode === '1month' ? 'secondary' : 'ghost'} 
               size="sm" 
               className="rounded-none"
-              onClick={() => setViewMode('week')}
+              onClick={() => setViewMode('1month')}
             >
-              Week
+              1 Month
             </Button>
             <Button 
-              variant={viewMode === 'month' ? 'secondary' : 'ghost'} 
+              variant={viewMode === '2months' ? 'secondary' : 'ghost'} 
               size="sm" 
               className="rounded-none"
-              onClick={() => setViewMode('month')}
+              onClick={() => setViewMode('2months')}
             >
-              Month
+              2 Months
             </Button>
           </div>
           {pendingRequests.length > 0 && (
@@ -291,87 +424,39 @@ export const LeaveCalendarView = () => {
       </div>
 
       <PremiumCard>
-        <CardContent>
+        <CardContent className="p-0 md:p-6">
           {isLoading ? (
             <div className="flex justify-center items-center h-96">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
             </div>
           ) : (
-            <div className="calendar-view">
-              {viewMode === 'week' ? (
-                <div className="grid grid-cols-7 gap-2">
-                  {/* Day headers */}
-                  {days.map((day, i) => (
-                    <div 
-                      key={i} 
-                      className={`text-center p-2 font-medium ${isWeekend(day) ? 'text-gray-500' : 'text-gray-700'} 
-                      ${format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? 'bg-blue-50 rounded-md' : ''}`}
-                    >
-                      <div>{format(day, 'EEE')}</div>
-                      <div className={`text-lg ${format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? 'text-blue-600 font-bold' : ''}`}>
-                        {format(day, 'd')}
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* Day cells with events */}
-                  {days.map((day, i) => {
-                    const dayEvents = leaveEvents.filter(event => 
-                      format(event.start, 'yyyy-MM-dd') <= format(day, 'yyyy-MM-dd') &&
-                      format(event.end, 'yyyy-MM-dd') >= format(day, 'yyyy-MM-dd')
-                    );
-                    
-                    const holiday = getPublicHoliday(day);
-                    
-                    return (
-                      <div 
-                        key={`cell-${i}`} 
-                        className={`min-h-[120px] border rounded-md p-2 
-                          ${isWeekend(day) ? 'bg-gray-50' : 'bg-white'}
-                          ${isPublicHoliday(day) ? 'bg-red-50' : ''}
-                          ${format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? 'border-blue-300' : 'border-gray-200'}
-                        `}
-                      >
-                        {holiday && (
-                          <div className="text-xs font-medium text-red-700 bg-red-100 rounded px-2 py-0.5 mb-1">
-                            {holiday.name}
-                          </div>
-                        )}
-
-                        {dayEvents.map(event => (
-                          <div 
-                            key={event.id} 
-                            className="text-xs mb-1 truncate"
-                            style={getEventStyle(event)}
-                          >
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span>{event.employee}: {event.type}</span>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <div className="text-xs">
-                                    <div className="font-bold">{event.type}</div>
-                                    <div>Employee: {event.employee}</div>
-                                    <div>Status: {event.status}</div>
-                                    <div>
-                                      {format(event.start, 'MMM d')} - {format(event.end, 'MMM d, yyyy')}
-                                    </div>
-                                  </div>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })}
+            <div className="calendar-container overflow-y-auto" style={{ height: viewMode === '1month' ? '600px' : '900px' }}>
+              <div className="calendar-view">
+                <Calendar
+                  mode="range"
+                  numberOfMonths={viewMode === '1month' ? 1 : 2}
+                  className="w-full border-0 p-0"
+                  month={currentDate}
+                  onMonthChange={setCurrentDate}
+                  disabled={[]}
+                  selected={{}}
+                  onSelect={() => {}}
+                />
+                
+                <div className="mt-6">
+                  {viewMode === '2months' && (
+                    <Calendar
+                      mode="range"
+                      month={addMonths(currentDate, 1)}
+                      onMonthChange={(date) => setCurrentDate(addMonths(date, -1))}
+                      className="w-full border-0 p-0"
+                      disabled={[]}
+                      selected={{}}
+                      onSelect={() => {}}
+                    />
+                  )}
                 </div>
-              ) : (
-                <div className="text-center p-8">
-                  Month view would be implemented here with a similar structure
-                </div>
-              )}
+              </div>
             </div>
           )}
         </CardContent>
@@ -397,7 +482,7 @@ export const LeaveCalendarView = () => {
                     <div className="text-sm mt-1">
                       {format(request.start, 'MMM d')} - {format(request.end, 'MMM d, yyyy')}
                       <Badge className="ml-2" variant="outline" style={{color: request.color, borderColor: request.color}}>
-                        {((new Date(request.end).getTime() - new Date(request.start).getTime()) / (1000 * 60 * 60 * 24) + 1)} days
+                        {differenceInDays(request.end, request.start) + 1} days
                       </Badge>
                     </div>
                   </div>

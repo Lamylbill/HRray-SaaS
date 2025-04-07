@@ -36,7 +36,11 @@ const sortFunctions = {
   department: (a, b, dir) => dir === 'asc' ? a.department.localeCompare(b.department) : b.department.localeCompare(a.department),
   position: (a, b, dir) => dir === 'asc' ? a.position.localeCompare(b.position) : b.position.localeCompare(a.position),
   status: (a, b, dir) => dir === 'asc' ? a.status.localeCompare(b.status) : b.status.localeCompare(a.status),
-  joinDate: (a, b, dir) => dir === 'asc' ? new Date(a.joinDate) - new Date(b.joinDate) : new Date(b.joinDate) - new Date(a.joinDate)
+  joinDate: (a, b, dir) => {
+    const dateA = new Date(a.joinDate);
+    const dateB = new Date(b.joinDate);
+    return dir === 'asc' ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
+  }
 };
 
 const Employees = () => {

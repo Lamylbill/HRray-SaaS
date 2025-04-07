@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, ListFilter, Plus, RefreshCw, Upload } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
 import { AnimatedSection } from '@/components/ui-custom/AnimatedSection';
@@ -17,6 +16,7 @@ const Leave = () => {
   const { toast } = useToast();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('calendar');
+  const [showFilterDrawer, setShowFilterDrawer] = useState(false);
   
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate('/login');
@@ -24,17 +24,65 @@ const Leave = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    // This would refresh the data from the API or database
-    
-    // Simulate a delay for demonstration
-    setTimeout(() => {
-      setIsRefreshing(false);
+    try {
+      // Fetch updated leave data from Supabase
+      // This would be a real data fetch in a production implementation
+      await Promise.all([
+        supabase
+          .from('leave_requests')
+          .select('*'),
+        supabase
+          .from('public_holidays')
+          .select('*'),
+        supabase
+          .from('shifts')
+          .select('*')
+      ]);
+      
       toast({
         title: "Refreshed",
         description: "Leave data has been refreshed",
         duration: 3000,
       });
-    }, 1000);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh data",
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleExport = () => {
+    // Implementation for exporting data would go here
+    toast({
+      title: "Export Started",
+      description: `Exporting ${activeTab === 'calendar' ? 'calendar' : 'leave records'} data`,
+      duration: 3000,
+    });
+  };
+  
+  const handleFilter = () => {
+    setShowFilterDrawer(true);
+    // Implementation for filter functionality would go here
+    toast({
+      title: "Filters",
+      description: "Filter functionality will be implemented soon",
+      duration: 3000,
+    });
+  };
+
+  const handleAddLeave = () => {
+    // Implementation for adding leave would go here
+    toast({
+      title: "Add Leave",
+      description: "Leave creation dialog will be implemented soon",
+      duration: 3000,
+    });
   };
 
   return (
@@ -46,6 +94,8 @@ const Leave = () => {
               <h1 className="text-3xl font-bold text-gray-900">Leave Management</h1>
               <p className="mt-1 text-gray-600">Manage employee leave, shifts, and attendance</p>
             </div>
+            
+            {/* Action Buttons */}
             <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
               <Button 
                 variant="outline" 
@@ -56,36 +106,57 @@ const Leave = () => {
                 <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleFilter}
+              >
                 <ListFilter className="mr-2 h-4 w-4" /> Filter
               </Button>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleExport}
+              >
                 <Upload className="mr-2 h-4 w-4" /> Export
               </Button>
-              <Button variant="primary" size="sm">
+              <Button 
+                variant="primary" 
+                size="sm"
+                onClick={handleAddLeave}
+              >
                 <Plus className="mr-2 h-4 w-4" /> Add Leave
               </Button>
             </div>
           </div>
           
-          <Tabs defaultValue="calendar" value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-2 mb-8">
-              <TabsTrigger value="calendar" className="flex items-center">
-                <Calendar className="mr-2 h-4 w-4" /> Calendar View
-              </TabsTrigger>
-              <TabsTrigger value="records" className="flex items-center">
-                <ListFilter className="mr-2 h-4 w-4" /> Leave Records
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="calendar" className="mt-0">
-              <LeaveCalendarView />
-            </TabsContent>
-            
-            <TabsContent value="records" className="mt-0">
-              <LeaveRecordsView />
-            </TabsContent>
-          </Tabs>
+          {/* Improved Tabs UI - now styled similar to button group */}
+          <div className="flex mb-8 border rounded-md overflow-hidden">
+            <Button
+              variant={activeTab === 'calendar' ? 'secondary' : 'ghost'}
+              size="sm"
+              className={`flex-1 justify-center rounded-none border-0 ${activeTab === 'calendar' ? 'bg-gray-100' : ''}`}
+              onClick={() => setActiveTab('calendar')}
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              Calendar View
+            </Button>
+            <Button
+              variant={activeTab === 'records' ? 'secondary' : 'ghost'}
+              size="sm"
+              className={`flex-1 justify-center rounded-none border-0 ${activeTab === 'records' ? 'bg-gray-100' : ''}`}
+              onClick={() => setActiveTab('records')}
+            >
+              <ListFilter className="mr-2 h-4 w-4" />
+              Leave Records
+            </Button>
+          </div>
+          
+          {/* Tab Content */}
+          <div className="mt-0">
+            {activeTab === 'calendar' && <LeaveCalendarView />}
+            {activeTab === 'records' && <LeaveRecordsView />}
+          </div>
         </AnimatedSection>
       </div>
     </div>

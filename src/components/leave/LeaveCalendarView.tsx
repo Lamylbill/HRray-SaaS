@@ -229,30 +229,31 @@ export const LeaveCalendarView = () => {
   });
 };
 
-  const renderCalendarDay(props.date, props)
-    if (!(day instanceof Date) || isNaN(day.getTime())) {
-      console.warn("Skipping invalid calendar day:", day);
-      return <div className="p-2 text-xs text-gray-400">Invalid date</div>;
-    }
+  const renderCalendarDay = (day: Date, props: any) => {
+  if (!(day instanceof Date) || isNaN(day.getTime())) {
+    console.warn("Skipping invalid calendar day:", day);
+    return <div className="p-2 text-xs text-gray-400">Invalid date</div>;
+  }
 
-    const holiday = getHolidayForDate(day);
+  const holiday = getHolidayForDate(day);
 
-    return (
-      <div {...props} className={`${props.className} relative h-32 overflow-y-auto`}>
-        <div className="absolute top-1 right-1 text-sm">
-          {format(day, 'd')}
-        </div>
-        {holiday && (
-          <div className="mt-5 mb-1 text-xs font-medium text-red-700 bg-red-100 rounded px-1 py-0.5 text-center">
-            {holiday.name}
-          </div>
-        )}
-        <div className="mt-6 space-y-1 overflow-y-auto max-h-24">
-          {renderLeaveEvents(day)}
-        </div>
+  return (
+    <div {...props} className={`${props.className} relative h-32 overflow-y-auto`}>
+      <div className="absolute top-1 right-1 text-sm">
+        {format(day, 'd')}
       </div>
-    );
-  };
+      {holiday && (
+        <div className="mt-5 mb-1 text-xs font-medium text-red-700 bg-red-100 rounded px-1 py-0.5 text-center">
+          {holiday.name}
+        </div>
+      )}
+      <div className="mt-6 space-y-1 overflow-y-auto max-h-24">
+        {renderLeaveEvents(day)}
+      </div>
+    </div>
+  );
+};
+
 
   return (
     <>
@@ -324,7 +325,7 @@ export const LeaveCalendarView = () => {
                 selected={undefined}
                 onSelect={() => {}}
                 components={{
-                  Day: (props) => renderCalendarDay(props.date, [], props)
+                  Day: (props) => renderCalendarDay(props.date, props)
                 }}
               />
               

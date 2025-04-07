@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { addMonths, format, parseISO, differenceInDays, addDays, isWithinInterval } from 'date-fns';
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
@@ -33,10 +32,8 @@ export const LeaveCalendarView = () => {
 
   const fetchPublicHolidays = async () => {
     try {
-      // Call the Supabase edge function to fetch holidays if needed
       const year = currentDate.getFullYear();
       
-      // First check if we already have this year's holidays
       const { data: existingHolidays, error } = await supabase
         .from('public_holidays')
         .select('*')
@@ -49,7 +46,6 @@ export const LeaveCalendarView = () => {
         return;
       }
       
-      // If we have holidays for this year, use those
       if (existingHolidays && existingHolidays.length > 0) {
         setPublicHolidays(existingHolidays.map(h => ({
           ...h,
@@ -58,7 +54,6 @@ export const LeaveCalendarView = () => {
         return;
       }
       
-      // Otherwise fetch from the edge function
       const { data, error: funcError } = await supabase.functions.invoke('fetch-public-holidays', {
         body: { year, country: 'SG' }
       });
@@ -82,7 +77,6 @@ export const LeaveCalendarView = () => {
   const loadCalendarData = async () => {
     setIsLoading(true);
     try {
-      // Fetch leave requests from Supabase
       const { data: leaveRequestsData, error: leaveError } = await supabase
         .from('leave_requests')
         .select(`
@@ -127,8 +121,6 @@ export const LeaveCalendarView = () => {
   };
 
   const loadPendingRequests = async () => {
-    // In a real implementation, fetch from Supabase
-    // For now, use dummy data
     const mockPendingRequests: LeaveEvent[] = [
       {
         id: '2',
@@ -157,14 +149,11 @@ export const LeaveCalendarView = () => {
 
   const handleApproveReject = async (id: string, action: 'Approved' | 'Rejected') => {
     try {
-      // Update the leave request in Supabase
       const { error } = await supabase
         .from('leave_requests')
         .update({ 
           status: action,
           reviewed_at: new Date().toISOString(),
-          // In a real app, you'd get the current user's ID here
-          // reviewed_by: user.id
         })
         .eq('id', id);
       
@@ -172,7 +161,6 @@ export const LeaveCalendarView = () => {
         throw error;
       }
       
-      // Update local state
       setPendingRequests(prev => prev.filter(request => request.id !== id));
       setLeaveEvents(prev => 
         prev.map(event => 
@@ -186,7 +174,6 @@ export const LeaveCalendarView = () => {
         duration: 3000,
       });
       
-      // Refresh data
       loadCalendarData();
       
     } catch (error) {
@@ -211,7 +198,6 @@ export const LeaveCalendarView = () => {
     setCurrentDate(new Date());
   };
 
-  // Modified to render continuous bars for multi-day leave events
   const renderLeaveEvents = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const eventsForDay = leaveEvents.filter(event => {
@@ -221,20 +207,17 @@ export const LeaveCalendarView = () => {
       });
     });
 
-    // Sort events to show approved first, then pending, then rejected
     eventsForDay.sort((a, b) => {
       const statusPriority = { 'Approved': 0, 'Pending': 1, 'Rejected': 2 };
       return statusPriority[a.status] - statusPriority[b.status];
     });
 
     return eventsForDay.map((event, index) => {
-      // Determine if this is the start, middle, or end day of a multi-day event
       const isFirstDay = format(event.start, 'yyyy-MM-dd') === dateStr;
       const isLastDay = format(event.end, 'yyyy-MM-dd') === dateStr;
       const totalDays = differenceInDays(event.end, event.start) + 1;
       const isMultiDay = totalDays > 1;
       
-      // Style based on status and position in multi-day event
       let style: React.CSSProperties = {
         backgroundColor: event.status === 'Approved' ? event.color : 'transparent',
         color: event.status === 'Approved' ? 'white' : event.color,
@@ -252,7 +235,6 @@ export const LeaveCalendarView = () => {
         alignItems: 'center',
       };
       
-      // For multi-day events, adjust styling for continuity
       if (isMultiDay) {
         if (isFirstDay) {
           style = {
@@ -284,7 +266,6 @@ export const LeaveCalendarView = () => {
         }
       }
       
-      // For rejected leaves, add strikethrough
       if (event.status === 'Rejected') {
         style = {
           ...style,
@@ -324,7 +305,6 @@ export const LeaveCalendarView = () => {
     });
   };
 
-  // Helper function to check if a date has a public holiday
   const getHolidayForDate = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     return publicHolidays.find(holiday => 
@@ -332,7 +312,6 @@ export const LeaveCalendarView = () => {
     );
   };
 
-  // Custom day renderer for the calendar
   const renderCalendarDay = (day: Date, selectedDays: Date[], props: any) => {
     const holiday = getHolidayForDate(day);
     
@@ -422,31 +401,28 @@ export const LeaveCalendarView = () => {
                   className="w-full border-0 p-0"
                   month={currentDate}
                   onMonthChange={setCurrentDate}
-                  disabled={false}
-                  selected={{}}
+                  disabled={(date) => false}
+                  selected={undefined}
                   onSelect={() => {}}
                 />
                 
-                <div className="mt-6">
-                  {viewMode === '2months' && (
-                    <Calendar
-                      mode="range"
-                      month={addMonths(currentDate, 1)}
-                      onMonthChange={(date) => setCurrentDate(addMonths(date, -1))}
-                      className="w-full border-0 p-0"
-                      disabled={false}
-                      selected={{}}
-                      onSelect={() => {}}
-                    />
-                  )}
-                </div>
+                {viewMode === '2months' && (
+                  <Calendar
+                    mode="range"
+                    month={addMonths(currentDate, 1)}
+                    onMonthChange={(date) => setCurrentDate(addMonths(date, -1))}
+                    className="w-full border-0 p-0"
+                    disabled={(date) => false}
+                    selected={undefined}
+                    onSelect={() => {}}
+                  />
+                )}
               </div>
             </div>
           )}
         </CardContent>
       </PremiumCard>
 
-      {/* Pending Leaves Sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent className="w-full sm:max-w-md">
           <SheetHeader>

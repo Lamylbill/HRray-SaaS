@@ -1,6 +1,3 @@
-
-// src/pages/Employees.tsx
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -33,11 +30,15 @@ const employees = [
 ];
 
 const sortFunctions = {
-  name: (a, b, dir) => dir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name),
-  department: (a, b, dir) => dir === 'asc' ? a.department.localeCompare(b.department) : b.department.localeCompare(a.department),
-  position: (a, b, dir) => dir === 'asc' ? a.position.localeCompare(b.position) : b.position.localeCompare(a.position),
-  status: (a, b, dir) => dir === 'asc' ? a.status.localeCompare(b.status) : b.status.localeCompare(a.status),
-  joinDate: (a, b, dir) => dir === 'asc' ? new Date(a.joinDate) - new Date(b.joinDate) : new Date(b.joinDate) - new Date(a.joinDate)
+  name: (a: any, b: any, dir: string) => dir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name),
+  department: (a: any, b: any, dir: string) => dir === 'asc' ? a.department.localeCompare(b.department) : b.department.localeCompare(a.department),
+  position: (a: any, b: any, dir: string) => dir === 'asc' ? a.position.localeCompare(b.position) : b.position.localeCompare(a.position),
+  status: (a: any, b: any, dir: string) => dir === 'asc' ? a.status.localeCompare(b.status) : b.status.localeCompare(a.status),
+  joinDate: (a: any, b: any, dir: string) => {
+    const dateA = new Date(a.joinDate).getTime();
+    const dateB = new Date(b.joinDate).getTime();
+    return dir === 'asc' ? dateA - dateB : dateB - dateA;
+  }
 };
 
 const Employees = () => {

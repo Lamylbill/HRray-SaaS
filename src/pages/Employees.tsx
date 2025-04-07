@@ -154,8 +154,102 @@ const Employees = () => {
           </PremiumCard>
         </AnimatedSection>
 
-        <!-- (Table rendering remains unchanged) -->
-
+        <AnimatedSection delay={200}>
+          <PremiumCard>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {isMultiSelectMode && (
+                        <TableHead className="w-10">
+                          <Checkbox
+                            checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
+                            className="mr-2"
+                            onCheckedChange={handleSelectAll}
+                          />
+                        </TableHead>
+                      )}
+                      <TableHead
+                        onClick={() => handleSort('name')}
+                        className="cursor-pointer hover:text-hrflow-blue"
+                      >
+                        Name <SortIndicator column="name" />
+                      </TableHead>
+                      <TableHead
+                        onClick={() => handleSort('department')}
+                        className="cursor-pointer hover:text-hrflow-blue"
+                      >
+                        Department <SortIndicator column="department" />
+                      </TableHead>
+                      <TableHead
+                        onClick={() => handleSort('position')}
+                        className="cursor-pointer hover:text-hrflow-blue"
+                      >
+                        Position <SortIndicator column="position" />
+                      </TableHead>
+                      <TableHead
+                        onClick={() => handleSort('status')}
+                        className="cursor-pointer hover:text-hrflow-blue"
+                      >
+                        Status <SortIndicator column="status" />
+                      </TableHead>
+                      <TableHead
+                        onClick={() => handleSort('joinDate')}
+                        className="cursor-pointer hover:text-hrflow-blue"
+                      >
+                        Join Date <SortIndicator column="joinDate" />
+                      </TableHead>
+                      <TableHead className="w-10"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredEmployees.map(employee => (
+                      <TableRow key={employee.id}>
+                        {isMultiSelectMode && (
+                          <TableCell className="py-2">
+                            <Checkbox
+                              checked={selectedEmployees.includes(employee.id)}
+                              onCheckedChange={() => handleCheckboxChange(employee.id)}
+                            />
+                          </TableCell>
+                        )}
+                        <TableCell className="font-medium">
+                          {employee.name}
+                          <div className="text-sm text-gray-500">{employee.email}</div>
+                        </TableCell>
+                        <TableCell>{employee.department}</TableCell>
+                        <TableCell>{employee.position}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(employee.status)}`}>
+                            {employee.status}
+                          </span>
+                        </TableCell>
+                        <TableCell>{new Date(employee.joinDate).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem>View Profile</DropdownMenuItem>
+                              <DropdownMenuItem>Edit Details</DropdownMenuItem>
+                              <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </PremiumCard>
+        </AnimatedSection>
       </div>
     </div>
   );

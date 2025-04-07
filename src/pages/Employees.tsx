@@ -50,8 +50,7 @@ const Employees = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
-  const [selectedEmployees, setSelectedEmployees] = useState<number[]>([]);
-  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate('/login');
@@ -72,35 +71,6 @@ const Employees = () => {
       setSortBy(key);
       setSortDirection('asc');
     }
-  };
-
-  const handleCheckboxChange = (id: number) => {
-    setSelectedEmployees(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
-    
-    if (!isMultiSelectMode) {
-      setIsMultiSelectMode(true);
-    }
-  };
-
-  const handleSelectAll = () => {
-    if (selectedEmployees.length === filteredEmployees.length) {
-      setSelectedEmployees([]);
-    } else {
-      setSelectedEmployees(filteredEmployees.map(emp => emp.id));
-    }
-  };
-
-  const handleDeleteSelected = () => {
-    // Implementation would go here
-    alert(`Delete: ${selectedEmployees.join(', ')}`);
-    setSelectedEmployees([]);
-  };
-  
-  const clearSelection = () => {
-    setSelectedEmployees([]);
-    setIsMultiSelectMode(false);
   };
 
   const SortIndicator = ({ column }: { column: string }) => {
@@ -129,9 +99,7 @@ const Employees = () => {
               <p className="mt-1 text-gray-600">Manage your employee directory</p>
             </div>
             <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}>
-                {isMultiSelectMode ? 'Exit Selection' : 'Select Multiple'}
-              </Button>
+
               <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
               <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" /> Export</Button>
               <Button variant="primary" size="sm"><UserPlus className="mr-2 h-4 w-4" /> Add Employee</Button>
@@ -153,16 +121,7 @@ const Employees = () => {
                 <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
               </div>
               
-              {selectedEmployees.length > 0 && (
-                <div className="flex items-center gap-2 self-end">
-                  <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
-                    <Trash className="mr-2 h-4 w-4" /> Delete Selected
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={clearSelection}>
-                    Clear Selection
-                  </Button>
-                </div>
-              )}
+              
             </div>
           </div>
         </AnimatedSection>
@@ -178,14 +137,7 @@ const Employees = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12 px-4">
-                        <div className="flex items-center justify-center">
-                          <Checkbox
-                            checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
-                            onCheckedChange={handleSelectAll}
-                          />
-                        </div>
-                      </TableHead>
+                      
                       <TableHead onClick={() => handleSort('name')} className="cursor-pointer">
                         Name <SortIndicator column="name" />
                       </TableHead>
@@ -216,18 +168,9 @@ const Employees = () => {
                       filteredEmployees.map(employee => (
                         <TableRow 
                           key={employee.id} 
-                          data-state={selectedEmployees.includes(employee.id) ? 'selected' : undefined}
-                          className={selectedEmployees.includes(employee.id) ? "bg-hrflow-blue/5" : ""}
+                          <TableRow key={employee.id}>
                         >
-                          <TableCell className="w-12 px-4">
-                            <div className="flex items-center justify-center">
-                              <Checkbox
-                                checked={selectedEmployees.includes(employee.id)}
-                                onCheckedChange={() => handleCheckboxChange(employee.id)}
-                                className="border-gray-300 data-[state=checked]:bg-hrflow-blue"
-                              />
-                            </div>
-                          </TableCell>
+                          
                           <TableCell className="font-medium">
                             <div className="flex items-center">
                               <div className="h-9 w-9 rounded-full bg-hrflow-blue/10 flex items-center justify-center text-hrflow-blue font-medium mr-2">

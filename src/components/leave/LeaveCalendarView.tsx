@@ -120,21 +120,8 @@ export const LeaveCalendarView = () => {
             status: leave.status as 'Pending' | 'Approved' | 'Rejected',
             color: leave.leave_types?.color || '#999',
           };
-        })
-        
-          return {
-            id: leave.id,
-            title: leave.leave_types.name,
-            start,
-            end,
-            type: leave.leave_types.name,
-            employee: leave.employees?.full_name || 'Unknown Employee',
-            status: leave.status as 'Pending' | 'Approved' | 'Rejected',
-            color: leave.leave_types.color,
-          };
-        }
-
-        .filter(Boolean);
+          })
+          .filter(Boolean);
 
       setLeaveEvents(formattedLeaveEvents);
       setPendingRequests(formattedLeaveEvents.filter(e => e.status === 'Pending'));

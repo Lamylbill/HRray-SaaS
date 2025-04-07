@@ -325,7 +325,7 @@ export const LeaveCalendarView = () => {
                 selected={undefined}
                 onSelect={() => {}}
                 components={{
-                  Day: (props) => renderCalendarDay(props.date, props)
+                  Day: (props) => renderCalendarDay(props.day, props)
                 }}
               />
               
@@ -339,7 +339,7 @@ export const LeaveCalendarView = () => {
                   selected={undefined}
                   onSelect={() => {}}
                   components={{
-                    Day: ({ day, selectedDay, ...props }) => renderCalendarDay(day, selectedDay || [], props)
+                    Day: (props) => renderCalendarDay(props.day, props)
                   }}
                 />
               )}

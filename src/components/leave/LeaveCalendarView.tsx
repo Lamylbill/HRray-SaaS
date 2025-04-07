@@ -132,7 +132,7 @@ export const LeaveCalendarView = () => {
             status: leave.status as 'Pending' | 'Approved' | 'Rejected',
             color: leave.leave_types.color,
           };
-        })
+        }
 
         .filter(Boolean);
 

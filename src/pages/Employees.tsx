@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  PlusCircle, Search, UserPlus, Filter, Download, MoreHorizontal,
-  SortAsc, SortDesc, CheckSquare
+  Search, UserPlus, Filter, Download, MoreHorizontal,
+  SortAsc, SortDesc
 } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
 import {
@@ -30,15 +30,11 @@ const employees = [
 ];
 
 const sortFunctions = {
-  name: (a: any, b: any, dir: string) => dir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name),
-  department: (a: any, b: any, dir: string) => dir === 'asc' ? a.department.localeCompare(b.department) : b.department.localeCompare(a.department),
-  position: (a: any, b: any, dir: string) => dir === 'asc' ? a.position.localeCompare(b.position) : b.position.localeCompare(a.position),
-  status: (a: any, b: any, dir: string) => dir === 'asc' ? a.status.localeCompare(b.status) : b.status.localeCompare(a.status),
-  joinDate: (a: any, b: any, dir: string) => {
-    const dateA = new Date(a.joinDate).getTime();
-    const dateB = new Date(b.joinDate).getTime();
-    return dir === 'asc' ? dateA - dateB : dateB - dateA;
-  }
+  name: (a, b, dir) => dir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name),
+  department: (a, b, dir) => dir === 'asc' ? a.department.localeCompare(b.department) : b.department.localeCompare(a.department),
+  position: (a, b, dir) => dir === 'asc' ? a.position.localeCompare(b.position) : b.position.localeCompare(a.position),
+  status: (a, b, dir) => dir === 'asc' ? a.status.localeCompare(b.status) : b.status.localeCompare(a.status),
+  joinDate: (a, b, dir) => dir === 'asc' ? new Date(a.joinDate) - new Date(b.joinDate) : new Date(b.joinDate) - new Date(a.joinDate)
 };
 
 const Employees = () => {
@@ -55,7 +51,8 @@ const Employees = () => {
   }, [isAuthenticated, isLoading, navigate]);
 
   const filteredEmployees = employees
-    .filter(e => e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    .filter(e =>
+      e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.position.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -115,15 +112,21 @@ const Employees = () => {
             </div>
             <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
               <Button
-                variant={isMultiSelectMode ? "hrflow" : "outline"}
+                variant="outline"
                 size="sm"
                 onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
               >
-                {isMultiSelectMode ? "Exit Selection" : "Select Multiple"}
+                {isMultiSelectMode ? 'Exit Selection' : 'Select Multiple'}
               </Button>
-              <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
-              <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" /> Export</Button>
-              <Button variant="primary" size="sm"><UserPlus className="mr-2 h-4 w-4" /> Add Employee</Button>
+              <Button variant="outline" size="sm">
+                <Filter className="mr-2 h-4 w-4" /> Filter
+              </Button>
+              <Button variant="outline" size="sm">
+                <Download className="mr-2 h-4 w-4" /> Export
+              </Button>
+              <Button variant="primary" size="sm">
+                <UserPlus className="mr-2 h-4 w-4" /> Add Employee
+              </Button>
             </div>
           </div>
         </AnimatedSection>
@@ -131,120 +134,126 @@ const Employees = () => {
         <AnimatedSection delay={100}>
           <PremiumCard className="mb-6">
             <CardContent className="pt-6">
-              {isMultiSelectMode && (
-                <div className="flex items-center justify-between bg-white border rounded-md p-4 mb-4 shadow-sm">
-                  <span className="text-sm font-medium text-gray-700">{selectedEmployees.length} employees selected</span>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleSelectAll}>
-                      <CheckSquare className="mr-2 h-4 w-4" />
-                      Select All
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
-                      Delete Selected
-                    </Button>
-                  </div>
-                </div>
-              )}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-grow">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input placeholder="Search employees..." className="pl-10" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                </div>
+              <div className="relative flex-grow">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search employees..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                />
               </div>
             </CardContent>
           </PremiumCard>
         </AnimatedSection>
 
+        {isMultiSelectMode && (
+          <AnimatedSection delay={150}>
+            <CardContent className="flex items-center justify-between bg-white border rounded-md p-4 mb-4 shadow-sm">
+              <span className="text-sm font-medium text-gray-700">
+                {selectedEmployees.length} employees selected
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleSelectAll}>
+                  Select All
+                </Button>
+                <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
+                  Delete Selected
+                </Button>
+              </div>
+            </CardContent>
+          </AnimatedSection>
+        )}
+
         <AnimatedSection delay={200}>
           <PremiumCard>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
+            <CardHeader className="pb-0">
+              <CardTitle>Employee Directory</CardTitle>
+              <CardDescription>{filteredEmployees.length} employees found</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      {isMultiSelectMode && (
-                        <TableHead className="w-10">
-                          <Checkbox
-                            checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
-                            className="mr-2"
-                            onCheckedChange={handleSelectAll}
-                          />
-                        </TableHead>
-                      )}
-                      <TableHead
-                        onClick={() => handleSort('name')}
-                        className="cursor-pointer hover:text-hrflow-blue"
-                      >
+                      <TableHead className="w-12 px-4">
+                        <Checkbox
+                          checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
+                          onCheckedChange={handleSelectAll}
+                        />
+                      </TableHead>
+                      <TableHead onClick={() => handleSort('name')} className="cursor-pointer">
                         Name <SortIndicator column="name" />
                       </TableHead>
-                      <TableHead
-                        onClick={() => handleSort('department')}
-                        className="cursor-pointer hover:text-hrflow-blue"
-                      >
+                      <TableHead>Email</TableHead>
+                      <TableHead onClick={() => handleSort('department')} className="cursor-pointer">
                         Department <SortIndicator column="department" />
                       </TableHead>
-                      <TableHead
-                        onClick={() => handleSort('position')}
-                        className="cursor-pointer hover:text-hrflow-blue"
-                      >
+                      <TableHead onClick={() => handleSort('position')} className="cursor-pointer">
                         Position <SortIndicator column="position" />
                       </TableHead>
-                      <TableHead
-                        onClick={() => handleSort('status')}
-                        className="cursor-pointer hover:text-hrflow-blue"
-                      >
+                      <TableHead onClick={() => handleSort('status')} className="cursor-pointer">
                         Status <SortIndicator column="status" />
                       </TableHead>
-                      <TableHead
-                        onClick={() => handleSort('joinDate')}
-                        className="cursor-pointer hover:text-hrflow-blue"
-                      >
+                      <TableHead onClick={() => handleSort('joinDate')} className="cursor-pointer">
                         Join Date <SortIndicator column="joinDate" />
                       </TableHead>
-                      <TableHead className="w-10"></TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredEmployees.map(employee => (
-                      <TableRow key={employee.id}>
-                        {isMultiSelectMode && (
-                          <TableCell className="py-2">
+                    {filteredEmployees.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                          No employees found. Try adjusting your search.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredEmployees.map(employee => (
+                        <TableRow key={employee.id} data-state={selectedEmployees.includes(employee.id) ? 'selected' : undefined}>
+                          <TableCell className="w-12 px-4">
                             <Checkbox
                               checked={selectedEmployees.includes(employee.id)}
                               onCheckedChange={() => handleCheckboxChange(employee.id)}
+                              className="border-gray-300"
                             />
                           </TableCell>
-                        )}
-                        <TableCell className="font-medium">
-                          {employee.name}
-                          <div className="text-sm text-gray-500">{employee.email}</div>
-                        </TableCell>
-                        <TableCell>{employee.department}</TableCell>
-                        <TableCell>{employee.position}</TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(employee.status)}`}>
-                            {employee.status}
-                          </span>
-                        </TableCell>
-                        <TableCell>{new Date(employee.joinDate).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem>View Profile</DropdownMenuItem>
-                              <DropdownMenuItem>Edit Details</DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          <TableCell className="font-medium">
+                            <div className="flex items-center">
+                              <div className="h-9 w-9 rounded-full bg-hrflow-blue/10 flex items-center justify-center text-hrflow-blue font-medium mr-2">
+                                {employee.name.split(' ').map(n => n[0]).join('')}
+                              </div>
+                              {employee.name}
+                            </div>
+                          </TableCell>
+                          <TableCell>{employee.email}</TableCell>
+                          <TableCell>{employee.department}</TableCell>
+                          <TableCell>{employee.position}</TableCell>
+                          <TableCell>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(employee.status)}`}>{employee.status}</span>
+                          </TableCell>
+                          <TableCell>{new Date(employee.joinDate).toLocaleDateString()}</TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem>View Profile</DropdownMenuItem>
+                                <DropdownMenuItem>Edit Details</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem>Change Status</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>

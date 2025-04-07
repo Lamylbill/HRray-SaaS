@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { addMonths, format, parseISO, differenceInDays, addDays, isWithinInterval } from 'date-fns';
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
@@ -421,7 +422,7 @@ export const LeaveCalendarView = () => {
                   className="w-full border-0 p-0"
                   month={currentDate}
                   onMonthChange={setCurrentDate}
-                  disabled={[]}
+                  disabled={false}
                   selected={{}}
                   onSelect={() => {}}
                 />
@@ -433,7 +434,7 @@ export const LeaveCalendarView = () => {
                       month={addMonths(currentDate, 1)}
                       onMonthChange={(date) => setCurrentDate(addMonths(date, -1))}
                       className="w-full border-0 p-0"
-                      disabled={[]}
+                      disabled={false}
                       selected={{}}
                       onSelect={() => {}}
                     />

@@ -1,4 +1,3 @@
-console.log('Raw leave request data:', leaveRequestsData);
 
 import React, { useState, useEffect } from 'react';
 import { addMonths, format, parseISO, differenceInDays, addDays, isWithinInterval } from 'date-fns';
@@ -90,6 +89,9 @@ export const LeaveCalendarView = () => {
 
       if (leaveError) throw leaveError;
 
+      // ✅ SAFE TO LOG HERE
+      console.log('Raw leave request data:', leaveRequestsData);
+      
       const formattedLeaveEvents: LeaveEvent[] = (leaveRequestsData || [])
         .map(leave => {
           const startRaw = leave.start_date;

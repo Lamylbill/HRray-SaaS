@@ -90,8 +90,14 @@ export const LeaveCalendarView = () => {
 
       const formattedLeaveEvents: LeaveEvent[] = (leaveRequestsData || [])
         .map(leave => {
-          const start = leave.start_date ? new Date(leave.start_date) : null;
-          const end = leave.end_date ? new Date(leave.end_date) : null;
+          const start = new Date(leave.start_date);
+          const end = new Date(leave.end_date);
+          
+          if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            console.warn("Invalid date in leave record:", leave);
+            return null;
+          }
+
 
           if (!start || !end || isNaN(start.getTime()) || isNaN(end.getTime())) {
             console.warn("Invalid date in leave record:", leave);
@@ -240,7 +246,7 @@ export const LeaveCalendarView = () => {
   return (
     <div {...props} className={`${props.className} relative h-32 overflow-y-auto`}>
       <div className="absolute top-1 right-1 text-sm">
-        {format(day, 'd')}
+        {safeFormat(day, 'd')}
       </div>
       {holiday && (
         <div className="mt-5 mb-1 text-xs font-medium text-red-700 bg-red-100 rounded px-1 py-0.5 text-center">
@@ -269,7 +275,7 @@ export const LeaveCalendarView = () => {
             <ChevronRight className="h-4 w-4" />
           </Button>
           <h3 className="text-lg font-semibold">
-            {format(currentDate, 'MMMM yyyy')}
+            {safeFormat(currentDate, 'MMMM yyyy')}
           </h3>
         </div>
         <div className="flex items-center space-x-2">
@@ -365,7 +371,7 @@ export const LeaveCalendarView = () => {
                     <h4 className="font-medium">{request.employee}</h4>
                     <div className="text-sm text-gray-600">{request.type}</div>
                     <div className="text-sm mt-1">
-                      {format(request.start, 'MMM d')} - {format(request.end, 'MMM d, yyyy')}
+                      {safeFormat(request.start, 'MMM d')} - {safeFormat(request.end, 'MMM d, yyyy')}
                       <Badge className="ml-2" variant="outline" style={{color: request.color, borderColor: request.color}}>
                         {differenceInDays(request.end, request.start) + 1} days
                       </Badge>

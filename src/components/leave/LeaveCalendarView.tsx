@@ -24,7 +24,11 @@ export const LeaveCalendarView = () => {
   const [pendingRequests, setPendingRequests] = useState<LeaveEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-
+   // ✅ Add these navigation handlers here
+  const navigateToday = () => setCurrentDate(new Date());
+  const navigatePrevious = () => setCurrentDate(prev => addMonths(prev, -1));
+  const navigateNext = () => setCurrentDate(prev => addMonths(prev, 1));
+  
   useEffect(() => {
     loadCalendarData();
     fetchPublicHolidays();

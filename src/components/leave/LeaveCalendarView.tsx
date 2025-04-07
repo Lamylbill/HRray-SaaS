@@ -33,41 +33,34 @@ export const LeaveCalendarView = () => {
   const fetchPublicHolidays = async () => {
     try {
       const year = currentDate.getFullYear();
-      
       const { data: existingHolidays, error } = await supabase
         .from('public_holidays')
         .select('*')
         .eq('country', 'SG')
         .gte('date', `${year}-01-01`)
         .lte('date', `${year}-12-31`);
-      
+
       if (error) {
         console.error('Error checking for holidays:', error);
         return;
       }
-      
+
       if (existingHolidays && existingHolidays.length > 0) {
-        setPublicHolidays(existingHolidays.map(h => ({
-          ...h,
-          date: new Date(h.date)
-        })));
+        setPublicHolidays(existingHolidays.map(h => ({ ...h, date: new Date(h.date) })));
         return;
       }
-      
+
       const { data, error: funcError } = await supabase.functions.invoke('fetch-public-holidays', {
         body: { year, country: 'SG' }
       });
-      
+
       if (funcError) {
         console.error('Error fetching holidays:', funcError);
         return;
       }
-      
+
       if (data && data.data) {
-        setPublicHolidays(data.data.map(h => ({
-          ...h,
-          date: new Date(h.date)
-        })));
+        setPublicHolidays(data.data.map(h => ({ ...h, date: new Date(h.date) })));
       }
     } catch (error) {
       console.error('Error fetching public holidays:', error);
@@ -89,21 +82,19 @@ export const LeaveCalendarView = () => {
           employees(id, full_name),
           leave_types(id, name, color)
         `);
-      
-      if (leaveError) {
-        throw leaveError;
-      }
-      
+
+      if (leaveError) throw leaveError;
+
       const formattedLeaveEvents: LeaveEvent[] = (leaveRequestsData || [])
         .map(leave => {
           const start = leave.start_date ? new Date(leave.start_date) : null;
           const end = leave.end_date ? new Date(leave.end_date) : null;
-      
+
           if (!start || !end || isNaN(start.getTime()) || isNaN(end.getTime())) {
             console.warn("Invalid date in leave record:", leave);
             return null;
           }
-      
+
           return {
             id: leave.id,
             title: leave.leave_types.name,
@@ -115,234 +106,37 @@ export const LeaveCalendarView = () => {
             color: leave.leave_types.color,
           };
         })
-        .filter(Boolean); // Remove nulls
+        .filter(Boolean);
 
-      
       setLeaveEvents(formattedLeaveEvents);
       setPendingRequests(formattedLeaveEvents.filter(e => e.status === 'Pending'));
-      
+
     } catch (error) {
       console.error('Error loading calendar data:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load calendar data',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to load calendar data', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const loadPendingRequests = async () => {
-    const mockPendingRequests: LeaveEvent[] = [
-      {
-        id: '2',
-        title: 'Sick Leave',
-        start: addDays(currentDate, 2),
-        end: addDays(currentDate, 3),
-        type: 'Sick Leave',
-        employee: 'Michael Chen',
-        status: 'Pending',
-        color: '#ef4444',
-      },
-      {
-        id: '3',
-        title: 'Annual Leave',
-        start: addDays(currentDate, 4),
-        end: addDays(currentDate, 6),
-        type: 'Annual Leave',
-        employee: 'Priya Patel',
-        status: 'Pending',
-        color: '#3b82f6',
-      },
-    ];
-
-    setPendingRequests(mockPendingRequests);
-  };
-
-  const handleApproveReject = async (id: string, action: 'Approved' | 'Rejected') => {
-    try {
-      const { error } = await supabase
-        .from('leave_requests')
-        .update({ 
-          status: action,
-          reviewed_at: new Date().toISOString(),
-        })
-        .eq('id', id);
-      
-      if (error) {
-        throw error;
-      }
-      
-      setPendingRequests(prev => prev.filter(request => request.id !== id));
-      setLeaveEvents(prev => 
-        prev.map(event => 
-          event.id === id ? { ...event, status: action } : event
-        )
-      );
-
-      toast({
-        title: `Request ${action}`,
-        description: `The leave request has been ${action === 'Approved' ? 'approved' : 'rejected'}.`,
-        duration: 3000,
-      });
-      
-      loadCalendarData();
-      
-    } catch (error) {
-      console.error(`Error ${action.toLowerCase()} leave request:`, error);
-      toast({
-        title: 'Error',
-        description: `Failed to ${action.toLowerCase()} leave request`,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const navigatePrevious = () => {
-    setCurrentDate(prev => addMonths(prev, -1));
-  };
-
-  const navigateNext = () => {
-    setCurrentDate(prev => addMonths(prev, 1));
-  };
-
-  const navigateToday = () => {
-    setCurrentDate(new Date());
-  };
-
-  const renderLeaveEvents = (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    const eventsForDay = leaveEvents.filter(event => {
-      return isWithinInterval(date, {
-        start: event.start,
-        end: event.end
-      });
-    });
-
-    eventsForDay.sort((a, b) => {
-      const statusPriority = { 'Approved': 0, 'Pending': 1, 'Rejected': 2 };
-      return statusPriority[a.status] - statusPriority[b.status];
-    });
-
-    return eventsForDay.map((event, index) => {
-      const isFirstDay = format(event.start, 'yyyy-MM-dd') === dateStr;
-      const isLastDay = format(event.end, 'yyyy-MM-dd') === dateStr;
-      const totalDays = differenceInDays(event.end, event.start) + 1;
-      const isMultiDay = totalDays > 1;
-      
-      let style: EventStyleProps = {
-        backgroundColor: event.status === 'Approved' ? event.color : 'transparent',
-        color: event.status === 'Approved' ? 'white' : event.color,
-        borderRadius: '2px',
-        padding: '1px 4px',
-        fontSize: '0.7rem',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        marginBottom: '2px',
-        marginTop: index === 0 ? '2px' : '0',
-        border: event.status === 'Approved' ? 'none' : `1px dashed ${event.color}`,
-        position: 'relative',
-        display: 'flex',
-        alignItems: 'center',
-      };
-      
-      if (isMultiDay) {
-        if (isFirstDay) {
-          style = {
-            ...style,
-            borderTopLeftRadius: '4px',
-            borderBottomLeftRadius: '4px',
-            borderTopRightRadius: '0',
-            borderBottomRightRadius: '0',
-            borderRight: 'none',
-            paddingLeft: '6px',
-          };
-        } else if (isLastDay) {
-          style = {
-            ...style,
-            borderTopLeftRadius: '0',
-            borderBottomLeftRadius: '0',
-            borderTopRightRadius: '4px',
-            borderBottomRightRadius: '4px',
-            borderLeft: 'none',
-            paddingRight: '6px',
-          };
-        } else {
-          style = {
-            ...style,
-            borderRadius: '0',
-            borderLeft: 'none',
-            borderRight: 'none',
-          };
-        }
-      }
-      
-      if (event.status === 'Rejected') {
-        style = {
-          ...style,
-          textDecoration: 'line-through',
-          opacity: 0.7,
-        };
-      }
-      
-      return (
-        <TooltipProvider key={`${event.id}-${dateStr}`}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div style={style}>
-                {(isFirstDay || !isMultiDay) && (
-                  <span>
-                    {event.employee.split(' ')[0]} - {event.type}
-                    {isMultiDay && ` (${totalDays}d)`}
-                  </span>
-                )}
-                {!isFirstDay && isMultiDay && <span>⬤</span>}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <div className="text-xs">
-                <div className="font-bold">{event.type}</div>
-                <div>Employee: {event.employee}</div>
-                <div>Status: {event.status}</div>
-                <div>
-                  {format(event.start, 'MMM d')} - {format(event.end, 'MMM d, yyyy')}
-                  {` (${totalDays} day${totalDays > 1 ? 's' : ''})`}
-                </div>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
-    });
-  };
-
-  const getHolidayForDate = (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    return publicHolidays.find(holiday => 
-      format(holiday.date, 'yyyy-MM-dd') === dateStr
-    );
-  };
-
   const renderCalendarDay = (day: Date, selectedDays: Date[], props: any) => {
+    if (!(day instanceof Date) || isNaN(day.getTime())) {
+      console.warn("Skipping invalid calendar day:", day);
+      return <div className="p-2 text-xs text-gray-400">Invalid date</div>;
+    }
+
     const holiday = getHolidayForDate(day);
-    
+
     return (
-      <div 
-        {...props}
-        className={`${props.className} relative h-32 overflow-y-auto`}
-      >
+      <div {...props} className={`${props.className} relative h-32 overflow-y-auto`}>
         <div className="absolute top-1 right-1 text-sm">
-          {day instanceof Date && !isNaN(day.getTime()) ? format(day, 'd') : '—'}
+          {format(day, 'd')}
         </div>
-        
         {holiday && (
           <div className="mt-5 mb-1 text-xs font-medium text-red-700 bg-red-100 rounded px-1 py-0.5 text-center">
             {holiday.name}
           </div>
         )}
-        
         <div className="mt-6 space-y-1 overflow-y-auto max-h-24">
           {renderLeaveEvents(day)}
         </div>

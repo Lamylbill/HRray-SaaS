@@ -111,76 +111,26 @@ const Employees = () => {
               <p className="mt-1 text-gray-600">Manage your employee directory</p>
             </div>
             <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}>
                 {isMultiSelectMode ? 'Exit Selection' : 'Select Multiple'}
               </Button>
-              <Button variant="outline" size="sm">
-                <Filter className="mr-2 h-4 w-4" /> Filter
-              </Button>
-              <Button variant="outline" size="sm">
-                <Download className="mr-2 h-4 w-4" /> Export
-              </Button>
-              <Button variant="primary" size="sm">
-                <UserPlus className="mr-2 h-4 w-4" /> Add Employee
-              </Button>
+              <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
+              <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" /> Export</Button>
+              <Button variant="primary" size="sm"><UserPlus className="mr-2 h-4 w-4" /> Add Employee</Button>
             </div>
           </div>
-        </AnimatedSection>
-
-        <AnimatedSection delay={100}>
-          <PremiumCard className="mb-6">
-            <CardContent className="pt-6">
-              <div className="relative flex-grow">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search employees..."
-                  className="pl-10"
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </CardContent>
-          </PremiumCard>
         </AnimatedSection>
 
         {isMultiSelectMode && (
           <div className="flex items-center justify-between bg-white border rounded-md p-4 mb-4 shadow-sm">
             <span className="text-sm font-medium text-gray-700">{selectedEmployees.length} employees selected</span>
             <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  console.log('Select All clicked');
-                  handleSelectAll();
-                }}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  border: '1px solid #ccc',
-                  backgroundColor: '#f9f9f9',
-                  fontSize: '14px'
-                }}
-              >
+              <Button variant="outline" size="sm" onClick={handleSelectAll}>
                 Select All
-              </button>
-              <button
-                onClick={() => {
-                  console.log('Delete Selected clicked');
-                  handleDeleteSelected();
-                }}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  backgroundColor: '#dc2626',
-                  color: 'white',
-                  fontSize: '14px'
-                }}
-              >
+              </Button>
+              <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
                 Delete Selected
-              </button>
+              </Button>
             </div>
           </div>
         )}

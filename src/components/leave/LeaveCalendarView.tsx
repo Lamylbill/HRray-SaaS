@@ -229,7 +229,7 @@ export const LeaveCalendarView = () => {
   });
 };
 
-  const renderCalendarDay = (day: Date, selectedDays: Date[], props: any) => {
+  const renderCalendarDay(props.date, props)
     if (!(day instanceof Date) || isNaN(day.getTime())) {
       console.warn("Skipping invalid calendar day:", day);
       return <div className="p-2 text-xs text-gray-400">Invalid date</div>;
@@ -324,7 +324,7 @@ export const LeaveCalendarView = () => {
                 selected={undefined}
                 onSelect={() => {}}
                 components={{
-                  Day: ({ day, selectedDay, ...props }) => renderCalendarDay(day, selectedDay || [], props)
+                  Day: (props) => renderCalendarDay(props.date, [], props)
                 }}
               />
               

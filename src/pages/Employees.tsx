@@ -123,16 +123,24 @@ const Employees = () => {
 
         {isMultiSelectMode && (
           <div className="flex items-center justify-between bg-white border rounded-md p-4 mb-4 shadow-sm">
-            <span className="text-sm font-medium text-gray-700">{selectedEmployees.length} employees selected</span>
+            <span className="text-sm font-medium text-gray-700">
+              {selectedEmployees.length} employees selected
+            </span>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={handleSelectAll}>
                 Select All
               </Button>
-              <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDeleteSelected}
+                disabled={selectedEmployees.length === 0}
+              >
                 Delete Selected
               </Button>
             </div>
           </div>
+
         )}
 
         <AnimatedSection delay={200}>

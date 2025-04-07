@@ -9,24 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
-
-interface LeaveEvent {
-  id: string;
-  title: string;
-  start: Date;
-  end: Date;
-  type: string;
-  employee: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  color: string;
-}
-
-interface PublicHoliday {
-  id: string;
-  name: string;
-  date: Date;
-  country: string;
-}
+import { LeaveEvent, PublicHoliday } from './interfaces';
 
 export const LeaveCalendarView = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -123,7 +106,7 @@ export const LeaveCalendarView = () => {
         end: new Date(leave.end_date),
         type: leave.leave_types.name,
         employee: leave.employees?.full_name || 'Unknown Employee',
-        status: leave.status,
+        status: leave.status as 'Pending' | 'Approved' | 'Rejected',
         color: leave.leave_types.color,
       }));
       
@@ -251,19 +234,19 @@ export const LeaveCalendarView = () => {
       const isMultiDay = totalDays > 1;
       
       // Style based on status and position in multi-day event
-      let style = {
+      let style: React.CSSProperties = {
         backgroundColor: event.status === 'Approved' ? event.color : 'transparent',
         color: event.status === 'Approved' ? 'white' : event.color,
         borderRadius: '2px',
         padding: '1px 4px',
         fontSize: '0.7rem',
-        whiteSpace: 'nowrap' as 'nowrap',
+        whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         marginBottom: '2px',
         marginTop: index === 0 ? '2px' : '0',
         border: event.status === 'Approved' ? 'none' : `1px dashed ${event.color}`,
-        position: 'relative' as 'relative',
+        position: 'relative',
         display: 'flex',
         alignItems: 'center',
       };

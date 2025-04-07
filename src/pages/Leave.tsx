@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { LeaveCalendarView } from '@/components/leave/LeaveCalendarView';
 import { LeaveRecordsView } from '@/components/leave/LeaveRecordsView';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Leave = () => {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -130,26 +131,20 @@ const Leave = () => {
             </div>
           </div>
           
-          {/* Improved Tabs UI - now styled similar to button group */}
-          <div className="flex mb-8 border rounded-md overflow-hidden">
-            <Button
-              variant={activeTab === 'calendar' ? 'secondary' : 'ghost'}
-              size="sm"
-              className={`flex-1 justify-center rounded-none border-0 ${activeTab === 'calendar' ? 'bg-gray-100' : ''}`}
-              onClick={() => setActiveTab('calendar')}
-            >
-              <Calendar className="mr-2 h-4 w-4" />
-              Calendar View
-            </Button>
-            <Button
-              variant={activeTab === 'records' ? 'secondary' : 'ghost'}
-              size="sm"
-              className={`flex-1 justify-center rounded-none border-0 ${activeTab === 'records' ? 'bg-gray-100' : ''}`}
-              onClick={() => setActiveTab('records')}
-            >
-              <ListFilter className="mr-2 h-4 w-4" />
-              Leave Records
-            </Button>
+          {/* Updated Tabs UI using shadcn Tabs component */}
+          <div className="mb-8">
+            <Tabs defaultValue="calendar" value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid grid-cols-2 w-full max-w-xs">
+                <TabsTrigger value="calendar" className="flex items-center">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Calendar View
+                </TabsTrigger>
+                <TabsTrigger value="records" className="flex items-center">
+                  <ListFilter className="mr-2 h-4 w-4" />
+                  Leave Records
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
           
           {/* Tab Content */}

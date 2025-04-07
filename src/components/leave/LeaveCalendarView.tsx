@@ -90,20 +90,19 @@ export const LeaveCalendarView = () => {
 
       const formattedLeaveEvents: LeaveEvent[] = (leaveRequestsData || [])
         .map(leave => {
+          if (!leave.start_date || !leave.end_date) {
+            console.warn("Missing date:", leave);
+            return null;
+          }
+        
           const start = new Date(leave.start_date);
           const end = new Date(leave.end_date);
-          
+        
           if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-            console.warn("Invalid date in leave record:", leave);
+            console.warn("Invalid parsed date:", leave);
             return null;
           }
-
-
-          if (!start || !end || isNaN(start.getTime()) || isNaN(end.getTime())) {
-            console.warn("Invalid date in leave record:", leave);
-            return null;
-          }
-
+        
           return {
             id: leave.id,
             title: leave.leave_types.name,
@@ -115,6 +114,7 @@ export const LeaveCalendarView = () => {
             color: leave.leave_types.color,
           };
         })
+
         .filter(Boolean);
 
       setLeaveEvents(formattedLeaveEvents);

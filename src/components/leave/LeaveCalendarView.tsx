@@ -334,7 +334,7 @@ export const LeaveCalendarView = () => {
         className={`${props.className} relative h-32 overflow-y-auto`}
       >
         <div className="absolute top-1 right-1 text-sm">
-          {format(day, 'd')}
+          {day instanceof Date && !isNaN(day.getTime()) ? format(day, 'd') : '—'}
         </div>
         
         {holiday && (

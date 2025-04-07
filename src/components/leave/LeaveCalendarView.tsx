@@ -11,6 +11,9 @@ import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { LeaveEvent, PublicHoliday, EventStyleProps } from './interfaces';
 
+const safeFormat = (date: Date | null | undefined, fmt: string) =>
+  date instanceof Date && !isNaN(date.getTime()) ? format(date, fmt) : 'Invalid date';
+
 export const LeaveCalendarView = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'1month' | '2months'>('1month');
@@ -118,6 +121,113 @@ export const LeaveCalendarView = () => {
       setIsLoading(false);
     }
   };
+
+  const renderLeaveEvents = (date: Date) => {
+  const dateStr = safeFormat(date, 'yyyy-MM-dd');
+  const eventsForDay = leaveEvents.filter(event => {
+    return isWithinInterval(date, {
+      start: event.start,
+      end: event.end
+    });
+  });
+
+  eventsForDay.sort((a, b) => {
+    const statusPriority = { 'Approved': 0, 'Pending': 1, 'Rejected': 2 };
+    return statusPriority[a.status] - statusPriority[b.status];
+  });
+
+  return eventsForDay.map((event, index) => {
+    const isFirstDay = safeFormat(event.start, 'yyyy-MM-dd') === dateStr;
+    const isLastDay = safeFormat(event.end, 'yyyy-MM-dd') === dateStr;
+    const totalDays = differenceInDays(event.end, event.start) + 1;
+    const isMultiDay = totalDays > 1;
+
+    let style: EventStyleProps = {
+      backgroundColor: event.status === 'Approved' ? event.color : 'transparent',
+      color: event.status === 'Approved' ? 'white' : event.color,
+      borderRadius: '2px',
+      padding: '1px 4px',
+      fontSize: '0.7rem',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      marginBottom: '2px',
+      marginTop: index === 0 ? '2px' : '0',
+      border: event.status === 'Approved' ? 'none' : `1px dashed ${event.color}`,
+      position: 'relative',
+      display: 'flex',
+      alignItems: 'center',
+    };
+
+    if (isMultiDay) {
+      if (isFirstDay) {
+        style = {
+          ...style,
+          borderTopLeftRadius: '4px',
+          borderBottomLeftRadius: '4px',
+          borderTopRightRadius: '0',
+          borderBottomRightRadius: '0',
+          borderRight: 'none',
+          paddingLeft: '6px',
+        };
+      } else if (isLastDay) {
+        style = {
+          ...style,
+          borderTopLeftRadius: '0',
+          borderBottomLeftRadius: '0',
+          borderTopRightRadius: '4px',
+          borderBottomRightRadius: '4px',
+          borderLeft: 'none',
+          paddingRight: '6px',
+        };
+      } else {
+        style = {
+          ...style,
+          borderRadius: '0',
+          borderLeft: 'none',
+          borderRight: 'none',
+        };
+      }
+    }
+
+    if (event.status === 'Rejected') {
+      style = {
+        ...style,
+        textDecoration: 'line-through',
+        opacity: 0.7,
+      };
+    }
+
+    return (
+      <TooltipProvider key={`${event.id}-${dateStr}`}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div style={style}>
+              {(isFirstDay || !isMultiDay) && (
+                <span>
+                  {event.employee.split(' ')[0]} - {event.type}
+                  {isMultiDay && ` (${totalDays}d)`}
+                </span>
+              )}
+              {!isFirstDay && isMultiDay && <span>⬤</span>}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <div className="text-xs">
+              <div className="font-bold">{event.type}</div>
+              <div>Employee: {event.employee}</div>
+              <div>Status: {event.status}</div>
+              <div>
+                {safeFormat(event.start, 'MMM d')} – {safeFormat(event.end, 'MMM d, yyyy')}
+                {` (${totalDays} day${totalDays > 1 ? 's' : ''})`}
+              </div>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  });
+};
 
   const renderCalendarDay = (day: Date, selectedDays: Date[], props: any) => {
     if (!(day instanceof Date) || isNaN(day.getTime())) {

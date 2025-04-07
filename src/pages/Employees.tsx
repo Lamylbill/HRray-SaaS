@@ -148,21 +148,41 @@ const Employees = () => {
         </AnimatedSection>
 
         {isMultiSelectMode && (
-          <AnimatedSection delay={150}>
-            <CardContent className="flex items-center justify-between bg-white border rounded-md p-4 mb-4 shadow-sm">
-              <span className="text-sm font-medium text-gray-700">
-                {selectedEmployees.length} employees selected
-              </span>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleSelectAll}>
-                  Select All
-                </Button>
-                <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
-                  Delete Selected
-                </Button>
-              </div>
-            </CardContent>
-          </AnimatedSection>
+          <div className="flex items-center justify-between bg-white border rounded-md p-4 mb-4 shadow-sm">
+            <span className="text-sm font-medium text-gray-700">{selectedEmployees.length} employees selected</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  console.log('Select All clicked');
+                  handleSelectAll();
+                }}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #ccc',
+                  backgroundColor: '#f9f9f9',
+                  fontSize: '14px'
+                }}
+              >
+                Select All
+              </button>
+              <button
+                onClick={() => {
+                  console.log('Delete Selected clicked');
+                  handleDeleteSelected();
+                }}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  backgroundColor: '#dc2626',
+                  color: 'white',
+                  fontSize: '14px'
+                }}
+              >
+                Delete Selected
+              </button>
+            </div>
+          </div>
         )}
 
         <AnimatedSection delay={200}>

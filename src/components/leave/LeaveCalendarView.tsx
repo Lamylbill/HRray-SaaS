@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { addMonths, format, parseISO, differenceInDays, addDays, isWithinInterval } from 'date-fns';
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
@@ -9,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
-import { LeaveEvent, PublicHoliday } from './interfaces';
+import { LeaveEvent, PublicHoliday, EventStyleProps } from './interfaces';
 
 export const LeaveCalendarView = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -218,7 +219,7 @@ export const LeaveCalendarView = () => {
       const totalDays = differenceInDays(event.end, event.start) + 1;
       const isMultiDay = totalDays > 1;
       
-      let style: React.CSSProperties = {
+      let style: EventStyleProps = {
         backgroundColor: event.status === 'Approved' ? event.color : 'transparent',
         color: event.status === 'Approved' ? 'white' : event.color,
         borderRadius: '2px',
@@ -393,7 +394,7 @@ export const LeaveCalendarView = () => {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
             </div>
           ) : (
-            <div className="calendar-container overflow-y-auto" style={{ height: viewMode === '1month' ? '600px' : '900px' }}>
+            <div className="calendar-container overflow-x-auto overflow-y-auto" style={{ height: viewMode === '1month' ? '600px' : '900px' }}>
               <div className="calendar-view">
                 <Calendar
                   mode="range"
@@ -401,7 +402,7 @@ export const LeaveCalendarView = () => {
                   className="w-full border-0 p-0"
                   month={currentDate}
                   onMonthChange={setCurrentDate}
-                  disabled={(date) => false}
+                  disabled={() => false}
                   selected={undefined}
                   onSelect={() => {}}
                 />
@@ -412,7 +413,7 @@ export const LeaveCalendarView = () => {
                     month={addMonths(currentDate, 1)}
                     onMonthChange={(date) => setCurrentDate(addMonths(date, -1))}
                     className="w-full border-0 p-0"
-                    disabled={(date) => false}
+                    disabled={() => false}
                     selected={undefined}
                     onSelect={() => {}}
                   />

@@ -16,3 +16,6 @@ export interface PublicHoliday {
   date: Date;
   country: string;
 }
+
+// Define the CSSProperties type for consistent styling
+export type EventStyleProps = React.CSSProperties;

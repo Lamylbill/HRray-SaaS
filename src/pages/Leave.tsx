@@ -9,7 +9,6 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { LeaveCalendarView } from '@/components/leave/LeaveCalendarView';
 import { LeaveRecordsView } from '@/components/leave/LeaveRecordsView';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Leave = () => {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -131,20 +130,28 @@ const Leave = () => {
             </div>
           </div>
           
-          {/* Updated Tabs UI using shadcn Tabs component */}
+          {/* View Toggle Buttons - redesigned to match button group style */}
           <div className="mb-8">
-            <Tabs defaultValue="calendar" value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid grid-cols-2 w-full max-w-xs">
-                <TabsTrigger value="calendar" className="flex items-center">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Calendar View
-                </TabsTrigger>
-                <TabsTrigger value="records" className="flex items-center">
-                  <ListFilter className="mr-2 h-4 w-4" />
-                  Leave Records
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={activeTab === 'calendar' ? 'secondary' : 'outline'}
+                size="sm"
+                onClick={() => setActiveTab('calendar')}
+                className="flex items-center"
+              >
+                <Calendar className="mr-2 h-4 w-4" />
+                Calendar View
+              </Button>
+              <Button
+                variant={activeTab === 'records' ? 'secondary' : 'outline'}
+                size="sm"
+                onClick={() => setActiveTab('records')}
+                className="flex items-center"
+              >
+                <ListFilter className="mr-2 h-4 w-4" />
+                Leave Records
+              </Button>
+            </div>
           </div>
           
           {/* Tab Content */}

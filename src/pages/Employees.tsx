@@ -1,10 +1,11 @@
+
 // src/pages/Employees.tsx
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search, UserPlus, Filter, Download, MoreHorizontal,
-  SortAsc, SortDesc
+  SortAsc, SortDesc, Trash, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
 import {
@@ -77,6 +78,10 @@ const Employees = () => {
     setSelectedEmployees(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
+    
+    if (!isMultiSelectMode) {
+      setIsMultiSelectMode(true);
+    }
   };
 
   const handleSelectAll = () => {
@@ -88,7 +93,14 @@ const Employees = () => {
   };
 
   const handleDeleteSelected = () => {
+    // Implementation would go here
     alert(`Delete: ${selectedEmployees.join(', ')}`);
+    setSelectedEmployees([]);
+  };
+  
+  const clearSelection = () => {
+    setSelectedEmployees([]);
+    setIsMultiSelectMode(false);
   };
 
   const SortIndicator = ({ column }: { column: string }) => {
@@ -127,26 +139,33 @@ const Employees = () => {
           </div>
         </AnimatedSection>
 
-        {isMultiSelectMode && (
-          <div className="flex items-center justify-between bg-white border rounded-md p-4 mb-4 shadow-sm">
-            <span className="text-sm font-medium text-gray-700">
-              {selectedEmployees.length} employees selected
-            </span>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleSelectAll}>
-                Select All
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleDeleteSelected}
-                disabled={selectedEmployees.length === 0}
-              >
-                Delete Selected
-              </Button>
+        <AnimatedSection delay={100}>
+          <div className="bg-white p-4 rounded-lg mb-4">
+            <div className="flex md:justify-between md:flex-row flex-col gap-4">
+              <div className="relative w-full md:w-80">
+                <Input
+                  type="text"
+                  placeholder="Search employees..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+                <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+              </div>
+              
+              {selectedEmployees.length > 0 && (
+                <div className="flex items-center gap-2 self-end">
+                  <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
+                    <Trash className="mr-2 h-4 w-4" /> Delete Selected
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={clearSelection}>
+                    Clear Selection
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
-        )}
+        </AnimatedSection>
 
         <AnimatedSection delay={200}>
           <PremiumCard>
@@ -160,10 +179,12 @@ const Employees = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-12 px-4">
-                        <Checkbox
-                          checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
-                          onCheckedChange={handleSelectAll}
-                        />
+                        <div className="flex items-center justify-center">
+                          <Checkbox
+                            checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
+                            onCheckedChange={handleSelectAll}
+                          />
+                        </div>
                       </TableHead>
                       <TableHead onClick={() => handleSort('name')} className="cursor-pointer">
                         Name <SortIndicator column="name" />
@@ -193,13 +214,19 @@ const Employees = () => {
                       </TableRow>
                     ) : (
                       filteredEmployees.map(employee => (
-                        <TableRow key={employee.id} data-state={selectedEmployees.includes(employee.id) ? 'selected' : undefined}>
+                        <TableRow 
+                          key={employee.id} 
+                          data-state={selectedEmployees.includes(employee.id) ? 'selected' : undefined}
+                          className={selectedEmployees.includes(employee.id) ? "bg-hrflow-blue/5" : ""}
+                        >
                           <TableCell className="w-12 px-4">
-                            <Checkbox
-                              checked={selectedEmployees.includes(employee.id)}
-                              onCheckedChange={() => handleCheckboxChange(employee.id)}
-                              className="border-gray-300"
-                            />
+                            <div className="flex items-center justify-center">
+                              <Checkbox
+                                checked={selectedEmployees.includes(employee.id)}
+                                onCheckedChange={() => handleCheckboxChange(employee.id)}
+                                className="border-gray-300 data-[state=checked]:bg-hrflow-blue"
+                              />
+                            </div>
                           </TableCell>
                           <TableCell className="font-medium">
                             <div className="flex items-center">

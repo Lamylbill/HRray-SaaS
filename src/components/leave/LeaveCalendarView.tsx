@@ -25,10 +25,46 @@ export const LeaveCalendarView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
    // ✅ Add these navigation handlers here
-  const navigateToday = () => setCurrentDate(new Date());
-  const navigatePrevious = () => setCurrentDate(prev => addMonths(prev, -1));
-  const navigateNext = () => setCurrentDate(prev => addMonths(prev, 1));
+  const navigateToday = () => {
+    setCurrentDate(new Date());
+  };
   
+  const navigatePrevious = () => {
+    setCurrentDate(prev => addMonths(prev, -1));
+  };
+  
+  const navigateNext = () => {
+    setCurrentDate(prev => addMonths(prev, 1));
+  };
+  
+  const loadPendingRequests = () => {
+    setPendingRequests(leaveEvents.filter(e => e.status === 'Pending'));
+  };
+
+  const handleApproveReject = async (id: string, status: 'Approved' | 'Rejected') => {
+  const { error } = await supabase
+    .from('leave_requests')
+    .update({ status })
+    .eq('id', id);
+
+  if (error) {
+    toast({
+      title: 'Error',
+      description: `Failed to ${status.toLowerCase()} request.`,
+      variant: 'destructive'
+    });
+    return;
+  }
+
+  toast({
+    title: `Leave ${status}`,
+    description: `Leave request has been ${status.toLowerCase()}.`,
+  });
+
+  // Refresh leave events and pending list
+  await loadCalendarData();
+};
+
   useEffect(() => {
     loadCalendarData();
     fetchPublicHolidays();
@@ -93,8 +129,7 @@ export const LeaveCalendarView = () => {
 
       if (leaveError) throw leaveError;
 
-      // ✅ SAFE TO LOG HERE
-      console.log('Raw leave request data:', leaveRequestsData);
+
       
       const formattedLeaveEvents: LeaveEvent[] = (leaveRequestsData || [])
         .map(leave => {
@@ -245,6 +280,12 @@ export const LeaveCalendarView = () => {
       </TooltipProvider>
     );
   });
+};
+
+const getHolidayForDate = (date: Date): PublicHoliday | undefined => {
+  return publicHolidays.find(h => 
+    h.date instanceof Date && format(h.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+  );
 };
 
   const renderCalendarDay = (day: Date, props: any) => {

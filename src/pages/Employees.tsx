@@ -166,11 +166,7 @@ const Employees = () => {
                       </TableRow>
                     ) : (
                       filteredEmployees.map(employee => (
-                        <TableRow 
-                          key={employee.id} 
-                          <TableRow key={employee.id}>
-                        >
-                          
+                        <TableRow key={employee.id}>
                           <TableCell className="font-medium">
                             <div className="flex items-center">
                               <div className="h-9 w-9 rounded-full bg-hrflow-blue/10 flex items-center justify-center text-hrflow-blue font-medium mr-2">

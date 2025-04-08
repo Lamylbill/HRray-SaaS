@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -519,188 +519,184 @@ export const LeaveRecordsView = () => {
                             </TableCell>
                           </TableRow>
                           
-                          {isExpanded && leaveQuotas[employee.id] && !isHistoryShown && (
+                          {isExpanded && leaveQuotas[employee.id] && (
                             <TableRow className="bg-gray-50">
                               <TableCell colSpan={7} className="py-0">
                                 <div className="py-4 px-4">
                                   <div className="flex justify-between items-center mb-2">
-                                    <h4 className="text-sm font-medium">All Leave Types</h4>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-sm text-gray-700">Show Leave History</span>
-                                      <Switch
-                                        checked={isHistoryShown}
-                                        onCheckedChange={() => handleToggleHistory(employee.id)}
-                                      />
-                                    </div>
-                                  </div>
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        <TableHead>Leave Type</TableHead>
-                                        <TableHead className="text-right">Quota</TableHead>
-                                        <TableHead className="text-right">Taken</TableHead>
-                                        <TableHead className="text-right">Adjustments</TableHead>
-                                        <TableHead className="text-right">Remaining</TableHead>
-                                        <TableHead className="text-right">Reset Date</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {leaveQuotas[employee.id].map((quota) => (
-                                        <TableRow key={quota.leave_type_id}>
-                                          <TableCell>
-                                            <Badge style={{backgroundColor: quota.color, color: 'white'}}>
-                                              {leaveTypes[quota.leave_type_id]?.name || 'Unknown Type'}
-                                            </Badge>
-                                          </TableCell>
-                                          <TableCell className="text-right">
-                                            <div 
-                                              className="cursor-pointer hover:text-blue-500"
-                                              onClick={() => setIsEditing({
-                                                employeeId: employee.id,
-                                                leaveTypeId: quota.leave_type_id,
-                                                field: 'quota_days'
-                                              })}
-                                            >
-                                              {isEditing && 
-                                               isEditing.employeeId === employee.id && 
-                                               isEditing.leaveTypeId === quota.leave_type_id && 
-                                               isEditing.field === 'quota_days' ? (
-                                                <Input 
-                                                  type="number"
-                                                  className="w-20 h-7 text-right"
-                                                  defaultValue={quota.quota_days}
-                                                  min={0}
-                                                  autoFocus
-                                                  onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit(
-                                                    employee.id, 
-                                                    quota.leave_type_id, 
-                                                    'quota_days', 
-                                                    parseInt((e.target as HTMLInputElement).value)
-                                                  )}
-                                                  onBlur={(e) => handleSaveEdit(
-                                                    employee.id, 
-                                                    quota.leave_type_id, 
-                                                    'quota_days', 
-                                                    parseInt(e.target.value)
-                                                  )}
-                                                />
-                                              ) : (
-                                                quota.quota_days
-                                              )}
-                                            </div>
-                                          </TableCell>
-                                          <TableCell className="text-right">
-                                            {quota.taken_days}
-                                          </TableCell>
-                                          <TableCell className="text-right">
-                                            <div 
-                                              className={`cursor-pointer hover:text-blue-500 ${
-                                                quota.adjustment_days !== 0 ? (
-                                                  quota.adjustment_days > 0 ? 'text-green-600' : 'text-red-600'
-                                                ) : ''
-                                              }`}
-                                              onClick={() => setIsEditing({
-                                                employeeId: employee.id,
-                                                leaveTypeId: quota.leave_type_id,
-                                                field: 'adjustment_days'
-                                              })}
-                                            >
-                                              {isEditing && 
-                                               isEditing.employeeId === employee.id && 
-                                               isEditing.leaveTypeId === quota.leave_type_id && 
-                                               isEditing.field === 'adjustment_days' ? (
-                                                <Input 
-                                                  type="number"
-                                                  className="w-20 h-7 text-right"
-                                                  defaultValue={quota.adjustment_days}
-                                                  autoFocus
-                                                  onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit(
-                                                    employee.id, 
-                                                    quota.leave_type_id, 
-                                                    'adjustment_days', 
-                                                    parseInt((e.target as HTMLInputElement).value)
-                                                  )}
-                                                  onBlur={(e) => handleSaveEdit(
-                                                    employee.id, 
-                                                    quota.leave_type_id, 
-                                                    'adjustment_days', 
-                                                    parseInt(e.target.value)
-                                                  )}
-                                                />
-                                              ) : (
-                                                quota.adjustment_days > 0 ? `+${quota.adjustment_days}` : quota.adjustment_days
-                                              )}
-                                            </div>
-                                          </TableCell>
-                                          <TableCell className={`text-right font-medium ${
-                                            getRemainingDays(quota) < 0 ? 'text-red-600' : 
-                                            getRemainingDays(quota) === 0 ? 'text-orange-600' : 
-                                            'text-green-600'
-                                          }`}>
-                                            {getRemainingDays(quota)}
-                                          </TableCell>
-                                          <TableCell className="text-right">
-                                            {formatDate(quota.reset_date)}
-                                          </TableCell>
-                                        </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                          
-                          {isExpanded && isHistoryShown && (
-                            <TableRow className="bg-gray-50">
-                              <TableCell colSpan={7} className="py-0">
-                                <div className="py-4 px-4">
-                                  <div className="flex justify-between items-center mb-2">
-                                    <h4 className="text-sm font-medium">Leave History</h4>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-sm text-gray-700">Show Leave Types</span>
-                                      <Switch
-                                        checked={!isHistoryShown}
-                                        onCheckedChange={() => handleToggleHistory(employee.id)}
-                                      />
-                                    </div>
+                                    <h4 className="text-sm font-medium">Employee Details</h4>
+                                    <ToggleGroup 
+                                      type="single"
+                                      value={isHistoryShown ? 'history' : 'summary'}
+                                      onValueChange={(value) => {
+                                        if (value) {
+                                          handleToggleHistory(employee.id);
+                                        }
+                                      }}
+                                      className="border rounded-md"
+                                    >
+                                      <ToggleGroupItem value="summary" className="px-3 py-1 text-sm">
+                                        Summary View
+                                      </ToggleGroupItem>
+                                      <ToggleGroupItem value="history" className="px-3 py-1 text-sm">
+                                        Leave History
+                                      </ToggleGroupItem>
+                                    </ToggleGroup>
                                   </div>
                                   
-                                  {(!leaveHistory[employee.id] || leaveHistory[employee.id]?.length === 0) ? (
-                                    <div className="text-center py-8 text-gray-500">
-                                      {leaveHistory[employee.id] ? 'No leave history found' : 'Loading leave history...'}
-                                    </div>
-                                  ) : (
+                                  {!isHistoryShown ? (
                                     <Table>
                                       <TableHeader>
                                         <TableRow>
                                           <TableHead>Leave Type</TableHead>
-                                          <TableHead>Period</TableHead>
-                                          <TableHead className="text-center">Days</TableHead>
-                                          <TableHead className="text-right">Status</TableHead>
+                                          <TableHead className="text-right">Quota</TableHead>
+                                          <TableHead className="text-right">Taken</TableHead>
+                                          <TableHead className="text-right">Adjustments</TableHead>
+                                          <TableHead className="text-right">Remaining</TableHead>
+                                          <TableHead className="text-right">Reset Date</TableHead>
                                         </TableRow>
                                       </TableHeader>
                                       <TableBody>
-                                        {leaveHistory[employee.id].map(leave => (
-                                          <TableRow key={leave.id}>
+                                        {leaveQuotas[employee.id].map((quota) => (
+                                          <TableRow key={quota.leave_type_id}>
                                             <TableCell>
-                                              <Badge style={{backgroundColor: leave.leave_type.color, color: 'white'}}>
-                                                {leave.leave_type.name}
+                                              <Badge style={{backgroundColor: quota.color, color: 'white'}}>
+                                                {leaveTypes[quota.leave_type_id]?.name || 'Unknown Type'}
                                               </Badge>
                                             </TableCell>
-                                            <TableCell>
-                                              {format(leave.start_date, 'dd MMM yyyy')} - {format(leave.end_date, 'dd MMM yyyy')}
-                                            </TableCell>
-                                            <TableCell className="text-center">
-                                              {leave.days}
+                                            <TableCell className="text-right">
+                                              <div 
+                                                className="cursor-pointer hover:text-blue-500"
+                                                onClick={() => setIsEditing({
+                                                  employeeId: employee.id,
+                                                  leaveTypeId: quota.leave_type_id,
+                                                  field: 'quota_days'
+                                                })}
+                                              >
+                                                {isEditing && 
+                                                 isEditing.employeeId === employee.id && 
+                                                 isEditing.leaveTypeId === quota.leave_type_id && 
+                                                 isEditing.field === 'quota_days' ? (
+                                                  <Input 
+                                                    type="number"
+                                                    className="w-20 h-7 text-right"
+                                                    defaultValue={quota.quota_days}
+                                                    min={0}
+                                                    autoFocus
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit(
+                                                      employee.id, 
+                                                      quota.leave_type_id, 
+                                                      'quota_days', 
+                                                      parseInt((e.target as HTMLInputElement).value)
+                                                    )}
+                                                    onBlur={(e) => handleSaveEdit(
+                                                      employee.id, 
+                                                      quota.leave_type_id, 
+                                                      'quota_days', 
+                                                      parseInt(e.target.value)
+                                                    )}
+                                                  />
+                                                ) : (
+                                                  quota.quota_days
+                                                )}
+                                              </div>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                              {getLeaveStatusBadge(leave.status)}
+                                              {quota.taken_days}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                              <div 
+                                                className={`cursor-pointer hover:text-blue-500 ${
+                                                  quota.adjustment_days !== 0 ? (
+                                                    quota.adjustment_days > 0 ? 'text-green-600' : 'text-red-600'
+                                                  ) : ''
+                                                }`}
+                                                onClick={() => setIsEditing({
+                                                  employeeId: employee.id,
+                                                  leaveTypeId: quota.leave_type_id,
+                                                  field: 'adjustment_days'
+                                                })}
+                                              >
+                                                {isEditing && 
+                                                 isEditing.employeeId === employee.id && 
+                                                 isEditing.leaveTypeId === quota.leave_type_id && 
+                                                 isEditing.field === 'adjustment_days' ? (
+                                                  <Input 
+                                                    type="number"
+                                                    className="w-20 h-7 text-right"
+                                                    defaultValue={quota.adjustment_days}
+                                                    autoFocus
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit(
+                                                      employee.id, 
+                                                      quota.leave_type_id, 
+                                                      'adjustment_days', 
+                                                      parseInt((e.target as HTMLInputElement).value)
+                                                    )}
+                                                    onBlur={(e) => handleSaveEdit(
+                                                      employee.id, 
+                                                      quota.leave_type_id, 
+                                                      'adjustment_days', 
+                                                      parseInt(e.target.value)
+                                                    )}
+                                                  />
+                                                ) : (
+                                                  quota.adjustment_days > 0 ? `+${quota.adjustment_days}` : quota.adjustment_days
+                                                )}
+                                              </div>
+                                            </TableCell>
+                                            <TableCell className={`text-right font-medium ${
+                                              getRemainingDays(quota) < 0 ? 'text-red-600' : 
+                                              getRemainingDays(quota) === 0 ? 'text-orange-600' : 
+                                              'text-green-600'
+                                            }`}>
+                                              {getRemainingDays(quota)}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                              {formatDate(quota.reset_date)}
                                             </TableCell>
                                           </TableRow>
                                         ))}
                                       </TableBody>
                                     </Table>
+                                  ) : (
+                                    <div>
+                                      {(!leaveHistory[employee.id] || leaveHistory[employee.id]?.length === 0) ? (
+                                        <div className="text-center py-8 text-gray-500">
+                                          {leaveHistory[employee.id] ? 'No leave history found' : 'Loading leave history...'}
+                                        </div>
+                                      ) : (
+                                        <Table>
+                                          <TableHeader>
+                                            <TableRow>
+                                              <TableHead>Leave Type</TableHead>
+                                              <TableHead>Period</TableHead>
+                                              <TableHead className="text-center">Days</TableHead>
+                                              <TableHead className="text-right">Status</TableHead>
+                                            </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                            {leaveHistory[employee.id].map(leave => (
+                                              <TableRow key={leave.id}>
+                                                <TableCell>
+                                                  <Badge style={{backgroundColor: leave.leave_type.color, color: 'white'}}>
+                                                    {leave.leave_type.name}
+                                                  </Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                  {format(leave.start_date, 'dd MMM yyyy')} - {format(leave.end_date, 'dd MMM yyyy')}
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                  {leave.days}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                  {getLeaveStatusBadge(leave.status)}
+                                                </TableCell>
+                                              </TableRow>
+                                            ))}
+                                          </TableBody>
+                                        </Table>
+                                      )}
+                                    </div>
                                   )}
                                 </div>
                               </TableCell>

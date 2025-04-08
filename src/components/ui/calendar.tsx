@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker, CaptionProps } from "react-day-picker";
@@ -37,24 +38,8 @@ function Calendar({
       props.onMonthChange?.(newDate);
     };
 
-    // Skip rendering navigation buttons if specified
-    const showNavigation = !hideNavigation;
-
     return (
       <div className="flex justify-center pt-1 relative items-center">
-        {showNavigation && (
-          <button
-            onClick={() => props.onMonthChange?.(new Date(displayMonth.getFullYear(), displayMonth.getMonth() - 1, 1))}
-            className={cn(
-              buttonVariants({ variant: "outline" }),
-              "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute left-1"
-            )}
-            aria-label="Previous month"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-        )}
-        
         <Select
           value={months[displayMonth.getMonth()]}
           onValueChange={handleMonthChange}
@@ -86,19 +71,6 @@ function Calendar({
             ))}
           </SelectContent>
         </Select>
-
-        {showNavigation && (
-          <button
-            onClick={() => props.onMonthChange?.(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1))}
-            className={cn(
-              buttonVariants({ variant: "outline" }),
-              "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute right-1"
-            )}
-            aria-label="Next month"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        )}
       </div>
     );
   }
@@ -108,7 +80,7 @@ function Calendar({
       showOutsideDays={showOutsideDays}
       className={cn("p-3 pointer-events-auto w-full", className)}
       classNames={{
-        months: "flex flex-col sm:flex-row w-full space-y-4 sm:space-x-4 sm:space-y-0",
+        months: "flex flex-col w-full space-y-4",
         month: "w-full space-y-4",
         caption: "flex justify-center pt-1 relative items-center",
         caption_label: "hidden", // Hide the default caption label
@@ -142,8 +114,8 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: () => null, // Hide default left icon, we use our own in CustomCaption
-        IconRight: () => null, // Hide default right icon, we use our own in CustomCaption
+        IconLeft: () => null, // Hide default left icon
+        IconRight: () => null, // Hide default right icon
         Caption: CustomCaption,
       }}
       captionLayout="buttons"

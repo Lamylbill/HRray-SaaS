@@ -388,14 +388,13 @@ export const LeaveCalendarView = () => {
                   onSelect={() => {}}
                   components={{
                     Day: renderCalendarDay,
-                    IconLeft: () => null,
-                    IconRight: () => null,
                   }}
+                  hideNavigation={true}
                 />
               </div>
             ) : (
-              <div className="flex flex-col lg:flex-row gap-6 calendar-view h-full">
-                <div className="flex-1">
+              <div className="flex flex-col gap-6 calendar-view h-full">
+                <div className="w-full">
                   <Calendar
                     mode="range"
                     numberOfMonths={1}
@@ -407,12 +406,11 @@ export const LeaveCalendarView = () => {
                     onSelect={() => {}}
                     components={{
                       Day: renderCalendarDay,
-                      IconLeft: () => null,
-                      IconRight: () => null,
                     }}
+                    hideNavigation={true}
                   />
                 </div>
-                <div className="flex-1">
+                <div className="w-full">
                   <Calendar
                     mode="range"
                     numberOfMonths={1}
@@ -424,9 +422,8 @@ export const LeaveCalendarView = () => {
                     onSelect={() => {}}
                     components={{
                       Day: renderCalendarDay,
-                      IconLeft: () => null,
-                      IconRight: () => null,
                     }}
+                    hideNavigation={true}
                   />
                 </div>
               </div>

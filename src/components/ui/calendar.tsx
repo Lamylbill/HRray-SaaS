@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker, CaptionProps } from "react-day-picker";
@@ -7,12 +6,15 @@ import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export type CalendarProps = React.ComponentProps<typeof DayPicker>;
+export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
+  hideNavigation?: boolean;
+};
 
 function Calendar({
   className,
   classNames,
   showOutsideDays = true,
+  hideNavigation,
   ...props
 }: CalendarProps) {
   // Custom caption component with month/year dropdowns
@@ -36,7 +38,7 @@ function Calendar({
     };
 
     // Skip rendering navigation buttons if specified
-    const showNavigation = !props.hideNavigation;
+    const showNavigation = !hideNavigation;
 
     return (
       <div className="flex justify-center pt-1 relative items-center">

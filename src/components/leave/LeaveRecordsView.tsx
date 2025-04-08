@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { LeaveHistory } from './interfaces';
 
 interface Employee {
   id: string;
@@ -28,18 +29,6 @@ interface LeaveQuota {
   adjustment_days: number;
   reset_date: Date;
   color?: string;
-}
-
-interface LeaveHistory {
-  id: string;
-  start_date: Date;
-  end_date: Date;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  leave_type: {
-    name: string;
-    color: string;
-  };
-  days: number;
 }
 
 export const LeaveRecordsView = () => {
@@ -62,7 +51,6 @@ export const LeaveRecordsView = () => {
   const loadEmployeesAndQuotas = async () => {
     setIsLoading(true);
     try {
-      // Fetch all employees from Supabase
       const { data: employeesData, error: employeesError } = await supabase
         .from('employees')
         .select('id, full_name, email')
@@ -70,14 +58,12 @@ export const LeaveRecordsView = () => {
       
       if (employeesError) throw employeesError;
       
-      // Fetch all leave types
       const { data: leaveTypesData, error: leaveTypesError } = await supabase
         .from('leave_types')
         .select('id, name, color');
         
       if (leaveTypesError) throw leaveTypesError;
       
-      // Create a map of leave types for easier reference
       const leaveTypesMap = leaveTypesData.reduce((acc, type) => {
         acc[type.id] = { name: type.name, color: type.color };
         return acc;
@@ -85,27 +71,21 @@ export const LeaveRecordsView = () => {
       
       setLeaveTypes(leaveTypesMap);
       
-      // Fetch all leave quotas
       const { data: quotasData, error: quotasError } = await supabase
         .from('leave_quotas')
         .select('*');
         
       if (quotasError) throw quotasError;
       
-      // Organize quotas by employee
       const quotasByEmployee = {};
       
-      // Initialize showHistory state
       const initialShowHistory = {};
       
-      // Ensure each employee has at least the default leave types
       for (const employee of employeesData) {
         quotasByEmployee[employee.id] = [];
         initialShowHistory[employee.id] = false;
         
-        // Add default quotas for main leave types if not exists
         for (const leaveType of leaveTypesData) {
-          // Find if quota exists
           const existingQuota = quotasData.find(q => 
             q.employee_id === employee.id && q.leave_type_id === leaveType.id
           );
@@ -118,7 +98,6 @@ export const LeaveRecordsView = () => {
               reset_date: new Date(existingQuota.reset_date)
             });
           } else {
-            // Create default quota
             const defaultQuota = {
               id: `temp-${employee.id}-${leaveType.id}`,
               employee_id: employee.id,
@@ -129,13 +108,12 @@ export const LeaveRecordsView = () => {
                          leaveType.name === 'Childcare Leave' ? 6 : 0,
               taken_days: 0,
               adjustment_days: 0,
-              reset_date: new Date(new Date().getFullYear(), 0, 1), // Jan 1st of current year
+              reset_date: new Date(new Date().getFullYear(), 0, 1),
               color: leaveType.color
             };
             
             quotasByEmployee[employee.id].push(defaultQuota);
             
-            // Save this default quota to database
             await supabase
               .from('leave_quotas')
               .insert({
@@ -185,7 +163,7 @@ export const LeaveRecordsView = () => {
       if (error) throw error;
       
       if (data) {
-        const formattedHistory = data.map(item => {
+        const formattedHistory: LeaveHistory[] = data.map(item => {
           const start = new Date(item.start_date);
           const end = new Date(item.end_date);
           const days = item.half_day ? 0.5 : ((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
@@ -194,7 +172,7 @@ export const LeaveRecordsView = () => {
             id: item.id,
             start_date: start,
             end_date: end,
-            status: item.status,
+            status: (item.status as 'Pending' | 'Approved' | 'Rejected'),
             leave_type: {
               name: item.leave_types?.name || 'Unknown',
               color: item.leave_types?.color || '#999'
@@ -249,7 +227,6 @@ export const LeaveRecordsView = () => {
 
   const handleSaveEdit = async (employeeId: string, leaveTypeId: string, field: string, value: number) => {
     try {
-      // Find the quota object
       const quotas = [...leaveQuotas[employeeId]];
       const quotaIndex = quotas.findIndex(q => q.leave_type_id === leaveTypeId);
       
@@ -257,7 +234,6 @@ export const LeaveRecordsView = () => {
         throw new Error('Leave quota not found');
       }
       
-      // Update the quota
       const updatedQuota = { ...quotas[quotaIndex] };
       if (field === 'quota_days') {
         updatedQuota.quota_days = value;
@@ -265,7 +241,6 @@ export const LeaveRecordsView = () => {
         updatedQuota.adjustment_days = value;
       }
       
-      // Update in Supabase
       const { error } = await supabase
         .from('leave_quotas')
         .update({ [field]: value })
@@ -276,7 +251,6 @@ export const LeaveRecordsView = () => {
         throw error;
       }
       
-      // Update local state
       quotas[quotaIndex] = updatedQuota;
       setLeaveQuotas(prev => ({
         ...prev,
@@ -302,8 +276,6 @@ export const LeaveRecordsView = () => {
 
   const handleDelete = async (employeeIds: string[]) => {
     try {
-      // In a real implementation, we would handle deletion properly
-      // For now, just remove from local state and show toast
       toast({
         title: 'Not Implemented',
         description: 'Deletion functionality will be added soon',

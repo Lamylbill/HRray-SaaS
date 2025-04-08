@@ -17,5 +17,17 @@ export interface PublicHoliday {
   country: string;
 }
 
+export interface LeaveHistory {
+  id: string;
+  start_date: Date;
+  end_date: Date;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  leave_type: {
+    name: string;
+    color: string;
+  };
+  days: number;
+}
+
 // Define the CSSProperties type for consistent styling
 export type EventStyleProps = React.CSSProperties;

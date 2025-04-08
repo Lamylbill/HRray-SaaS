@@ -12,7 +12,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { LeaveEvent, PublicHoliday, EventStyleProps } from './interfaces';
 
-const safeFormatForDisplay = (date: Date | null | undefined, fmt: string): string =>
+const safeFormat = (date: Date | null | undefined, fmt: string): string =>
   date instanceof Date && !isNaN(date.getTime()) ? format(date, fmt) : '';
 
 export const LeaveCalendarView = () => {
@@ -24,7 +24,7 @@ export const LeaveCalendarView = () => {
   const [pendingRequests, setPendingRequests] = useState<LeaveEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-   // ✅ Add these navigation handlers here
+
   const navigateToday = () => {
     setCurrentDate(new Date());
   };
@@ -42,28 +42,28 @@ export const LeaveCalendarView = () => {
   };
 
   const handleApproveReject = async (id: string, status: 'Approved' | 'Rejected') => {
-  const { error } = await supabase
-    .from('leave_requests')
-    .update({ status })
-    .eq('id', id);
+    const { error } = await supabase
+      .from('leave_requests')
+      .update({ status })
+      .eq('id', id);
 
-  if (error) {
+    if (error) {
+      toast({
+        title: 'Error',
+        description: `Failed to ${status.toLowerCase()} request.`,
+        variant: 'destructive'
+      });
+      return;
+    }
+
     toast({
-      title: 'Error',
-      description: `Failed to ${status.toLowerCase()} request.`,
-      variant: 'destructive'
+      title: `Leave ${status}`,
+      description: `Leave request has been ${status.toLowerCase()}.`,
     });
-    return;
-  }
 
-  toast({
-    title: `Leave ${status}`,
-    description: `Leave request has been ${status.toLowerCase()}.`,
-  });
-
-  // Refresh leave events and pending list
-  await loadCalendarData();
-};
+    // Refresh leave events and pending list
+    await loadCalendarData();
+  };
 
   useEffect(() => {
     loadCalendarData();
@@ -72,7 +72,7 @@ export const LeaveCalendarView = () => {
 
   useEffect(() => {
     loadPendingRequests();
-  }, []);
+  }, [leaveEvents]);
 
   const fetchPublicHolidays = async () => {
     try {
@@ -94,17 +94,22 @@ export const LeaveCalendarView = () => {
         return;
       }
 
-      const { data, error: funcError } = await supabase.functions.invoke('fetch-public-holidays', {
-        body: { year, country: 'SG' }
-      });
+      // Attempt to fetch holidays from edge function
+      try {
+        const { data, error: funcError } = await supabase.functions.invoke('fetch-public-holidays', {
+          body: { year, country: 'SG' }
+        });
 
-      if (funcError) {
-        console.error('Error fetching holidays:', funcError);
-        return;
-      }
+        if (funcError) {
+          console.error('Error fetching holidays:', funcError);
+          return;
+        }
 
-      if (data && data.data) {
-        setPublicHolidays(data.data.map(h => ({ ...h, date: new Date(h.date) })));
+        if (data && data.data) {
+          setPublicHolidays(data.data.map(h => ({ ...h, date: new Date(h.date) })));
+        }
+      } catch (invokeError) {
+        console.error('Error fetching holidays:', invokeError);
       }
     } catch (error) {
       console.error('Error fetching public holidays:', error);
@@ -128,8 +133,6 @@ export const LeaveCalendarView = () => {
         `);
 
       if (leaveError) throw leaveError;
-
-
       
       const formattedLeaveEvents: LeaveEvent[] = (leaveRequestsData || [])
         .map(leave => {
@@ -161,8 +164,8 @@ export const LeaveCalendarView = () => {
             status: leave.status as 'Pending' | 'Approved' | 'Rejected',
             color: leave.leave_types?.color || '#999',
           };
-          })
-          .filter(Boolean);
+        })
+        .filter(Boolean) as LeaveEvent[];
 
       setLeaveEvents(formattedLeaveEvents);
       setPendingRequests(formattedLeaveEvents.filter(e => e.status === 'Pending'));
@@ -176,143 +179,145 @@ export const LeaveCalendarView = () => {
   };
 
   const renderLeaveEvents = (date: Date) => {
-  const dateStr = safeFormat(date, 'yyyy-MM-dd');
-  const eventsForDay = leaveEvents.filter(event => {
-    return isWithinInterval(date, {
-      start: event.start,
-      end: event.end
+    const dateStr = safeFormat(date, 'yyyy-MM-dd');
+    const eventsForDay = leaveEvents.filter(event => {
+      return isWithinInterval(date, {
+        start: event.start,
+        end: event.end
+      });
     });
-  });
 
-  eventsForDay.sort((a, b) => {
-    const statusPriority = { 'Approved': 0, 'Pending': 1, 'Rejected': 2 };
-    return statusPriority[a.status] - statusPriority[b.status];
-  });
+    eventsForDay.sort((a, b) => {
+      const statusPriority = { 'Approved': 0, 'Pending': 1, 'Rejected': 2 };
+      return statusPriority[a.status] - statusPriority[b.status];
+    });
 
-  return eventsForDay.map((event, index) => {
-    const isFirstDay = safeFormatForDisplay(event.start, 'yyyy-MM-dd') === dateStr;
-    const isLastDay = safeFormatForDisplay(event.end, 'yyyy-MM-dd') === dateStr;
-    const totalDays = differenceInDays(event.end, event.start) + 1;
-    const isMultiDay = totalDays > 1;
+    return eventsForDay.map((event, index) => {
+      const isFirstDay = safeFormat(event.start, 'yyyy-MM-dd') === dateStr;
+      const isLastDay = safeFormat(event.end, 'yyyy-MM-dd') === dateStr;
+      const totalDays = differenceInDays(event.end, event.start) + 1;
+      const isMultiDay = totalDays > 1;
 
-    let style: EventStyleProps = {
-      backgroundColor: event.status === 'Approved' ? event.color : 'transparent',
-      color: event.status === 'Approved' ? 'white' : event.color,
-      borderRadius: '2px',
-      padding: '1px 4px',
-      fontSize: '0.7rem',
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      marginBottom: '2px',
-      marginTop: index === 0 ? '2px' : '0',
-      border: event.status === 'Approved' ? 'none' : `1px dashed ${event.color}`,
-      position: 'relative',
-      display: 'flex',
-      alignItems: 'center',
-    };
+      let style: EventStyleProps = {
+        backgroundColor: event.status === 'Approved' ? event.color : 'transparent',
+        color: event.status === 'Approved' ? 'white' : event.color,
+        borderRadius: '2px',
+        padding: '1px 4px',
+        fontSize: '0.7rem',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        marginBottom: '2px',
+        marginTop: index === 0 ? '2px' : '0',
+        border: event.status === 'Approved' ? 'none' : `1px dashed ${event.color}`,
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+      };
 
-    if (isMultiDay) {
-      if (isFirstDay) {
+      if (isMultiDay) {
+        if (isFirstDay) {
+          style = {
+            ...style,
+            borderTopLeftRadius: '4px',
+            borderBottomLeftRadius: '4px',
+            borderTopRightRadius: '0',
+            borderBottomRightRadius: '0',
+            borderRight: 'none',
+            paddingLeft: '6px',
+          };
+        } else if (isLastDay) {
+          style = {
+            ...style,
+            borderTopLeftRadius: '0',
+            borderBottomLeftRadius: '0',
+            borderTopRightRadius: '4px',
+            borderBottomRightRadius: '4px',
+            borderLeft: 'none',
+            paddingRight: '6px',
+          };
+        } else {
+          style = {
+            ...style,
+            borderRadius: '0',
+            borderLeft: 'none',
+            borderRight: 'none',
+          };
+        }
+      }
+
+      if (event.status === 'Rejected') {
         style = {
           ...style,
-          borderTopLeftRadius: '4px',
-          borderBottomLeftRadius: '4px',
-          borderTopRightRadius: '0',
-          borderBottomRightRadius: '0',
-          borderRight: 'none',
-          paddingLeft: '6px',
-        };
-      } else if (isLastDay) {
-        style = {
-          ...style,
-          borderTopLeftRadius: '0',
-          borderBottomLeftRadius: '0',
-          borderTopRightRadius: '4px',
-          borderBottomRightRadius: '4px',
-          borderLeft: 'none',
-          paddingRight: '6px',
-        };
-      } else {
-        style = {
-          ...style,
-          borderRadius: '0',
-          borderLeft: 'none',
-          borderRight: 'none',
+          textDecoration: 'line-through',
+          opacity: 0.7,
         };
       }
+
+      return (
+        <TooltipProvider key={`${event.id}-${dateStr}`}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div style={style}>
+                {(isFirstDay || !isMultiDay) && (
+                  <span>
+                    {event.employee.split(' ')[0]} - {event.type}
+                    {isMultiDay && ` (${totalDays}d)`}
+                  </span>
+                )}
+                {!isFirstDay && isMultiDay && <span>⬤</span>}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="text-xs">
+                <div className="font-bold">{event.type}</div>
+                <div>Employee: {event.employee}</div>
+                <div>Status: {event.status}</div>
+                <div>
+                  {safeFormat(event.start, 'MMM d')} – {safeFormat(event.end, 'MMM d, yyyy')}
+                  {` (${totalDays} day${totalDays > 1 ? 's' : ''})`}
+                </div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    });
+  };
+
+  const getHolidayForDate = (date: Date): PublicHoliday | undefined => {
+    return publicHolidays.find(h => 
+      h.date instanceof Date && format(h.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+    );
+  };
+
+  // Fix the renderCalendarDay function to work with the Calendar component's Day props
+  const renderCalendarDay = (props: React.HTMLAttributes<HTMLDivElement> & { date?: Date }) => {
+    const day = props.date;
+    
+    if (!day || !(day instanceof Date) || isNaN(day.getTime())) {
+      console.warn("Skipping invalid calendar day:", day);
+      return <div {...props} className={`${props.className} p-2 text-xs text-gray-400`}>Invalid date</div>;
     }
 
-    if (event.status === 'Rejected') {
-      style = {
-        ...style,
-        textDecoration: 'line-through',
-        opacity: 0.7,
-      };
-    }
+    const holiday = getHolidayForDate(day);
 
     return (
-      <TooltipProvider key={`${event.id}-${dateStr}`}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div style={style}>
-              {(isFirstDay || !isMultiDay) && (
-                <span>
-                  {event.employee.split(' ')[0]} - {event.type}
-                  {isMultiDay && ` (${totalDays}d)`}
-                </span>
-              )}
-              {!isFirstDay && isMultiDay && <span>⬤</span>}
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            <div className="text-xs">
-              <div className="font-bold">{event.type}</div>
-              <div>Employee: {event.employee}</div>
-              <div>Status: {event.status}</div>
-              <div>
-                {safeFormat(event.start, 'MMM d')} – {safeFormat(event.end, 'MMM d, yyyy')}
-                {` (${totalDays} day${totalDays > 1 ? 's' : ''})`}
-              </div>
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  });
-};
-
-const getHolidayForDate = (date: Date): PublicHoliday | undefined => {
-  return publicHolidays.find(h => 
-    h.date instanceof Date && format(h.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-  );
-};
-
-  const renderCalendarDay = (day: Date, props: any) => {
-  if (!(day instanceof Date) || isNaN(day.getTime())) {
-    console.warn("Skipping invalid calendar day:", day);
-    return <div className="p-2 text-xs text-gray-400">Invalid date</div>;
-  }
-
-  const holiday = getHolidayForDate(day);
-
-  return (
-    <div {...props} className={`${props.className} relative h-32 overflow-y-auto`}>
-      <div className="absolute top-1 right-1 text-sm">
-        {safeFormat(day, 'd')}
-      </div>
-      {holiday && (
-        <div className="mt-5 mb-1 text-xs font-medium text-red-700 bg-red-100 rounded px-1 py-0.5 text-center">
-          {holiday.name}
+      <div {...props} className={`${props.className} relative h-32 overflow-y-auto`}>
+        <div className="absolute top-1 right-1 text-sm">
+          {safeFormat(day, 'd')}
         </div>
-      )}
-      <div className="mt-6 space-y-1 overflow-y-auto max-h-24">
-        {renderLeaveEvents(day)}
+        {holiday && (
+          <div className="mt-5 mb-1 text-xs font-medium text-red-700 bg-red-100 rounded px-1 py-0.5 text-center">
+            {holiday.name}
+          </div>
+        )}
+        <div className="mt-6 space-y-1 overflow-y-auto max-h-24">
+          {renderLeaveEvents(day)}
+        </div>
       </div>
-    </div>
-  );
-};
-
+    );
+  };
 
   return (
     <>
@@ -363,28 +368,25 @@ const getHolidayForDate = (date: Date): PublicHoliday | undefined => {
         </div>
       </div>
 
-      <div className="w-full h-full">
+      <div className="w-full flex-1 flex flex-col" style={{ height: 'calc(100vh - 280px)', minHeight: '700px' }}>
         {isLoading ? (
-          <div className="flex justify-center items-center h-[700px]">
+          <div className="flex justify-center items-center h-full">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
           </div>
         ) : (
-          <div className="calendar-container w-full overflow-hidden" style={{ 
-            height: viewMode === '1month' ? 'calc(100vh - 280px)' : 'calc(100vh - 200px)',
-            minHeight: viewMode === '1month' ? '700px' : '900px'
-          }}>
-            <div className="calendar-view">
+          <div className="calendar-container w-full flex-1 overflow-auto">
+            <div className="calendar-view h-full">
               <Calendar
                 mode="range"
                 numberOfMonths={viewMode === '1month' ? 1 : 2}
-                className="w-full border-0 p-0"
+                className="w-full h-full border-0 p-0"
                 month={currentDate}
                 onMonthChange={setCurrentDate}
                 disabled={() => false}
                 selected={undefined}
                 onSelect={() => {}}
                 components={{
-                  Day: (props) => renderCalendarDay(props.day, props)
+                  Day: renderCalendarDay
                 }}
               />
               
@@ -398,7 +400,7 @@ const getHolidayForDate = (date: Date): PublicHoliday | undefined => {
                   selected={undefined}
                   onSelect={() => {}}
                   components={{
-                    Day: (props) => renderCalendarDay(props.day, props)
+                    Day: renderCalendarDay
                   }}
                 />
               )}

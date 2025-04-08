@@ -154,7 +154,7 @@ const Leave = () => {
             </div>
           </div>
           
-          {/* Tab Content - Now takes full height */}
+          {/* Tab Content - Takes full height */}
           <div className="flex-1 flex flex-col">
             {activeTab === 'calendar' && <LeaveCalendarView />}
             {activeTab === 'records' && <LeaveRecordsView />}

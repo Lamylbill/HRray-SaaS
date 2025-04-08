@@ -35,8 +35,24 @@ function Calendar({
       props.onMonthChange?.(newDate);
     };
 
+    // Skip rendering navigation buttons if specified
+    const showNavigation = !props.hideNavigation;
+
     return (
       <div className="flex justify-center pt-1 relative items-center">
+        {showNavigation && (
+          <button
+            onClick={() => props.onMonthChange?.(new Date(displayMonth.getFullYear(), displayMonth.getMonth() - 1, 1))}
+            className={cn(
+              buttonVariants({ variant: "outline" }),
+              "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute left-1"
+            )}
+            aria-label="Previous month"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+        )}
+        
         <Select
           value={months[displayMonth.getMonth()]}
           onValueChange={handleMonthChange}
@@ -68,6 +84,19 @@ function Calendar({
             ))}
           </SelectContent>
         </Select>
+
+        {showNavigation && (
+          <button
+            onClick={() => props.onMonthChange?.(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1))}
+            className={cn(
+              buttonVariants({ variant: "outline" }),
+              "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute right-1"
+            )}
+            aria-label="Next month"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        )}
       </div>
     );
   }
@@ -111,8 +140,8 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: props.components?.IconLeft ?? (({ ..._props }) => <ChevronLeft className="h-4 w-4" />),
-        IconRight: props.components?.IconRight ?? (({ ..._props }) => <ChevronRight className="h-4 w-4" />),
+        IconLeft: () => null, // Hide default left icon, we use our own in CustomCaption
+        IconRight: () => null, // Hide default right icon, we use our own in CustomCaption
         Caption: CustomCaption,
       }}
       captionLayout="buttons"

@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { PlusCircle, Edit, Trash2, Eye, MoreHorizontal, FileText, AlertCircle, Download, History } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Eye, MoreHorizontal, FileText, AlertCircle, Download, History, Calendar, ChevronDown } from 'lucide-react';
 import { PremiumCard, CardContent } from '@/components/ui-custom/Card';
 import { Button } from '@/components/ui-custom/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -9,8 +8,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 
 interface Employee {
   id: string;
@@ -29,15 +30,29 @@ interface LeaveQuota {
   color?: string;
 }
 
+interface LeaveHistory {
+  id: string;
+  start_date: Date;
+  end_date: Date;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  leave_type: {
+    name: string;
+    color: string;
+  };
+  days: number;
+}
+
 export const LeaveRecordsView = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [leaveQuotas, setLeaveQuotas] = useState<{ [employeeId: string]: LeaveQuota[] }>({});
+  const [leaveHistory, setLeaveHistory] = useState<{ [employeeId: string]: LeaveHistory[] }>({});
   const [leaveTypes, setLeaveTypes] = useState<{ [id: string]: { name: string, color: string } }>({});
   const [expandedEmployee, setExpandedEmployee] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState<{ employeeId: string, leaveTypeId: string, field: string } | null>(null);
+  const [showHistory, setShowHistory] = useState<{ [employeeId: string]: boolean }>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -80,9 +95,13 @@ export const LeaveRecordsView = () => {
       // Organize quotas by employee
       const quotasByEmployee = {};
       
+      // Initialize showHistory state
+      const initialShowHistory = {};
+      
       // Ensure each employee has at least the default leave types
       for (const employee of employeesData) {
         quotasByEmployee[employee.id] = [];
+        initialShowHistory[employee.id] = false;
         
         // Add default quotas for main leave types if not exists
         for (const leaveType of leaveTypesData) {
@@ -133,6 +152,7 @@ export const LeaveRecordsView = () => {
       
       setEmployees(employeesData);
       setLeaveQuotas(quotasByEmployee);
+      setShowHistory(initialShowHistory);
       
     } catch (error) {
       console.error('Error loading employees and leave quotas:', error);
@@ -143,6 +163,71 @@ export const LeaveRecordsView = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadLeaveHistory = async (employeeId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('leave_requests')
+        .select(`
+          id,
+          start_date,
+          end_date,
+          status,
+          half_day,
+          half_day_type,
+          leave_types(id, name, color)
+        `)
+        .eq('employee_id', employeeId)
+        .order('start_date', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (data) {
+        const formattedHistory = data.map(item => {
+          const start = new Date(item.start_date);
+          const end = new Date(item.end_date);
+          const days = item.half_day ? 0.5 : ((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
+          
+          return {
+            id: item.id,
+            start_date: start,
+            end_date: end,
+            status: item.status,
+            leave_type: {
+              name: item.leave_types?.name || 'Unknown',
+              color: item.leave_types?.color || '#999'
+            },
+            days
+          };
+        });
+        
+        setLeaveHistory(prev => ({
+          ...prev,
+          [employeeId]: formattedHistory
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading leave history:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load leave history',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleToggleHistory = (employeeId: string) => {
+    const newValue = !showHistory[employeeId];
+    
+    setShowHistory(prev => ({
+      ...prev,
+      [employeeId]: newValue
+    }));
+    
+    if (newValue && (!leaveHistory[employeeId] || leaveHistory[employeeId].length === 0)) {
+      loadLeaveHistory(employeeId);
     }
   };
 
@@ -242,17 +327,10 @@ export const LeaveRecordsView = () => {
     }).format(date);
   };
 
-  // Filter employees based on search term
-  const filteredEmployees = employees.filter(employee => 
-    employee.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const getRemainingDays = (quota: LeaveQuota) => {
     return quota.quota_days - quota.taken_days + quota.adjustment_days;
   };
 
-  // For each employee, find their Annual Leave quota
   const getAnnualLeave = (employeeId: string) => {
     if (!leaveQuotas[employeeId]) return null;
     
@@ -261,6 +339,24 @@ export const LeaveRecordsView = () => {
       return leaveType && leaveType.name === 'Annual Leave';
     });
   };
+
+  const getLeaveStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Approved':
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Approved</Badge>;
+      case 'Rejected':
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-200">Rejected</Badge>;
+      case 'Pending':
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">Pending</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const filteredEmployees = employees.filter(employee => 
+    employee.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    employee.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div>
@@ -336,6 +432,7 @@ export const LeaveRecordsView = () => {
                     filteredEmployees.map(employee => {
                       const annualLeave = getAnnualLeave(employee.id);
                       const isExpanded = expandedEmployee === employee.id;
+                      const isHistoryShown = showHistory[employee.id] || false;
                       
                       return (
                         <React.Fragment key={employee.id}>
@@ -437,8 +534,8 @@ export const LeaveRecordsView = () => {
                                     <DropdownMenuItem onClick={() => setExpandedEmployee(isExpanded ? null : employee.id)}>
                                       <Eye className="h-4 w-4 mr-2" /> View All Leave Types
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                      <History className="h-4 w-4 mr-2" /> View Leave History
+                                    <DropdownMenuItem onClick={() => handleToggleHistory(employee.id)}>
+                                      <History className="h-4 w-4 mr-2" /> {isHistoryShown ? 'Hide' : 'View'} Leave History
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem className="text-red-600">
@@ -450,12 +547,20 @@ export const LeaveRecordsView = () => {
                             </TableCell>
                           </TableRow>
                           
-                          {/* Expanded view showing all leave types */}
-                          {isExpanded && leaveQuotas[employee.id] && (
+                          {isExpanded && leaveQuotas[employee.id] && !isHistoryShown && (
                             <TableRow className="bg-gray-50">
                               <TableCell colSpan={7} className="py-0">
                                 <div className="py-4 px-4">
-                                  <h4 className="text-sm font-medium mb-2">All Leave Types</h4>
+                                  <div className="flex justify-between items-center mb-2">
+                                    <h4 className="text-sm font-medium">All Leave Types</h4>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm text-gray-700">Show Leave History</span>
+                                      <Switch
+                                        checked={isHistoryShown}
+                                        onCheckedChange={() => handleToggleHistory(employee.id)}
+                                      />
+                                    </div>
+                                  </div>
                                   <Table>
                                     <TableHeader>
                                       <TableRow>
@@ -569,6 +674,62 @@ export const LeaveRecordsView = () => {
                                       ))}
                                     </TableBody>
                                   </Table>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                          
+                          {isExpanded && isHistoryShown && (
+                            <TableRow className="bg-gray-50">
+                              <TableCell colSpan={7} className="py-0">
+                                <div className="py-4 px-4">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <h4 className="text-sm font-medium">Leave History</h4>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm text-gray-700">Show Leave Types</span>
+                                      <Switch
+                                        checked={!isHistoryShown}
+                                        onCheckedChange={() => handleToggleHistory(employee.id)}
+                                      />
+                                    </div>
+                                  </div>
+                                  
+                                  {(!leaveHistory[employee.id] || leaveHistory[employee.id]?.length === 0) ? (
+                                    <div className="text-center py-8 text-gray-500">
+                                      {leaveHistory[employee.id] ? 'No leave history found' : 'Loading leave history...'}
+                                    </div>
+                                  ) : (
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead>Leave Type</TableHead>
+                                          <TableHead>Period</TableHead>
+                                          <TableHead className="text-center">Days</TableHead>
+                                          <TableHead className="text-right">Status</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {leaveHistory[employee.id].map(leave => (
+                                          <TableRow key={leave.id}>
+                                            <TableCell>
+                                              <Badge style={{backgroundColor: leave.leave_type.color, color: 'white'}}>
+                                                {leave.leave_type.name}
+                                              </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                              {format(leave.start_date, 'dd MMM yyyy')} - {format(leave.end_date, 'dd MMM yyyy')}
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                              {leave.days}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                              {getLeaveStatusBadge(leave.status)}
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>

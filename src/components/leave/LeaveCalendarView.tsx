@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { addMonths, format, parseISO, differenceInDays, addDays, isWithinInterval } from 'date-fns';
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
@@ -61,7 +60,6 @@ export const LeaveCalendarView = () => {
       description: `Leave request has been ${status.toLowerCase()}.`,
     });
 
-    // Refresh leave events and pending list
     await loadCalendarData();
   };
 
@@ -94,7 +92,6 @@ export const LeaveCalendarView = () => {
         return;
       }
 
-      // Attempt to fetch holidays from edge function
       try {
         const { data, error: funcError } = await supabase.functions.invoke('fetch-public-holidays', {
           body: { year, country: 'SG' }
@@ -291,7 +288,6 @@ export const LeaveCalendarView = () => {
     );
   };
 
-  // Fix the renderCalendarDay function to work with the Calendar component's Day props
   const renderCalendarDay = (props: React.HTMLAttributes<HTMLDivElement> & { date?: Date }) => {
     const day = props.date;
     
@@ -319,54 +315,58 @@ export const LeaveCalendarView = () => {
     );
   };
 
+  const CalendarHeader = () => (
+    <div className="mb-4 flex items-center justify-between">
+      <div className="flex items-center space-x-2">
+        <Button variant="outline" size="sm" onClick={navigateToday}>
+          Today
+        </Button>
+        <Button variant="outline" size="icon" onClick={navigatePrevious}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <Button variant="outline" size="icon" onClick={navigateNext}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <h3 className="text-lg font-semibold">
+          {format(currentDate, 'MMMM yyyy')}
+        </h3>
+      </div>
+      <div className="flex items-center space-x-2">
+        <div className="flex border rounded-md overflow-hidden">
+          <Button 
+            variant={viewMode === '1month' ? 'secondary' : 'ghost'} 
+            size="sm" 
+            className="rounded-none"
+            onClick={() => setViewMode('1month')}
+          >
+            1 Month
+          </Button>
+          <Button 
+            variant={viewMode === '2months' ? 'secondary' : 'ghost'} 
+            size="sm" 
+            className="rounded-none"
+            onClick={() => setViewMode('2months')}
+          >
+            2 Months
+          </Button>
+        </div>
+        {pendingRequests.length > 0 && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
+            onClick={() => setSidebarOpen(true)}
+          >
+            {pendingRequests.length} Pending
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <>
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={navigateToday}>
-            Today
-          </Button>
-          <Button variant="outline" size="icon" onClick={navigatePrevious}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={navigateNext}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <h3 className="text-lg font-semibold">
-            {format(currentDate, 'MMMM yyyy')}
-          </h3>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="flex border rounded-md overflow-hidden">
-            <Button 
-              variant={viewMode === '1month' ? 'secondary' : 'ghost'} 
-              size="sm" 
-              className="rounded-none"
-              onClick={() => setViewMode('1month')}
-            >
-              1 Month
-            </Button>
-            <Button 
-              variant={viewMode === '2months' ? 'secondary' : 'ghost'} 
-              size="sm" 
-              className="rounded-none"
-              onClick={() => setViewMode('2months')}
-            >
-              2 Months
-            </Button>
-          </div>
-          {pendingRequests.length > 0 && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
-              onClick={() => setSidebarOpen(true)}
-            >
-              {pendingRequests.length} Pending
-            </Button>
-          )}
-        </div>
-      </div>
+      <CalendarHeader />
 
       <div className="w-full flex-1 flex flex-col" style={{ height: 'calc(100vh - 280px)', minHeight: '700px' }}>
         {isLoading ? (
@@ -375,36 +375,62 @@ export const LeaveCalendarView = () => {
           </div>
         ) : (
           <div className="calendar-container w-full flex-1 overflow-auto">
-            <div className="calendar-view h-full">
-              <Calendar
-                mode="range"
-                numberOfMonths={viewMode === '1month' ? 1 : 2}
-                className="w-full h-full border-0 p-0"
-                month={currentDate}
-                onMonthChange={setCurrentDate}
-                disabled={() => false}
-                selected={undefined}
-                onSelect={() => {}}
-                components={{
-                  Day: renderCalendarDay
-                }}
-              />
-              
-              {viewMode === '2months' && (
+            {viewMode === '1month' ? (
+              <div className="calendar-view h-full">
                 <Calendar
                   mode="range"
-                  month={addMonths(currentDate, 1)}
-                  onMonthChange={(date) => setCurrentDate(addMonths(date, -1))}
-                  className="w-full border-0 p-0 mt-6"
+                  numberOfMonths={1}
+                  className="w-full h-full border-0 p-0"
+                  month={currentDate}
+                  onMonthChange={setCurrentDate}
                   disabled={() => false}
                   selected={undefined}
                   onSelect={() => {}}
                   components={{
-                    Day: renderCalendarDay
+                    Day: renderCalendarDay,
+                    IconLeft: () => null,
+                    IconRight: () => null,
                   }}
                 />
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="flex flex-col lg:flex-row gap-6 calendar-view h-full">
+                <div className="flex-1">
+                  <Calendar
+                    mode="range"
+                    numberOfMonths={1}
+                    className="w-full border-0 p-0"
+                    month={currentDate}
+                    onMonthChange={setCurrentDate}
+                    disabled={() => false}
+                    selected={undefined}
+                    onSelect={() => {}}
+                    components={{
+                      Day: renderCalendarDay,
+                      IconLeft: () => null,
+                      IconRight: () => null,
+                    }}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Calendar
+                    mode="range"
+                    numberOfMonths={1}
+                    month={addMonths(currentDate, 1)}
+                    onMonthChange={(date) => setCurrentDate(addMonths(date, -1))}
+                    className="w-full border-0 p-0"
+                    disabled={() => false}
+                    selected={undefined}
+                    onSelect={() => {}}
+                    components={{
+                      Day: renderCalendarDay,
+                      IconLeft: () => null,
+                      IconRight: () => null,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

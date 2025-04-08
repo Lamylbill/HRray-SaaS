@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { addMonths, format, parseISO, differenceInDays, addDays, isWithinInterval } from 'date-fns';
+import { addMonths, format, differenceInDays, isWithinInterval } from 'date-fns';
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
-import { PremiumCard, CardContent } from '@/components/ui-custom/Card';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
@@ -24,44 +23,9 @@ export const LeaveCalendarView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const navigateToday = () => {
-    setCurrentDate(new Date());
-  };
-  
-  const navigatePrevious = () => {
-    setCurrentDate(prev => addMonths(prev, -1));
-  };
-  
-  const navigateNext = () => {
-    setCurrentDate(prev => addMonths(prev, 1));
-  };
-  
-  const loadPendingRequests = () => {
-    setPendingRequests(leaveEvents.filter(e => e.status === 'Pending'));
-  };
-
-  const handleApproveReject = async (id: string, status: 'Approved' | 'Rejected') => {
-    const { error } = await supabase
-      .from('leave_requests')
-      .update({ status })
-      .eq('id', id);
-
-    if (error) {
-      toast({
-        title: 'Error',
-        description: `Failed to ${status.toLowerCase()} request.`,
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    toast({
-      title: `Leave ${status}`,
-      description: `Leave request has been ${status.toLowerCase()}.`,
-    });
-
-    await loadCalendarData();
-  };
+  const navigateToday = () => setCurrentDate(new Date());
+  const navigatePrevious = () => setCurrentDate(prev => addMonths(prev, -1));
+  const navigateNext = () => setCurrentDate(prev => addMonths(prev, 1));
 
   useEffect(() => {
     loadCalendarData();
@@ -69,7 +33,7 @@ export const LeaveCalendarView = () => {
   }, [currentDate]);
 
   useEffect(() => {
-    loadPendingRequests();
+    setPendingRequests(leaveEvents.filter(e => e.status === 'Pending'));
   }, [leaveEvents]);
 
   const fetchPublicHolidays = async () => {
@@ -82,32 +46,17 @@ export const LeaveCalendarView = () => {
         .gte('date', `${year}-01-01`)
         .lte('date', `${year}-12-31`);
 
-      if (error) {
-        console.error('Error checking for holidays:', error);
-        return;
-      }
-
-      if (existingHolidays && existingHolidays.length > 0) {
+      if (error) return console.error('Error checking for holidays:', error);
+      if (existingHolidays?.length) {
         setPublicHolidays(existingHolidays.map(h => ({ ...h, date: new Date(h.date) })));
         return;
       }
 
-      try {
-        const { data, error: funcError } = await supabase.functions.invoke('fetch-public-holidays', {
-          body: { year, country: 'SG' }
-        });
-
-        if (funcError) {
-          console.error('Error fetching holidays:', funcError);
-          return;
-        }
-
-        if (data && data.data) {
-          setPublicHolidays(data.data.map(h => ({ ...h, date: new Date(h.date) })));
-        }
-      } catch (invokeError) {
-        console.error('Error fetching holidays:', invokeError);
-      }
+      const { data, error: funcError } = await supabase.functions.invoke('fetch-public-holidays', {
+        body: { year, country: 'SG' }
+      });
+      if (funcError) return console.error('Error fetching holidays:', funcError);
+      if (data?.data) setPublicHolidays(data.data.map(h => ({ ...h, date: new Date(h.date) })));
     } catch (error) {
       console.error('Error fetching public holidays:', error);
     }
@@ -116,59 +65,35 @@ export const LeaveCalendarView = () => {
   const loadCalendarData = async () => {
     setIsLoading(true);
     try {
-      const { data: leaveRequestsData, error: leaveError } = await supabase
+      const { data, error } = await supabase
         .from('leave_requests')
         .select(`
-          id,
-          start_date,
-          end_date,
-          status,
-          half_day,
-          half_day_type,
+          id, start_date, end_date, status, half_day, half_day_type,
           employees(id, full_name),
           leave_types(id, name, color)
         `);
 
-      if (leaveError) throw leaveError;
-      
-      const formattedLeaveEvents: LeaveEvent[] = (leaveRequestsData || [])
-        .map(leave => {
-          const startRaw = leave.start_date;
-          const endRaw = leave.end_date;
-        
-          const start = startRaw ? new Date(startRaw) : null;
-          const end = endRaw ? new Date(endRaw) : null;
-        
-          const isStartValid = start instanceof Date && !isNaN(start.getTime());
-          const isEndValid = end instanceof Date && !isNaN(end.getTime());
-        
-          if (!isStartValid || !isEndValid) {
-            console.warn("⚠️ Skipping invalid leave record due to date issue:", {
-              id: leave.id,
-              start_date: startRaw,
-              end_date: endRaw,
-            });
-            return null;
-          }
-        
-          return {
-            id: leave.id,
-            title: leave.leave_types?.name || 'Leave',
-            start,
-            end,
-            type: leave.leave_types?.name || 'Unknown',
-            employee: leave.employees?.full_name || 'Unknown Employee',
-            status: leave.status as 'Pending' | 'Approved' | 'Rejected',
-            color: leave.leave_types?.color || '#999',
-          };
-        })
-        .filter(Boolean) as LeaveEvent[];
+      if (error) throw error;
 
-      setLeaveEvents(formattedLeaveEvents);
-      setPendingRequests(formattedLeaveEvents.filter(e => e.status === 'Pending'));
+      const formatted = (data || []).map(leave => {
+        const start = new Date(leave.start_date);
+        const end = new Date(leave.end_date);
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+        return {
+          id: leave.id,
+          title: leave.leave_types?.name || 'Leave',
+          start,
+          end,
+          type: leave.leave_types?.name || 'Unknown',
+          employee: leave.employees?.full_name || 'Unknown Employee',
+          status: leave.status,
+          color: leave.leave_types?.color || '#999'
+        };
+      }).filter(Boolean) as LeaveEvent[];
 
-    } catch (error) {
-      console.error('Error loading calendar data:', error);
+      setLeaveEvents(formatted);
+    } catch (err) {
+      console.error('Error loading calendar data:', err);
       toast({ title: 'Error', description: 'Failed to load calendar data', variant: 'destructive' });
     } finally {
       setIsLoading(false);
@@ -177,23 +102,16 @@ export const LeaveCalendarView = () => {
 
   const renderLeaveEvents = (date: Date) => {
     const dateStr = safeFormat(date, 'yyyy-MM-dd');
-    const eventsForDay = leaveEvents.filter(event => {
-      return isWithinInterval(date, {
-        start: event.start,
-        end: event.end
-      });
-    });
+    const events = leaveEvents.filter(event =>
+      isWithinInterval(date, { start: event.start, end: event.end })
+    );
+    events.sort((a, b) => ({ Approved: 0, Pending: 1, Rejected: 2 }[a.status] - { Approved: 0, Pending: 1, Rejected: 2 }[b.status]));
 
-    eventsForDay.sort((a, b) => {
-      const statusPriority = { 'Approved': 0, 'Pending': 1, 'Rejected': 2 };
-      return statusPriority[a.status] - statusPriority[b.status];
-    });
-
-    return eventsForDay.map((event, index) => {
-      const isFirstDay = safeFormat(event.start, 'yyyy-MM-dd') === dateStr;
-      const isLastDay = safeFormat(event.end, 'yyyy-MM-dd') === dateStr;
+    return events.map((event, index) => {
+      const isFirst = safeFormat(event.start, 'yyyy-MM-dd') === dateStr;
+      const isLast = safeFormat(event.end, 'yyyy-MM-dd') === dateStr;
       const totalDays = differenceInDays(event.end, event.start) + 1;
-      const isMultiDay = totalDays > 1;
+      const isMulti = totalDays > 1;
 
       let style: EventStyleProps = {
         backgroundColor: event.status === 'Approved' ? event.color : 'transparent',
@@ -201,68 +119,26 @@ export const LeaveCalendarView = () => {
         borderRadius: '2px',
         padding: '1px 4px',
         fontSize: '0.7rem',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        marginBottom: '2px',
-        marginTop: index === 0 ? '2px' : '0',
         border: event.status === 'Approved' ? 'none' : `1px dashed ${event.color}`,
-        position: 'relative',
-        display: 'flex',
-        alignItems: 'center',
+        display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        marginBottom: '2px', marginTop: index === 0 ? '2px' : '0'
       };
 
-      if (isMultiDay) {
-        if (isFirstDay) {
-          style = {
-            ...style,
-            borderTopLeftRadius: '4px',
-            borderBottomLeftRadius: '4px',
-            borderTopRightRadius: '0',
-            borderBottomRightRadius: '0',
-            borderRight: 'none',
-            paddingLeft: '6px',
-          };
-        } else if (isLastDay) {
-          style = {
-            ...style,
-            borderTopLeftRadius: '0',
-            borderBottomLeftRadius: '0',
-            borderTopRightRadius: '4px',
-            borderBottomRightRadius: '4px',
-            borderLeft: 'none',
-            paddingRight: '6px',
-          };
-        } else {
-          style = {
-            ...style,
-            borderRadius: '0',
-            borderLeft: 'none',
-            borderRight: 'none',
-          };
-        }
+      if (isMulti) {
+        if (isFirst) Object.assign(style, { borderTopRightRadius: '0', borderBottomRightRadius: '0', borderRight: 'none', paddingLeft: '6px' });
+        else if (isLast) Object.assign(style, { borderTopLeftRadius: '0', borderBottomLeftRadius: '0', borderLeft: 'none', paddingRight: '6px' });
+        else Object.assign(style, { borderRadius: '0', borderLeft: 'none', borderRight: 'none' });
       }
 
-      if (event.status === 'Rejected') {
-        style = {
-          ...style,
-          textDecoration: 'line-through',
-          opacity: 0.7,
-        };
-      }
+      if (event.status === 'Rejected') Object.assign(style, { textDecoration: 'line-through', opacity: 0.7 });
 
       return (
         <TooltipProvider key={`${event.id}-${dateStr}`}>
           <Tooltip>
             <TooltipTrigger asChild>
               <div style={style}>
-                {(isFirstDay || !isMultiDay) && (
-                  <span>
-                    {event.employee.split(' ')[0]} - {event.type}
-                    {isMultiDay && ` (${totalDays}d)`}
-                  </span>
-                )}
-                {!isFirstDay && isMultiDay && <span>⬤</span>}
+                {(isFirst || !isMulti) && <span>{event.employee.split(' ')[0]} - {event.type}{isMulti && ` (${totalDays}d)`}</span>}
+                {!isFirst && isMulti && <span>⬤</span>}
               </div>
             </TooltipTrigger>
             <TooltipContent>
@@ -270,10 +146,7 @@ export const LeaveCalendarView = () => {
                 <div className="font-bold">{event.type}</div>
                 <div>Employee: {event.employee}</div>
                 <div>Status: {event.status}</div>
-                <div>
-                  {safeFormat(event.start, 'MMM d')} – {safeFormat(event.end, 'MMM d, yyyy')}
-                  {` (${totalDays} day${totalDays > 1 ? 's' : ''})`}
-                </div>
+                <div>{safeFormat(event.start, 'MMM d')} – {safeFormat(event.end, 'MMM d, yyyy')} ({totalDays} day{totalDays > 1 ? 's' : ''})</div>
               </div>
             </TooltipContent>
           </Tooltip>
@@ -282,35 +155,18 @@ export const LeaveCalendarView = () => {
     });
   };
 
-  const getHolidayForDate = (date: Date): PublicHoliday | undefined => {
-    return publicHolidays.find(h => 
-      h.date instanceof Date && format(h.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-    );
-  };
+  const getHolidayForDate = (date: Date) => publicHolidays.find(h => format(h.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'));
 
   const renderCalendarDay = (props: React.HTMLAttributes<HTMLDivElement> & { date?: Date }) => {
     const day = props.date;
-    
-    if (!day || !(day instanceof Date) || isNaN(day.getTime())) {
-      console.warn("Skipping invalid calendar day:", day);
-      return <div {...props} className={`${props.className} p-2 text-xs text-gray-400`}>Invalid date</div>;
-    }
-
+    if (!day || isNaN(day.getTime())) return <div {...props} className={`${props.className} p-2 text-xs text-gray-400`}>Invalid date</div>;
     const holiday = getHolidayForDate(day);
 
     return (
       <div {...props} className={`${props.className} relative h-32 overflow-y-auto`}>
-        <div className="absolute top-1 right-1 text-sm">
-          {safeFormat(day, 'd')}
-        </div>
-        {holiday && (
-          <div className="mt-5 mb-1 text-xs font-medium text-red-700 bg-red-100 rounded px-1 py-0.5 text-center">
-            {holiday.name}
-          </div>
-        )}
-        <div className="mt-6 space-y-1 overflow-y-auto max-h-24">
-          {renderLeaveEvents(day)}
-        </div>
+        <div className="absolute top-1 right-1 text-sm">{safeFormat(day, 'd')}</div>
+        {holiday && <div className="mt-5 mb-1 text-xs font-medium text-red-700 bg-red-100 rounded px-1 py-0.5 text-center">{holiday.name}</div>}
+        <div className="mt-6 space-y-1 overflow-y-auto max-h-24">{renderLeaveEvents(day)}</div>
       </div>
     );
   };
@@ -318,45 +174,18 @@ export const LeaveCalendarView = () => {
   const CalendarHeader = () => (
     <div className="mb-4 flex items-center justify-between">
       <div className="flex items-center space-x-2">
-        <Button variant="outline" size="sm" onClick={navigateToday}>
-          Today
-        </Button>
-        <Button variant="outline" size="icon" onClick={navigatePrevious}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <Button variant="outline" size="icon" onClick={navigateNext}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        <h3 className="text-lg font-semibold">
-          {format(currentDate, 'MMMM yyyy')}
-        </h3>
+        <Button variant="outline" size="sm" onClick={navigateToday}>Today</Button>
+        <Button variant="outline" size="icon" onClick={navigatePrevious}><ChevronLeft className="h-4 w-4" /></Button>
+        <Button variant="outline" size="icon" onClick={navigateNext}><ChevronRight className="h-4 w-4" /></Button>
+        <h3 className="text-lg font-semibold">{format(currentDate, 'MMMM yyyy')}</h3>
       </div>
       <div className="flex items-center space-x-2">
         <div className="flex border rounded-md overflow-hidden">
-          <Button 
-            variant={viewMode === '1month' ? 'secondary' : 'ghost'} 
-            size="sm" 
-            className="rounded-none"
-            onClick={() => setViewMode('1month')}
-          >
-            1 Month
-          </Button>
-          <Button 
-            variant={viewMode === '2months' ? 'secondary' : 'ghost'} 
-            size="sm" 
-            className="rounded-none"
-            onClick={() => setViewMode('2months')}
-          >
-            2 Months
-          </Button>
+          <Button variant={viewMode === '1month' ? 'secondary' : 'ghost'} size="sm" className="rounded-none" onClick={() => setViewMode('1month')}>1 Month</Button>
+          <Button variant={viewMode === '2months' ? 'secondary' : 'ghost'} size="sm" className="rounded-none" onClick={() => setViewMode('2months')}>2 Months</Button>
         </div>
         {pendingRequests.length > 0 && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
-            onClick={() => setSidebarOpen(true)}
-          >
+          <Button variant="outline" size="sm" className="bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100" onClick={() => setSidebarOpen(true)}>
             {pendingRequests.length} Pending
           </Button>
         )}
@@ -367,7 +196,6 @@ export const LeaveCalendarView = () => {
   return (
     <>
       <CalendarHeader />
-
       <div className="w-full flex-1 flex flex-col" style={{ height: 'calc(100vh - 280px)', minHeight: '700px' }}>
         {isLoading ? (
           <div className="flex justify-center items-center h-full">
@@ -375,62 +203,21 @@ export const LeaveCalendarView = () => {
           </div>
         ) : (
           <div className="calendar-container w-full flex-1 overflow-auto">
-            {viewMode === '1month' ? (
-              <div className="calendar-view h-full">
-                <Calendar
-                  mode="range"
-                  numberOfMonths={1}
-                  className="w-full h-full border-0 p-0"
-                  classNames={{
-                    nav: 'hidden', // <-- This hides the internal navigation arrows
-                  }}
-                  month={currentDate}
-                  onMonthChange={setCurrentDate}
-                  disabled={() => false}
-                  selected={undefined}
-                  onSelect={() => {}}
-                  components={{
-                    Day: renderCalendarDay,
-                  }}
-                  hideNavigation={true}
-                />
-              </div>
-            ) : (
-              <div className="flex flex-col gap-6 calendar-view h-full">
-                <div className="w-full">
-                  <Calendar
-                    mode="range"
-                    numberOfMonths={1}
-                    className="w-full border-0 p-0"
-                    month={currentDate}
-                    onMonthChange={setCurrentDate}
-                    disabled={() => false}
-                    selected={undefined}
-                    onSelect={() => {}}
-                    components={{
-                      Day: renderCalendarDay,
-                    }}
-                    hideNavigation={true}
-                  />
-                </div>
-                <div className="w-full">
-                  <Calendar
-                    mode="range"
-                    numberOfMonths={1}
-                    month={addMonths(currentDate, 1)}
-                    onMonthChange={(date) => setCurrentDate(addMonths(date, -1))}
-                    className="w-full border-0 p-0"
-                    disabled={() => false}
-                    selected={undefined}
-                    onSelect={() => {}}
-                    components={{
-                      Day: renderCalendarDay,
-                    }}
-                    hideNavigation={true}
-                  />
-                </div>
-              </div>
-            )}
+            <div className="calendar-view h-full">
+              <Calendar
+                mode="range"
+                numberOfMonths={viewMode === '2months' ? 2 : 1}
+                className="w-full h-full border-0 p-0"
+                classNames={{ nav: 'hidden', head_row: '', head_cell: '' }}
+                month={currentDate}
+                onMonthChange={setCurrentDate}
+                disabled={() => false}
+                selected={undefined}
+                onSelect={() => {}}
+                components={{ Day: renderCalendarDay }}
+                hideNavigation={true}
+              />
+            </div>
           </div>
         )}
       </div>
@@ -439,11 +226,8 @@ export const LeaveCalendarView = () => {
         <SheetContent className="w-full sm:max-w-md">
           <SheetHeader>
             <SheetTitle>Pending Leave Requests</SheetTitle>
-            <SheetDescription>
-              {pendingRequests.length} leave requests pending your approval
-            </SheetDescription>
+            <SheetDescription>{pendingRequests.length} leave requests pending your approval</SheetDescription>
           </SheetHeader>
-          
           <div className="mt-8 space-y-4">
             {pendingRequests.map(request => (
               <div key={request.id} className="border rounded-md p-4 bg-white">
@@ -453,33 +237,19 @@ export const LeaveCalendarView = () => {
                     <div className="text-sm text-gray-600">{request.type}</div>
                     <div className="text-sm mt-1">
                       {safeFormat(request.start, 'MMM d')} - {safeFormat(request.end, 'MMM d, yyyy')}
-                      <Badge className="ml-2" variant="outline" style={{color: request.color, borderColor: request.color}}>
+                      <Badge className="ml-2" variant="outline" style={{ color: request.color, borderColor: request.color }}>
                         {differenceInDays(request.end, request.start) + 1} days
                       </Badge>
                     </div>
                   </div>
                   <Badge>Pending</Badge>
                 </div>
-                
                 <div className="mt-4 flex justify-end space-x-2">
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleApproveReject(request.id, 'Rejected')}
-                  >
-                    Reject
-                  </Button>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => handleApproveReject(request.id, 'Approved')}
-                  >
-                    Approve
-                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleApproveReject(request.id, 'Rejected')}>Reject</Button>
+                  <Button variant="default" size="sm" onClick={() => handleApproveReject(request.id, 'Approved')}>Approve</Button>
                 </div>
               </div>
             ))}
-            
             {pendingRequests.length === 0 && (
               <div className="text-center py-12 text-gray-500">
                 <Info className="mx-auto h-12 w-12 text-gray-400" />

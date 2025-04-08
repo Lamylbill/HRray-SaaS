@@ -381,6 +381,9 @@ export const LeaveCalendarView = () => {
                   mode="range"
                   numberOfMonths={1}
                   className="w-full h-full border-0 p-0"
+                  classNames={{
+                    nav: 'hidden', // <-- This hides the internal navigation arrows
+                  }}
                   month={currentDate}
                   onMonthChange={setCurrentDate}
                   disabled={() => false}

@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker, CaptionProps } from "react-day-picker";
@@ -83,7 +82,7 @@ function Calendar({
         months: "flex flex-col w-full space-y-4",
         month: "w-full space-y-4",
         caption: "flex justify-center pt-1 relative items-center",
-        caption_label: "hidden", // Hide the default caption label
+        caption_label: "hidden",
         nav: "space-x-1 flex items-center",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
@@ -92,9 +91,8 @@ function Calendar({
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
         table: "w-full h-full border-collapse space-y-1",
-        head_row: "flex w-full",
-        head_cell:
-          "text-muted-foreground rounded-md w-full font-normal text-[0.8rem] px-0",
+        head_row: "hidden",
+        head_cell: "hidden",
         row: "flex w-full mt-2",
         cell: "relative h-auto text-center text-sm p-0 overflow-visible first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20 w-full aspect-square",
         day: cn(
@@ -114,8 +112,8 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: () => null, // Hide default left icon
-        IconRight: () => null, // Hide default right icon
+        IconLeft: () => null,
+        IconRight: () => null,
         Caption: CustomCaption,
       }}
       captionLayout="buttons"

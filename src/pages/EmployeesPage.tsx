@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Search, PlusCircle, Download, AlertCircle,
-  ListFilter, Grid, Edit, Trash, CheckSquare
+  ListFilter, Grid, Edit, Trash
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui-custom/Button';
@@ -28,7 +29,6 @@ import { EmployeeCard } from '@/components/employees/EmployeeCard';
 import { ImportEmployeesDialog } from '@/components/employees/ImportEmployeesDialog';
 import { AdvancedFilterDropdown } from '@/components/employees/AdvancedFilterDropdown';
 import { standardizeEmployee } from '@/utils/employeeFieldUtils';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,9 +68,6 @@ const EmployeesPage = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
-  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
-  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
-  const [isMultiDeleteDialogOpen, setIsMultiDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -209,57 +206,6 @@ const EmployeesPage = () => {
     setIsDetailsOpen(true);
   };
 
-  const toggleMultiSelectMode = () => {
-    setIsMultiSelectMode(!isMultiSelectMode);
-    setSelectedEmployeeIds([]);
-  };
-
-  const toggleEmployeeSelection = (employeeId: string) => {
-    setSelectedEmployeeIds(prev => 
-      prev.includes(employeeId) 
-        ? prev.filter(id => id !== employeeId) 
-        : [...prev, employeeId]
-    );
-  };
-
-  const handleMultiDeleteConfirm = () => {
-    if (selectedEmployeeIds.length > 0) {
-      setDeleteConfirmText('');
-      setIsMultiDeleteDialogOpen(true);
-    }
-  };
-
-  const confirmMultiDelete = async () => {
-    if (deleteConfirmText !== 'DELETE') return;
-    
-    try {
-      const { error } = await supabase
-        .from('employees')
-        .delete()
-        .in('id', selectedEmployeeIds);
-
-      if (error) throw error;
-
-      toast({
-        title: "Employees Deleted",
-        description: `${selectedEmployeeIds.length} employees have been removed.`,
-      });
-
-      fetchEmployees();
-      setIsMultiDeleteDialogOpen(false);
-      setSelectedEmployeeIds([]);
-      setDeleteConfirmText('');
-      
-      setIsMultiSelectMode(false);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete employees",
-        variant: "destructive"
-      });
-    }
-  };
-
   return (
     <div className="px-4 sm:px-6 py-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
@@ -292,16 +238,6 @@ const EmployeesPage = () => {
         </div>
 
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={toggleMultiSelectMode}
-            className={isMultiSelectMode ? "bg-hrflow-blue text-white hover:bg-hrflow-blue/90" : ""}
-          >
-            <CheckSquare className="h-4 w-4 mr-2" /> 
-            {isMultiSelectMode ? "Exit Selection" : "Select Multiple"}
-          </Button>
-          
           <Button variant="outline" size="sm" onClick={() =>
             setViewMode(prev => prev === 'list' ? 'card' : 'list')
           }>
@@ -322,27 +258,11 @@ const EmployeesPage = () => {
         </div>
       )}
 
-      {isMultiSelectMode && (
-        <div className="mb-4 p-3 bg-gray-50 border rounded-md flex items-center justify-between">
-          <div className="text-sm">
-            <span className="font-medium">{selectedEmployeeIds.length}</span> employees selected
-          </div>
-          <Button 
-            variant="destructive" 
-            size="sm"
-            onClick={handleMultiDeleteConfirm}
-          >
-            <Trash className="h-4 w-4 mr-2" /> Delete Selected
-          </Button>
-        </div>
-      )}
-
       {viewMode === 'list' ? (
         <div className="border rounded-md overflow-hidden bg-white shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
-                {isMultiSelectMode && <TableHead className="w-[40px]"></TableHead>}
                 <TableHead>Employee</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>Contact</TableHead>
@@ -355,17 +275,9 @@ const EmployeesPage = () => {
               {filteredEmployees.map(emp => (
                 <TableRow 
                   key={emp.id} 
-                  onClick={isMultiSelectMode ? () => toggleEmployeeSelection(emp.id) : () => handleViewDetails(emp)} 
-                  className={`cursor-pointer hover:bg-gray-50 ${isMultiSelectMode && selectedEmployeeIds.includes(emp.id) ? 'bg-blue-50' : ''}`}
+                  onClick={() => handleViewDetails(emp)} 
+                  className="cursor-pointer hover:bg-gray-50"
                 >
-                  {isMultiSelectMode && (
-                    <TableCell className="w-[40px]" onClick={(e) => e.stopPropagation()}>
-                      <Checkbox 
-                        checked={selectedEmployeeIds.includes(emp.id)} 
-                        onCheckedChange={() => toggleEmployeeSelection(emp.id)}
-                      />
-                    </TableCell>
-                  )}
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Avatar className="h-10 w-10 border">
@@ -412,9 +324,6 @@ const EmployeesPage = () => {
               onViewDetails={handleViewDetails}
               onEdit={handleEditEmployee}
               onDelete={handleDeleteEmployee}
-              isMultiSelectMode={isMultiSelectMode}
-              isSelected={selectedEmployeeIds.includes(emp.id)}
-              onToggleSelect={() => toggleEmployeeSelection(emp.id)}
             />
           ))}
         </div>
@@ -485,41 +394,6 @@ const EmployeesPage = () => {
               className={`${deleteConfirmText !== 'DELETE' ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Delete Employee
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={isMultiDeleteDialogOpen} onOpenChange={setIsMultiDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Multiple Employees</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. You are about to delete {selectedEmployeeIds.length} employee records 
-              and all their associated data.
-              <div className="mt-4">
-                <p className="font-medium mb-2">Type DELETE to confirm:</p>
-                <Input 
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  placeholder="Type DELETE here"
-                  className="mt-1"
-                />
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setDeleteConfirmText('');
-            }}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmMultiDelete}
-              disabled={deleteConfirmText !== 'DELETE'}
-              className={`${deleteConfirmText !== 'DELETE' ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              Delete {selectedEmployeeIds.length} Employees
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

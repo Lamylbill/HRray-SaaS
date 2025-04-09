@@ -21,7 +21,6 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
-import { Checkbox } from '@/components/ui/checkbox';
 
 const employees = [
   { id: 1, name: 'Sarah Johnson', email: 'sarah.j@example.com', department: 'Marketing', position: 'Marketing Director', status: 'Active', joinDate: '2021-05-12' },
@@ -50,7 +49,6 @@ const Employees = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
-
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate('/login');
@@ -99,7 +97,6 @@ const Employees = () => {
               <p className="mt-1 text-gray-600">Manage your employee directory</p>
             </div>
             <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
-
               <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
               <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" /> Export</Button>
               <Button variant="primary" size="sm"><UserPlus className="mr-2 h-4 w-4" /> Add Employee</Button>
@@ -120,8 +117,6 @@ const Employees = () => {
                 />
                 <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
               </div>
-              
-              
             </div>
           </div>
         </AnimatedSection>
@@ -137,7 +132,6 @@ const Employees = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      
                       <TableHead onClick={() => handleSort('name')} className="cursor-pointer">
                         Name <SortIndicator column="name" />
                       </TableHead>

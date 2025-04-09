@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker, CaptionProps } from "react-day-picker";
@@ -8,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
   hideNavigation?: boolean;
+  showWeekdayHeader?: boolean;
 };
 
 function Calendar({
@@ -15,6 +17,7 @@ function Calendar({
   classNames,
   showOutsideDays = true,
   hideNavigation,
+  showWeekdayHeader = true,
   ...props
 }: CalendarProps) {
   // Custom caption component with month/year dropdowns
@@ -91,8 +94,12 @@ function Calendar({
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
         table: "w-full h-full border-collapse space-y-1",
-        head_row: "hidden",
-        head_cell: "hidden",
+        head_row: cn(
+          showWeekdayHeader ? "flex w-full mb-2" : "hidden"
+        ),
+        head_cell: cn(
+          showWeekdayHeader ? "text-muted-foreground rounded-md w-full font-normal text-xs" : "hidden"
+        ),
         row: "flex w-full mt-2",
         cell: "relative h-auto text-center text-sm p-0 overflow-visible first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20 w-full aspect-square",
         day: cn(

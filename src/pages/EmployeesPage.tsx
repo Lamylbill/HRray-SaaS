@@ -2,12 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import {
   Search, PlusCircle, Download, AlertCircle,
-  ListFilter, Grid, Edit, Trash
+  ListFilter, Grid, Edit, Trash, Check, X
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui-custom/Button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow
@@ -68,6 +69,7 @@ const EmployeesPage = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -202,9 +204,66 @@ const EmployeesPage = () => {
   };
 
   const handleViewDetails = (employee: Employee) => {
+    // Don't trigger view details when in selection mode
+    if (selectedEmployees.length > 0) return;
+    
     setSelectedEmployee(employee);
     setIsDetailsOpen(true);
   };
+
+  // Multi-select functionality
+  const toggleSelectEmployee = (employeeId: string, event?: React.MouseEvent) => {
+    if (event) event.stopPropagation();
+    
+    if (selectedEmployees.includes(employeeId)) {
+      setSelectedEmployees(prev => prev.filter(id => id !== employeeId));
+    } else {
+      setSelectedEmployees(prev => [...prev, employeeId]);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedEmployees.length === filteredEmployees.length) {
+      setSelectedEmployees([]);
+    } else {
+      setSelectedEmployees(filteredEmployees.map(emp => emp.id));
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedEmployees([]);
+  };
+
+  const deleteSelectedEmployees = async () => {
+    if (selectedEmployees.length === 0) return;
+    
+    try {
+      // Delete all selected employees
+      const { error } = await supabase
+        .from('employees')
+        .delete()
+        .in('id', selectedEmployees);
+
+      if (error) throw error;
+
+      toast({
+        title: "Employees Deleted",
+        description: `${selectedEmployees.length} employees have been removed.`,
+      });
+
+      fetchEmployees();
+      setSelectedEmployees([]);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete employees",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const isSelected = (employeeId: string) => selectedEmployees.includes(employeeId);
+  const allSelected = filteredEmployees.length > 0 && selectedEmployees.length === filteredEmployees.length;
 
   return (
     <div className="px-4 sm:px-6 py-6">
@@ -214,15 +273,39 @@ const EmployeesPage = () => {
           <p className="mt-1 text-sm text-gray-600">Manage your organization's employees</p>
         </div>
         <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-2">
-          <ImportEmployeesDialog onImportSuccess={fetchEmployees} />
-          <Button variant="outline" size="sm" onClick={exportEmployees}>
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-          <Button variant="primary" size="sm" onClick={handleAddEmployee}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add Employee
-          </Button>
+          {selectedEmployees.length > 0 ? (
+            <>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-red-600 border-red-200 hover:bg-red-50"
+                onClick={deleteSelectedEmployees}
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                Delete Selected ({selectedEmployees.length})
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={clearSelection}
+              >
+                <X className="mr-2 h-4 w-4" />
+                Clear Selection
+              </Button>
+            </>
+          ) : (
+            <>
+              <ImportEmployeesDialog onImportSuccess={fetchEmployees} />
+              <Button variant="outline" size="sm" onClick={exportEmployees}>
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+              <Button variant="primary" size="sm" onClick={handleAddEmployee}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Employee
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -263,6 +346,13 @@ const EmployeesPage = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox 
+                    checked={allSelected} 
+                    onClick={toggleSelectAll}
+                    className={allSelected ? "data-[state=checked]:bg-hrflow-blue" : ""}
+                  />
+                </TableHead>
                 <TableHead>Employee</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>Contact</TableHead>
@@ -276,14 +366,27 @@ const EmployeesPage = () => {
                 <TableRow 
                   key={emp.id} 
                   onClick={() => handleViewDetails(emp)} 
-                  className="cursor-pointer hover:bg-gray-50"
+                  className={`cursor-pointer ${isSelected(emp.id) ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
                 >
+                  <TableCell onClick={(e) => e.stopPropagation()} className="w-10">
+                    <Checkbox 
+                      checked={isSelected(emp.id)} 
+                      onClick={(e) => toggleSelectEmployee(emp.id, e)}
+                      className={isSelected(emp.id) ? "data-[state=checked]:bg-hrflow-blue" : ""}
+                    />
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Avatar className="h-10 w-10 border">
+                      <Avatar 
+                        className={`h-10 w-10 border cursor-pointer ${isSelected(emp.id) ? 'ring-2 ring-hrflow-blue' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSelectEmployee(emp.id);
+                        }}
+                      >
                         <AvatarImage src={emp.profile_photo || emp.profile_picture || undefined} />
-                        <AvatarFallback className="bg-hrflow-blue text-white">
-                          {emp.full_name?.[0] || '?'}
+                        <AvatarFallback className={`${isSelected(emp.id) ? 'bg-hrflow-blue text-white' : 'bg-gray-200'}`}>
+                          {isSelected(emp.id) ? <Check className="h-5 w-5" /> : emp.full_name?.[0] || '?'}
                         </AvatarFallback>
                       </Avatar>
                       <div>

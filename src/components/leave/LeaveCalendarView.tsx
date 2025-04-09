@@ -1,13 +1,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { addMonths, format, differenceInDays, isWithinInterval, startOfWeek, addDays } from 'date-fns';
+import { addMonths, format, differenceInDays, isWithinInterval, startOfWeek, addDays, subMonths } from 'date-fns';
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { LeaveEvent, PublicHoliday, EventStyleProps } from './interfaces';
 
@@ -16,7 +15,7 @@ const safeFormat = (date: Date | null | undefined, fmt: string): string =>
 
 export const LeaveCalendarView = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'1month' | '2months'>('1month');
+  const [visibleMonths, setVisibleMonths] = useState<Date[]>([]);
   const [leaveEvents, setLeaveEvents] = useState<LeaveEvent[]>([]);
   const [publicHolidays, setPublicHolidays] = useState<PublicHoliday[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -25,10 +24,89 @@ export const LeaveCalendarView = () => {
   const { toast } = useToast();
   const calendarContainerRef = useRef<HTMLDivElement>(null);
   const weekdayHeaderRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
-  const navigateToday = () => setCurrentDate(new Date());
-  const navigatePrevious = () => setCurrentDate(prev => addMonths(prev, -1));
-  const navigateNext = () => setCurrentDate(prev => addMonths(prev, 1));
+  // Generate range of months to display
+  const generateVisibleMonths = (centerDate: Date, count: number = 5) => {
+    const months: Date[] = [];
+    const halfCount = Math.floor(count / 2);
+    
+    for (let i = -halfCount; i <= halfCount; i++) {
+      months.push(i === 0 ? centerDate : addMonths(centerDate, i));
+    }
+    
+    return months;
+  };
+
+  // Initialize visible months on component mount
+  useEffect(() => {
+    setVisibleMonths(generateVisibleMonths(currentDate));
+  }, []);
+
+  const navigateToday = () => {
+    const today = new Date();
+    setCurrentDate(today);
+    setVisibleMonths(generateVisibleMonths(today));
+    
+    // Scroll to today's month (middle of the view)
+    if (calendarContainerRef.current) {
+      const monthElements = calendarContainerRef.current.querySelectorAll('.month-container');
+      if (monthElements.length > 0) {
+        const middleIndex = Math.floor(monthElements.length / 2);
+        monthElements[middleIndex].scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
+  const navigatePrevious = () => {
+    const prevMonth = subMonths(currentDate, 1);
+    setCurrentDate(prevMonth);
+    setVisibleMonths(generateVisibleMonths(prevMonth));
+  };
+
+  const navigateNext = () => {
+    const nextMonth = addMonths(currentDate, 1);
+    setCurrentDate(nextMonth);
+    setVisibleMonths(generateVisibleMonths(nextMonth));
+  };
+
+  // Handle infinite scroll loading
+  const handleScroll = () => {
+    if (!calendarContainerRef.current) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = calendarContainerRef.current;
+    const scrollThreshold = 300; // px from top/bottom to trigger loading more months
+    
+    // Load more months when scrolling near the top
+    if (scrollTop < scrollThreshold) {
+      // Add months to the top (earlier months)
+      const earliestMonth = visibleMonths[0];
+      const newMonths = [subMonths(earliestMonth, 2), subMonths(earliestMonth, 1), ...visibleMonths];
+      setVisibleMonths(newMonths);
+      
+      // Maintain scroll position after adding content
+      if (calendarContainerRef.current) {
+        calendarContainerRef.current.scrollTop = scrollTop + 400; // Approximate height of added content
+      }
+    }
+    
+    // Load more months when scrolling near the bottom
+    if (scrollHeight - scrollTop - clientHeight < scrollThreshold) {
+      // Add months to the bottom (later months)
+      const latestMonth = visibleMonths[visibleMonths.length - 1];
+      const newMonths = [...visibleMonths, addMonths(latestMonth, 1), addMonths(latestMonth, 2)];
+      setVisibleMonths(newMonths);
+    }
+  };
+
+  // Set up scrolling event handler
+  useEffect(() => {
+    const container = calendarContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, [visibleMonths]);
 
   useEffect(() => {
     loadCalendarData();
@@ -160,16 +238,15 @@ export const LeaveCalendarView = () => {
 
   const getHolidayForDate = (date: Date) => publicHolidays.find(h => format(h.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'));
 
-  const renderCalendarDay = (props: React.HTMLAttributes<HTMLDivElement> & { date?: Date }) => {
-    const day = props.date;
-    if (!day || isNaN(day.getTime())) return <div {...props} className={`${props.className} p-2 text-xs text-gray-400`}>Invalid date</div>;
-    const holiday = getHolidayForDate(day);
+  const renderCalendarDayCell = (date: Date) => {
+    if (!date || isNaN(date.getTime())) return <div className="p-2 text-xs text-gray-400">Invalid date</div>;
+    const holiday = getHolidayForDate(date);
 
     return (
-      <div {...props} className={`${props.className} relative h-32 overflow-y-auto`}>
-        <div className="absolute top-1 right-1 text-sm">{safeFormat(day, 'd')}</div>
+      <div className="relative h-32 overflow-y-auto">
+        <div className="absolute top-1 right-1 text-sm">{safeFormat(date, 'd')}</div>
         {holiday && <div className="mt-5 mb-1 text-xs font-medium text-red-700 bg-red-100 rounded px-1 py-0.5 text-center">{holiday.name}</div>}
-        <div className="mt-6 space-y-1 overflow-y-auto max-h-24">{renderLeaveEvents(day)}</div>
+        <div className="mt-6 space-y-1 overflow-y-auto max-h-24">{renderLeaveEvents(date)}</div>
       </div>
     );
   };
@@ -180,12 +257,59 @@ export const LeaveCalendarView = () => {
     const weekdays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
     
     return (
-      <div ref={weekdayHeaderRef} className="flex w-full border-b pb-2 mb-2 sticky top-0 bg-white z-10">
+      <div ref={weekdayHeaderRef} className="grid grid-cols-7 w-full border-b pb-2 mb-2 sticky top-0 bg-white z-10 h-10">
         {weekdays.map((day, i) => (
-          <div key={i} className="text-center w-full font-medium text-gray-700">
+          <div key={i} className="text-center font-medium text-gray-700">
             {format(day, 'EEE')}
           </div>
         ))}
+      </div>
+    );
+  };
+
+  const renderMonth = (month: Date, index: number) => {
+    const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
+    const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    
+    // Get start of first week and end of last week
+    const startDate = startOfWeek(firstDay);
+    const endDate = new Date(lastDay);
+    endDate.setDate(endDate.getDate() + (6 - endDate.getDay()));
+    
+    // Create days array
+    const days: Date[] = [];
+    let currentDate = new Date(startDate);
+    
+    while (currentDate <= endDate) {
+      days.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    // Group days into weeks
+    const weeks: Date[][] = [];
+    for (let i = 0; i < days.length; i += 7) {
+      weeks.push(days.slice(i, i + 7));
+    }
+
+    return (
+      <div key={`${month.getFullYear()}-${month.getMonth()}`} className="month-container mb-8" id={`month-${month.getFullYear()}-${month.getMonth()}`}>
+        <h3 className="text-lg font-semibold mb-4 px-2">{format(month, 'MMMM yyyy')}</h3>
+        <div className="grid grid-cols-7 gap-1">
+          {weeks.map((week, weekIndex) => (
+            week.map((day, dayIndex) => (
+              <div 
+                key={`${weekIndex}-${dayIndex}`} 
+                className={`border p-1 ${
+                  day.getMonth() !== month.getMonth() ? 'bg-gray-50 text-gray-400' : 'bg-white'
+                } ${
+                  safeFormat(day, 'yyyy-MM-dd') === safeFormat(new Date(), 'yyyy-MM-dd') ? 'ring-2 ring-hrflow-blue ring-opacity-50' : ''
+                }`}
+              >
+                {renderCalendarDayCell(day)}
+              </div>
+            ))
+          ))}
+        </div>
       </div>
     );
   };
@@ -199,10 +323,6 @@ export const LeaveCalendarView = () => {
         <h3 className="text-lg font-semibold">{format(currentDate, 'MMMM yyyy')}</h3>
       </div>
       <div className="flex items-center space-x-2">
-        <div className="flex border rounded-md overflow-hidden">
-          <Button variant={viewMode === '1month' ? 'secondary' : 'ghost'} size="sm" className="rounded-none" onClick={() => setViewMode('1month')}>1 Month</Button>
-          <Button variant={viewMode === '2months' ? 'secondary' : 'ghost'} size="sm" className="rounded-none" onClick={() => setViewMode('2months')}>2 Months</Button>
-        </div>
         {pendingRequests.length > 0 && (
           <Button variant="outline" size="sm" className="bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100" onClick={() => setSidebarOpen(true)}>
             {pendingRequests.length} Pending
@@ -226,26 +346,12 @@ export const LeaveCalendarView = () => {
         ) : (
           <div className="calendar-container w-full flex-1 overflow-hidden flex flex-col">
             <WeekdayHeader />
-            <div className="calendar-view h-full overflow-auto" ref={calendarContainerRef}>
-              <div className="flex flex-col space-y-8">
-                <Calendar
-                  mode="range"
-                  numberOfMonths={viewMode === '2months' ? 2 : 1}
-                  className="w-full border-0 p-0"
-                  classNames={{ 
-                    months: "flex flex-col space-y-8",
-                    head_row: "hidden",
-                    head_cell: "hidden"
-                  }}
-                  month={currentDate}
-                  onMonthChange={setCurrentDate}
-                  disabled={() => false}
-                  selected={undefined}
-                  onSelect={() => {}}
-                  components={{ Day: renderCalendarDay }}
-                  hideNavigation={true}
-                  showWeekdayHeader={false}
-                />
+            <div 
+              className="calendar-view h-full overflow-auto" 
+              ref={calendarContainerRef}
+            >
+              <div className="flex flex-col">
+                {visibleMonths.map(renderMonth)}
               </div>
             </div>
           </div>

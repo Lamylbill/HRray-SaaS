@@ -1,6 +1,5 @@
 
 import * as React from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker, CaptionProps } from "react-day-picker";
 
 import { cn } from "@/lib/utils";
@@ -16,7 +15,7 @@ function Calendar({
   className,
   classNames,
   showOutsideDays = true,
-  hideNavigation,
+  hideNavigation = false,
   showWeekdayHeader = true,
   ...props
 }: CalendarProps) {
@@ -86,7 +85,7 @@ function Calendar({
         month: "w-full space-y-4",
         caption: "flex justify-center pt-1 relative items-center",
         caption_label: "hidden",
-        nav: "space-x-1 flex items-center",
+        nav: hideNavigation ? "hidden" : "space-x-1 flex items-center",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
           "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"

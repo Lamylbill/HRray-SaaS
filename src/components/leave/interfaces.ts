@@ -29,6 +29,12 @@ export interface LeaveHistory {
   days: number;
 }
 
+export interface LeaveType {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export interface LeaveRequest {
   id: string;
   employee: {

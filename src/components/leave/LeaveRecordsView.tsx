@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-import { LeaveRequest } from './interfaces';
+import { LeaveRequest, LeaveType } from './interfaces';
 
 export const LeaveRecordsView = () => {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);

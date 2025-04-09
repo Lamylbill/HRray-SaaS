@@ -3,9 +3,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   addMonths, subMonths, format, differenceInDays, isWithinInterval, 
   startOfWeek, addDays, startOfMonth, getMonth, getYear, endOfMonth,
-  isSameDay
+  isSameDay, set
 } from 'date-fns';
-import { Info, Plus } from 'lucide-react';
+import { Info, Plus, Filter } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { LeaveEvent, PublicHoliday, EventStyleProps } from './interfaces';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AddLeaveForm } from './AddLeaveForm';
 
 const safeFormat = (date: Date | null | undefined, fmt: string): string =>
@@ -40,8 +40,8 @@ export const LeaveCalendarView = () => {
     const today = new Date();
     const months: Date[] = [];
     
-    // Generate 5 months centered on the current month
-    for (let i = -12; i <= 12; i++) {
+    // Generate months for 5 years before and after current date
+    for (let i = -60; i <= 60; i++) {
       months.push(addMonths(today, i));
     }
     
@@ -80,7 +80,7 @@ export const LeaveCalendarView = () => {
     
     const options = {
       root: calendarContainerRef.current,
-      rootMargin: '500px 0px',
+      rootMargin: '1000px 0px',
       threshold: 0.1
     };
     
@@ -133,14 +133,14 @@ export const LeaveCalendarView = () => {
       if (direction === 'before') {
         const firstMonth = prevMonths[0];
         const newMonths = [];
-        for (let i = 1; i <= 6; i++) {
+        for (let i = 1; i <= 24; i++) {
           newMonths.push(subMonths(firstMonth, i));
         }
         return [...newMonths.reverse(), ...prevMonths];
       } else {
         const lastMonth = prevMonths[prevMonths.length - 1];
         const newMonths = [];
-        for (let i = 1; i <= 6; i++) {
+        for (let i = 1; i <= 24; i++) {
           newMonths.push(addMonths(lastMonth, i));
         }
         return [...prevMonths, ...newMonths];
@@ -160,17 +160,32 @@ export const LeaveCalendarView = () => {
         .gte('date', `${year}-01-01`)
         .lte('date', `${year}-12-31`);
 
-      if (error) return console.error('Error checking for holidays:', error);
+      if (error) {
+        console.error('Error checking for holidays:', error);
+        return;
+      }
+      
       if (existingHolidays?.length) {
         setPublicHolidays(existingHolidays.map(h => ({ ...h, date: new Date(h.date) })));
         return;
       }
 
-      const { data, error: funcError } = await supabase.functions.invoke('fetch-public-holidays', {
-        body: { year, country: 'SG' }
-      });
-      if (funcError) return console.error('Error fetching holidays:', funcError);
-      if (data?.data) setPublicHolidays(data.data.map(h => ({ ...h, date: new Date(h.date) })));
+      try {
+        const { data, error: funcError } = await supabase.functions.invoke('fetch-public-holidays', {
+          body: { year, country: 'SG' }
+        });
+        
+        if (funcError) {
+          console.error('Error fetching holidays:', funcError);
+          return;
+        }
+        
+        if (data?.data) {
+          setPublicHolidays(data.data.map((h: any) => ({ ...h, date: new Date(h.date) })));
+        }
+      } catch (error) {
+        console.error('Error fetching public holidays:', error);
+      }
     } catch (error) {
       console.error('Error fetching public holidays:', error);
     }
@@ -364,12 +379,45 @@ export const LeaveCalendarView = () => {
     });
   };
 
+  const handleApproveReject = async (id: string, status: 'Approved' | 'Rejected') => {
+    try {
+      const { error } = await supabase
+        .from('leave_requests')
+        .update({ status })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: `Leave ${status}`,
+        description: `Leave request has been ${status.toLowerCase()}`,
+        duration: 3000,
+      });
+      
+      // Refresh data
+      loadCalendarData();
+      setSidebarOpen(false);
+    } catch (err) {
+      console.error(`Error ${status.toLowerCase()}ing leave:`, err);
+      toast({
+        title: "Error",
+        description: `Failed to ${status.toLowerCase()} leave request`,
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
+  };
+
   return (
     <>
       <div className="mb-4 flex items-center justify-between">
-        <div>
+        <div className="flex items-center space-x-2">
           <Button variant="primary" size="sm" onClick={() => setAddLeaveDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> Add Leave
+          </Button>
+          
+          <Button variant="outline" size="sm" onClick={() => loadCalendarData()}>
+            <Filter className="mr-2 h-4 w-4" /> Filter
           </Button>
         </div>
         <div className="flex items-center space-x-2">
@@ -446,6 +494,7 @@ export const LeaveCalendarView = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Add Leave Request</DialogTitle>
+            <DialogDescription>Create a new leave request for an employee</DialogDescription>
           </DialogHeader>
           <AddLeaveForm onSuccess={handleLeaveAdded} onCancel={() => setAddLeaveDialogOpen(false)} />
         </DialogContent>
@@ -453,8 +502,3 @@ export const LeaveCalendarView = () => {
     </>
   );
 };
-
-function handleApproveReject(id: string, status: 'Approved' | 'Rejected') {
-  // Implementation would go here - this is a stub to fix the build error
-  console.log(`Setting request ${id} to ${status}`);
-}

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import {
@@ -293,6 +294,34 @@ export const LeaveRecordsView = () => {
     
     return `${diffInDays} day${diffInDays !== 1 ? 's' : ''}`;
   };
+
+  const handleApproveReject = async (id: string, status: 'Approved' | 'Rejected') => {
+    try {
+      const { error } = await supabase
+        .from('leave_requests')
+        .update({ status })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: `Leave ${status}`,
+        description: `Leave request has been ${status.toLowerCase()}`,
+        duration: 3000,
+      });
+      
+      // Refresh data
+      fetchLeaveRequests();
+    } catch (err) {
+      console.error(`Error ${status.toLowerCase()}ing leave:`, err);
+      toast({
+        title: "Error",
+        description: `Failed to ${status.toLowerCase()} leave request`,
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
+  };
   
   return (
     <div className="space-y-4">
@@ -463,11 +492,7 @@ export const LeaveRecordsView = () => {
                             variant="ghost" 
                             size="sm" 
                             className="text-green-600 hover:text-green-700"
-                            onClick={() => {
-                              toggleSelectRequest(request.id);
-                              setBulkAction('approve');
-                              handleBulkAction();
-                            }}
+                            onClick={() => handleApproveReject(request.id, 'Approved')}
                           >
                             <Check className="h-4 w-4" />
                           </Button>
@@ -475,11 +500,7 @@ export const LeaveRecordsView = () => {
                             variant="ghost" 
                             size="sm" 
                             className="text-red-600 hover:text-red-700"
-                            onClick={() => {
-                              toggleSelectRequest(request.id);
-                              setBulkAction('reject');
-                              handleBulkAction();
-                            }}
+                            onClick={() => handleApproveReject(request.id, 'Rejected')}
                           >
                             <X className="h-4 w-4" />
                           </Button>

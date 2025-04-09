@@ -33,6 +33,9 @@ const Leave = () => {
           .from('public_holidays')
           .select('*'),
         supabase
+          .from('leave_quotas')
+          .select('*'),
+        supabase
           .from('shifts')
           .select('*')
       ]);

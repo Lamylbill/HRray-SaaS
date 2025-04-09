@@ -179,9 +179,24 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
     onFiltersChange(employees);
   };
 
+  const handleCategorySelect = (category: EmployeeCategory) => {
+    setActiveFilters({ category });
+    setCategoryOpen(false);
+    setFieldOpen(true);
+  };
+  
+  const handleFieldSelect = (field: { name: string; key: keyof Employee }) => {
+    setActiveFilters({ ...activeFilters, field });
+    setFieldOpen(false);
+  };
+
   return (
     <div className="relative">
-      <Popover open={categoryOpen || fieldOpen} onOpenChange={setCategoryOpen}>
+      <Popover open={categoryOpen || fieldOpen} onOpenChange={(open) => {
+        // Only allow closing through explicit actions, not by clicking outside
+        if (!open) return;
+        setCategoryOpen(open);
+      }}>
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm" className={cn(
             appliedFilters.length > 0 && "border-blue-500 text-blue-600"
@@ -226,11 +241,8 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
                       {employeeCategories.map((category) => (
                         <CommandItem
                           key={category.name}
-                          onSelect={() => {
-                            setActiveFilters({ category });
-                            setCategoryOpen(false);
-                            setFieldOpen(true);
-                          }}
+                          onSelect={() => handleCategorySelect(category)}
+                          className="cursor-pointer"
                         >
                           <Check
                             className={cn(
@@ -268,10 +280,8 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
                         {activeFilters.category.fields.map((field) => (
                           <CommandItem
                             key={String(field.key)}
-                            onSelect={() => {
-                              setActiveFilters({ ...activeFilters, field });
-                              setFieldOpen(false);
-                            }}
+                            onSelect={() => handleFieldSelect(field)}
+                            className="cursor-pointer"
                           >
                             <Check
                               className={cn(
@@ -357,7 +367,14 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
               
               {/* Action buttons */}
               <div className="flex justify-end gap-2 pt-2">
-                <Button variant="outline" size="sm" onClick={resetActiveFilters}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    resetActiveFilters();
+                    setCategoryOpen(false);
+                  }}
+                >
                   Cancel
                 </Button>
                 <Button 

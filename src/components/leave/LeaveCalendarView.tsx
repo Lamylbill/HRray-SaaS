@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   addMonths, subMonths, format, differenceInDays, isWithinInterval, 
   startOfWeek, addDays, startOfMonth, getMonth, getYear, endOfMonth,
-  isSameDay, set
+  isSameDay, set, parseISO
 } from 'date-fns';
 import { Info, Plus, Filter } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
@@ -12,9 +12,19 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { LeaveEvent, PublicHoliday, EventStyleProps } from './interfaces';
+import { LeaveEvent, PublicHoliday, EventStyleProps, LeaveType } from './interfaces';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AddLeaveForm } from './AddLeaveForm';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Check } from 'lucide-react';
 
 const safeFormat = (date: Date | null | undefined, fmt: string): string =>
   date instanceof Date && !isNaN(date.getTime()) ? format(date, fmt) : '';
@@ -28,6 +38,9 @@ export const LeaveCalendarView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [addLeaveDialogOpen, setAddLeaveDialogOpen] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
+  const [selectedLeaveType, setSelectedLeaveType] = useState<string | null>(null);
+  const [isFilterLoading, setIsFilterLoading] = useState(false);
   const { toast } = useToast();
   
   const calendarContainerRef = useRef<HTMLDivElement>(null);
@@ -65,12 +78,33 @@ export const LeaveCalendarView = () => {
   useEffect(() => {
     loadCalendarData();
     fetchPublicHolidays();
+    fetchLeaveTypes();
   }, []);
 
   // Update pending requests when leave events change
   useEffect(() => {
     setPendingRequests(leaveEvents.filter(e => e.status === 'Pending'));
   }, [leaveEvents]);
+  
+  // Fetch leave types for filtering
+  const fetchLeaveTypes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('leave_types')
+        .select('id, name, color')
+        .order('name');
+        
+      if (error) throw error;
+      setLeaveTypes(data || []);
+    } catch (err: any) {
+      console.error('Error fetching leave types:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to load leave types',
+        variant: 'destructive',
+      });
+    }
+  };
   
   // Setup infinite scroll with Intersection Observer
   const setupInfiniteScroll = useCallback(() => {
@@ -198,8 +232,8 @@ export const LeaveCalendarView = () => {
         .from('leave_requests')
         .select(`
           id, start_date, end_date, status, half_day, half_day_type,
-          employees(id, full_name),
-          leave_types(id, name, color)
+          employees:employee_id (id, full_name),
+          leave_types:leave_type_id (id, name, color)
         `);
 
       if (error) throw error;
@@ -226,6 +260,66 @@ export const LeaveCalendarView = () => {
       toast({ title: 'Error', description: 'Failed to load calendar data', variant: 'destructive' });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Filter leaves by leave type
+  const filterByLeaveType = async (typeId: string | null) => {
+    setIsFilterLoading(true);
+    setSelectedLeaveType(typeId);
+    
+    try {
+      let query = supabase
+        .from('leave_requests')
+        .select(`
+          id, start_date, end_date, status, half_day, half_day_type,
+          employees:employee_id (id, full_name),
+          leave_types:leave_type_id (id, name, color)
+        `);
+        
+      // Apply filter if a specific leave type is selected
+      if (typeId) {
+        query = query.eq('leave_type_id', typeId);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      const formatted = (data || []).map(leave => {
+        const start = new Date(leave.start_date);
+        const end = new Date(leave.end_date);
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+        return {
+          id: leave.id,
+          title: leave.leave_types?.name || 'Leave',
+          start,
+          end,
+          type: leave.leave_types?.name || 'Unknown',
+          employee: leave.employees?.full_name || 'Unknown Employee',
+          status: leave.status,
+          color: leave.leave_types?.color || '#999'
+        };
+      }).filter(Boolean) as LeaveEvent[];
+      
+      setLeaveEvents(formatted);
+      
+      toast({
+        title: typeId ? 'Filter Applied' : 'Filter Cleared',
+        description: typeId 
+          ? `Showing leaves of type: ${leaveTypes.find(t => t.id === typeId)?.name}`
+          : 'Showing all leave types',
+      });
+      
+    } catch (err) {
+      console.error('Error filtering leave data:', err);
+      toast({ 
+        title: 'Filter Error', 
+        description: 'Failed to apply leave type filter', 
+        variant: 'destructive' 
+      });
+    } finally {
+      setIsFilterLoading(false);
     }
   };
 
@@ -416,9 +510,38 @@ export const LeaveCalendarView = () => {
             <Plus className="mr-2 h-4 w-4" /> Add Leave
           </Button>
           
-          <Button variant="outline" size="sm" onClick={() => loadCalendarData()}>
-            <Filter className="mr-2 h-4 w-4" /> Filter
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm"
+                disabled={isFilterLoading}
+                className={selectedLeaveType ? "border-blue-400 text-blue-600" : ""}
+              >
+                <Filter className="mr-2 h-4 w-4" /> 
+                {isFilterLoading ? "Loading..." : selectedLeaveType 
+                  ? `Type: ${leaveTypes.find(t => t.id === selectedLeaveType)?.name}` 
+                  : "Filter Types"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Filter by Leave Type</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => filterByLeaveType(null)}>
+                All Types
+                {!selectedLeaveType && <Check className="ml-2 h-4 w-4" />}
+              </DropdownMenuItem>
+              {leaveTypes.map((type) => (
+                <DropdownMenuItem key={type.id} onClick={() => filterByLeaveType(type.id)}>
+                  <span className="flex items-center">
+                    <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: type.color }} />
+                    {type.name}
+                  </span>
+                  {selectedLeaveType === type.id && <Check className="ml-2 h-4 w-4" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <div className="flex items-center space-x-2">
           {pendingRequests.length > 0 && (

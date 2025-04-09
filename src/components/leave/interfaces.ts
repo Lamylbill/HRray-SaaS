@@ -29,5 +29,24 @@ export interface LeaveHistory {
   days: number;
 }
 
+export interface LeaveRequest {
+  id: string;
+  employee: {
+    id: string;
+    full_name: string;
+  };
+  leave_type: {
+    id: string;
+    name: string;
+    color: string;
+  };
+  start_date: string;
+  end_date: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  half_day: boolean;
+  half_day_type: 'AM' | 'PM' | null;
+  created_at: string;
+}
+
 // Define the CSSProperties type for consistent styling
 export type EventStyleProps = React.CSSProperties;

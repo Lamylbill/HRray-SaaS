@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import {
@@ -40,31 +39,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-
-interface LeaveRequest {
-  id: string;
-  employee: {
-    id: string;
-    full_name: string;
-  };
-  leave_type: {
-    id: string;
-    name: string;
-    color: string;
-  };
-  start_date: string;
-  end_date: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  half_day: boolean;
-  half_day_type: 'AM' | 'PM' | null;
-  created_at: string;
-}
-
-interface LeaveType {
-  id: string;
-  name: string;
-  color: string;
-}
+import { LeaveRequest } from './interfaces';
 
 export const LeaveRecordsView = () => {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
@@ -79,13 +54,11 @@ export const LeaveRecordsView = () => {
   const [leaveTypeFilter, setLeaveTypeFilter] = useState<string | null>(null);
   const { toast } = useToast();
   
-  // Fetch leave requests on component mount
   useEffect(() => {
     fetchLeaveRequests();
     fetchLeaveTypes();
   }, []);
   
-  // Apply filters when search term, status filter, or leave type filter changes
   useEffect(() => {
     applyFilters();
   }, [searchTerm, statusFilter, leaveRequests, leaveTypeFilter]);
@@ -131,9 +104,9 @@ export const LeaveRecordsView = () => {
         end_date: item.end_date,
         status: item.status as 'Pending' | 'Approved' | 'Rejected',
         half_day: item.half_day || false,
-        half_day_type: item.half_day_type,
+        half_day_type: (item.half_day_type === 'AM' || item.half_day_type === 'PM') ? item.half_day_type : null,
         created_at: item.created_at
-      })) || [];
+      })) as LeaveRequest[];
       
       setLeaveRequests(formattedData);
       setFilteredRequests(formattedData);
@@ -153,7 +126,6 @@ export const LeaveRecordsView = () => {
   const applyFilters = () => {
     let filtered = [...leaveRequests];
     
-    // Apply search term filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(request => 
@@ -162,12 +134,10 @@ export const LeaveRecordsView = () => {
       );
     }
     
-    // Apply status filter
     if (statusFilter) {
       filtered = filtered.filter(request => request.status === statusFilter);
     }
     
-    // Apply leave type filter
     if (leaveTypeFilter) {
       filtered = filtered.filter(request => request.leave_type.id === leaveTypeFilter);
     }
@@ -222,13 +192,11 @@ export const LeaveRecordsView = () => {
           description: `Successfully ${status.toLowerCase()} ${selectedRequests.length} request(s).`,
         });
         
-        // Refresh the data
         fetchLeaveRequests();
       } else if (bulkAction === 'export') {
         exportSelectedRequests();
       }
       
-      // Reset selection and bulk action
       setSelectedRequests([]);
       setBulkAction(null);
     } catch (err: any) {
@@ -246,7 +214,6 @@ export const LeaveRecordsView = () => {
       selectedRequests.includes(request.id)
     );
     
-    // Transform data for export
     const dataToExport = selectedData.map(request => ({
       'Employee': request.employee.full_name,
       'Leave Type': request.leave_type.name,
@@ -257,14 +224,11 @@ export const LeaveRecordsView = () => {
       'Created On': new Date(request.created_at).toLocaleDateString()
     }));
     
-    // Create a new workbook
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(dataToExport);
     
-    // Add the worksheet to the workbook
     XLSX.utils.book_append_sheet(wb, ws, 'Leave Requests');
     
-    // Write the workbook and trigger a download
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/octet-stream' });
     saveAs(blob, `leave_requests_${new Date().toISOString().split('T')[0]}.xlsx`);
@@ -332,7 +296,6 @@ export const LeaveRecordsView = () => {
   
   return (
     <div className="space-y-4">
-      {/* Controls */}
       <div className="flex flex-col md:flex-row gap-3 justify-between">
         <div className="flex-1 flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
@@ -423,7 +386,6 @@ export const LeaveRecordsView = () => {
         </div>
       </div>
       
-      {/* Error message */}
       {error && (
         <div className="p-4 bg-red-100 text-red-700 rounded-md flex items-center">
           <AlertCircle className="h-5 w-5 mr-2" />
@@ -431,7 +393,6 @@ export const LeaveRecordsView = () => {
         </div>
       )}
       
-      {/* Table */}
       <div className="border rounded-md overflow-hidden">
         <Table>
           <TableHeader>

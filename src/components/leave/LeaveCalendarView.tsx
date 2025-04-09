@@ -1,7 +1,11 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { addMonths, format, differenceInDays, isWithinInterval, startOfWeek, addDays, subMonths } from 'date-fns';
-import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { 
+  addMonths, subMonths, format, differenceInDays, isWithinInterval, 
+  startOfWeek, addDays, startOfMonth, getMonth, getYear, endOfMonth,
+  isSameDay
+} from 'date-fns';
+import { Info, Plus } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -9,117 +13,146 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { LeaveEvent, PublicHoliday, EventStyleProps } from './interfaces';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AddLeaveForm } from './AddLeaveForm';
 
 const safeFormat = (date: Date | null | undefined, fmt: string): string =>
   date instanceof Date && !isNaN(date.getTime()) ? format(date, fmt) : '';
 
 export const LeaveCalendarView = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
   const [visibleMonths, setVisibleMonths] = useState<Date[]>([]);
   const [leaveEvents, setLeaveEvents] = useState<LeaveEvent[]>([]);
   const [publicHolidays, setPublicHolidays] = useState<PublicHoliday[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<LeaveEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [addLeaveDialogOpen, setAddLeaveDialogOpen] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const { toast } = useToast();
+  
   const calendarContainerRef = useRef<HTMLDivElement>(null);
   const weekdayHeaderRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
-
-  // Generate range of months to display
-  const generateVisibleMonths = (centerDate: Date, count: number = 5) => {
-    const months: Date[] = [];
-    const halfCount = Math.floor(count / 2);
-    
-    for (let i = -halfCount; i <= halfCount; i++) {
-      months.push(i === 0 ? centerDate : addMonths(centerDate, i));
-    }
-    
-    return months;
-  };
-
+  const isInitialLoad = useRef(true);
+  
   // Initialize visible months on component mount
   useEffect(() => {
-    setVisibleMonths(generateVisibleMonths(currentDate));
+    const today = new Date();
+    const months: Date[] = [];
+    
+    // Generate 5 months centered on the current month
+    for (let i = -12; i <= 12; i++) {
+      months.push(addMonths(today, i));
+    }
+    
+    setVisibleMonths(months);
+    isInitialLoad.current = false;
   }, []);
 
-  const navigateToday = () => {
-    const today = new Date();
-    setCurrentDate(today);
-    setVisibleMonths(generateVisibleMonths(today));
-    
-    // Scroll to today's month (middle of the view)
-    if (calendarContainerRef.current) {
-      const monthElements = calendarContainerRef.current.querySelectorAll('.month-container');
-      if (monthElements.length > 0) {
-        const middleIndex = Math.floor(monthElements.length / 2);
-        monthElements[middleIndex].scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-  };
-
-  const navigatePrevious = () => {
-    const prevMonth = subMonths(currentDate, 1);
-    setCurrentDate(prevMonth);
-    setVisibleMonths(generateVisibleMonths(prevMonth));
-  };
-
-  const navigateNext = () => {
-    const nextMonth = addMonths(currentDate, 1);
-    setCurrentDate(nextMonth);
-    setVisibleMonths(generateVisibleMonths(nextMonth));
-  };
-
-  // Handle infinite scroll loading
-  const handleScroll = () => {
-    if (!calendarContainerRef.current) return;
-    
-    const { scrollTop, scrollHeight, clientHeight } = calendarContainerRef.current;
-    const scrollThreshold = 300; // px from top/bottom to trigger loading more months
-    
-    // Load more months when scrolling near the top
-    if (scrollTop < scrollThreshold) {
-      // Add months to the top (earlier months)
-      const earliestMonth = visibleMonths[0];
-      const newMonths = [subMonths(earliestMonth, 2), subMonths(earliestMonth, 1), ...visibleMonths];
-      setVisibleMonths(newMonths);
-      
-      // Maintain scroll position after adding content
-      if (calendarContainerRef.current) {
-        calendarContainerRef.current.scrollTop = scrollTop + 400; // Approximate height of added content
-      }
-    }
-    
-    // Load more months when scrolling near the bottom
-    if (scrollHeight - scrollTop - clientHeight < scrollThreshold) {
-      // Add months to the bottom (later months)
-      const latestMonth = visibleMonths[visibleMonths.length - 1];
-      const newMonths = [...visibleMonths, addMonths(latestMonth, 1), addMonths(latestMonth, 2)];
-      setVisibleMonths(newMonths);
-    }
-  };
-
-  // Set up scrolling event handler
+  // Scroll to current month when component mounts
   useEffect(() => {
-    const container = calendarContainerRef.current;
-    if (container) {
-      container.addEventListener('scroll', handleScroll);
-      return () => container.removeEventListener('scroll', handleScroll);
+    if (isInitialLoad.current && calendarContainerRef.current && visibleMonths.length) {
+      setTimeout(() => {
+        const currentMonthElement = document.getElementById(`month-${getYear(new Date())}-${getMonth(new Date())}`);
+        if (currentMonthElement) {
+          currentMonthElement.scrollIntoView({ block: 'start', behavior: 'auto' });
+        }
+      }, 100);
     }
   }, [visibleMonths]);
-
+  
+  // Load calendar data when the component mounts
   useEffect(() => {
     loadCalendarData();
     fetchPublicHolidays();
-  }, [currentDate]);
+  }, []);
 
+  // Update pending requests when leave events change
   useEffect(() => {
     setPendingRequests(leaveEvents.filter(e => e.status === 'Pending'));
   }, [leaveEvents]);
+  
+  // Setup infinite scroll with Intersection Observer
+  const setupInfiniteScroll = useCallback(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+    
+    const options = {
+      root: calendarContainerRef.current,
+      rootMargin: '500px 0px',
+      threshold: 0.1
+    };
+    
+    observerRef.current = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const monthId = entry.target.id;
+          const [_, yearStr, monthStr] = monthId.split('-');
+          const year = parseInt(yearStr, 10);
+          const month = parseInt(monthStr, 10);
+          const monthDate = new Date(year, month);
+          
+          // Load more months if we're near the edges of our date range
+          if (month === getMonth(visibleMonths[0]) && year === getYear(visibleMonths[0])) {
+            loadMoreMonths('before');
+          } else if (month === getMonth(visibleMonths[visibleMonths.length - 1]) && 
+                    year === getYear(visibleMonths[visibleMonths.length - 1])) {
+            loadMoreMonths('after');
+          }
+        }
+      });
+    }, options);
+    
+    // Observe all month containers
+    document.querySelectorAll('.month-container').forEach(monthElement => {
+      observerRef.current?.observe(monthElement);
+    });
+  }, [visibleMonths]);
+  
+  // Setup intersection observers when visible months change
+  useEffect(() => {
+    if (visibleMonths.length > 0) {
+      setupInfiniteScroll();
+    }
+    
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [visibleMonths, setupInfiniteScroll]);
+  
+  // Load more months in the specified direction
+  const loadMoreMonths = (direction: 'before' | 'after') => {
+    if (loadingMore) return;
+    
+    setLoadingMore(true);
+    
+    setVisibleMonths(prevMonths => {
+      if (direction === 'before') {
+        const firstMonth = prevMonths[0];
+        const newMonths = [];
+        for (let i = 1; i <= 6; i++) {
+          newMonths.push(subMonths(firstMonth, i));
+        }
+        return [...newMonths.reverse(), ...prevMonths];
+      } else {
+        const lastMonth = prevMonths[prevMonths.length - 1];
+        const newMonths = [];
+        for (let i = 1; i <= 6; i++) {
+          newMonths.push(addMonths(lastMonth, i));
+        }
+        return [...prevMonths, ...newMonths];
+      }
+    });
+    
+    setTimeout(() => setLoadingMore(false), 300);
+  };
 
   const fetchPublicHolidays = async () => {
     try {
-      const year = currentDate.getFullYear();
+      const year = new Date().getFullYear();
       const { data: existingHolidays, error } = await supabase
         .from('public_holidays')
         .select('*')
@@ -236,15 +269,20 @@ export const LeaveCalendarView = () => {
     });
   };
 
-  const getHolidayForDate = (date: Date) => publicHolidays.find(h => format(h.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'));
+  const getHolidayForDate = (date: Date) => publicHolidays.find(h => 
+    isSameDay(new Date(h.date), date)
+  );
 
   const renderCalendarDayCell = (date: Date) => {
     if (!date || isNaN(date.getTime())) return <div className="p-2 text-xs text-gray-400">Invalid date</div>;
     const holiday = getHolidayForDate(date);
+    const isToday = isSameDay(date, new Date());
 
     return (
-      <div className="relative h-32 overflow-y-auto">
-        <div className="absolute top-1 right-1 text-sm">{safeFormat(date, 'd')}</div>
+      <div className={`relative h-32 overflow-y-auto ${isToday ? 'bg-blue-50/30' : ''}`}>
+        <div className={`absolute top-1 right-1 text-sm ${isToday ? 'font-bold text-blue-600' : ''}`}>
+          {safeFormat(date, 'd')}
+        </div>
         {holiday && <div className="mt-5 mb-1 text-xs font-medium text-red-700 bg-red-100 rounded px-1 py-0.5 text-center">{holiday.name}</div>}
         <div className="mt-6 space-y-1 overflow-y-auto max-h-24">{renderLeaveEvents(date)}</div>
       </div>
@@ -268,13 +306,13 @@ export const LeaveCalendarView = () => {
   };
 
   const renderMonth = (month: Date, index: number) => {
-    const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
-    const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    const monthStart = startOfMonth(month);
+    const monthEnd = endOfMonth(month);
     
     // Get start of first week and end of last week
-    const startDate = startOfWeek(firstDay);
-    const endDate = new Date(lastDay);
-    endDate.setDate(endDate.getDate() + (6 - endDate.getDay()));
+    const startDate = startOfWeek(monthStart);
+    const endDate = startOfWeek(monthEnd);
+    endDate.setDate(endDate.getDate() + 6);
     
     // Create days array
     const days: Date[] = [];
@@ -291,8 +329,10 @@ export const LeaveCalendarView = () => {
       weeks.push(days.slice(i, i + 7));
     }
 
+    const idStr = `month-${month.getFullYear()}-${month.getMonth()}`;
+    
     return (
-      <div key={`${month.getFullYear()}-${month.getMonth()}`} className="month-container mb-8" id={`month-${month.getFullYear()}-${month.getMonth()}`}>
+      <div key={idStr} className="month-container mb-8" id={idStr}>
         <h3 className="text-lg font-semibold mb-4 px-2">{format(month, 'MMMM yyyy')}</h3>
         <div className="grid grid-cols-7 gap-1">
           {weeks.map((week, weekIndex) => (
@@ -314,27 +354,32 @@ export const LeaveCalendarView = () => {
     );
   };
 
-  const CalendarHeader = () => (
-    <div className="mb-4 flex items-center justify-between">
-      <div className="flex items-center space-x-2">
-        <Button variant="outline" size="sm" onClick={navigateToday}>Today</Button>
-        <Button variant="outline" size="icon" onClick={navigatePrevious}><ChevronLeft className="h-4 w-4" /></Button>
-        <Button variant="outline" size="icon" onClick={navigateNext}><ChevronRight className="h-4 w-4" /></Button>
-        <h3 className="text-lg font-semibold">{format(currentDate, 'MMMM yyyy')}</h3>
-      </div>
-      <div className="flex items-center space-x-2">
-        {pendingRequests.length > 0 && (
-          <Button variant="outline" size="sm" className="bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100" onClick={() => setSidebarOpen(true)}>
-            {pendingRequests.length} Pending
-          </Button>
-        )}
-      </div>
-    </div>
-  );
+  const handleLeaveAdded = () => {
+    loadCalendarData();
+    setAddLeaveDialogOpen(false);
+    toast({
+      title: "Leave Added",
+      description: "Leave request has been successfully created",
+      duration: 3000,
+    });
+  };
 
   return (
     <>
-      <CalendarHeader />
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <Button variant="primary" size="sm" onClick={() => setAddLeaveDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" /> Add Leave
+          </Button>
+        </div>
+        <div className="flex items-center space-x-2">
+          {pendingRequests.length > 0 && (
+            <Button variant="outline" size="sm" className="bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100" onClick={() => setSidebarOpen(true)}>
+              {pendingRequests.length} Pending
+            </Button>
+          )}
+        </div>
+      </div>
       <div 
         className="w-full flex-1 flex flex-col" 
         style={{ height: 'calc(100vh - 280px)', minHeight: '700px' }}
@@ -396,6 +441,15 @@ export const LeaveCalendarView = () => {
           </div>
         </SheetContent>
       </Sheet>
+
+      <Dialog open={addLeaveDialogOpen} onOpenChange={setAddLeaveDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Leave Request</DialogTitle>
+          </DialogHeader>
+          <AddLeaveForm onSuccess={handleLeaveAdded} onCancel={() => setAddLeaveDialogOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

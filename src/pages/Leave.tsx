@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, ListFilter, Plus, RefreshCw, Upload } from 'lucide-react';
+import { ListFilter, RefreshCw, Upload } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
 import { AnimatedSection } from '@/components/ui-custom/AnimatedSection';
 import { useAuth } from '@/context/AuthContext';
@@ -16,7 +16,6 @@ const Leave = () => {
   const { toast } = useToast();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('calendar');
-  const [showFilterDrawer, setShowFilterDrawer] = useState(false);
   
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate('/login');
@@ -26,7 +25,6 @@ const Leave = () => {
     setIsRefreshing(true);
     try {
       // Fetch updated leave data from Supabase
-      // This would be a real data fetch in a production implementation
       await Promise.all([
         supabase
           .from('leave_requests')
@@ -65,25 +63,6 @@ const Leave = () => {
       duration: 3000,
     });
   };
-  
-  const handleFilter = () => {
-    setShowFilterDrawer(true);
-    // Implementation for filter functionality would go here
-    toast({
-      title: "Filters",
-      description: "Filter functionality will be implemented soon",
-      duration: 3000,
-    });
-  };
-
-  const handleAddLeave = () => {
-    // Implementation for adding leave would go here
-    toast({
-      title: "Add Leave",
-      description: "Leave creation dialog will be implemented soon",
-      duration: 3000,
-    });
-  };
 
   return (
     <div className="min-h-screen pt-20 pb-12 bg-gray-50">
@@ -109,23 +88,9 @@ const Leave = () => {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={handleFilter}
-              >
-                <ListFilter className="mr-2 h-4 w-4" /> Filter
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
                 onClick={handleExport}
               >
                 <Upload className="mr-2 h-4 w-4" /> Export
-              </Button>
-              <Button 
-                variant="primary" 
-                size="sm"
-                onClick={handleAddLeave}
-              >
-                <Plus className="mr-2 h-4 w-4" /> Add Leave
               </Button>
             </div>
           </div>
@@ -139,7 +104,7 @@ const Leave = () => {
                 onClick={() => setActiveTab('calendar')}
                 className="flex items-center"
               >
-                <Calendar className="mr-2 h-4 w-4" />
+                <ListFilter className="mr-2 h-4 w-4" />
                 Calendar View
               </Button>
               <Button

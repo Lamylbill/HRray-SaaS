@@ -1,139 +1,145 @@
+
 import React, { useState, useEffect } from 'react';
-import { PlusCircle, Edit, Trash2, Eye, MoreHorizontal, FileText, AlertCircle, Download, History, Calendar, ChevronDown } from 'lucide-react';
-import { PremiumCard, CardContent } from '@/components/ui-custom/Card';
+import { format } from 'date-fns';
+import {
+  Calendar,
+  Download,
+  Filter,
+  AlertCircle,
+  Check,
+  X,
+  Eye,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  FileSpreadsheet
+} from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
-import { LeaveHistory } from './interfaces';
+import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
-interface Employee {
+interface LeaveRequest {
   id: string;
-  full_name: string;
-  email: string;
+  employee: {
+    id: string;
+    full_name: string;
+  };
+  leave_type: {
+    id: string;
+    name: string;
+    color: string;
+  };
+  start_date: string;
+  end_date: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  half_day: boolean;
+  half_day_type: 'AM' | 'PM' | null;
+  created_at: string;
 }
 
-interface LeaveQuota {
+interface LeaveType {
   id: string;
-  leave_type_id: string;
-  leave_type_name?: string;
-  quota_days: number;
-  taken_days: number;
-  adjustment_days: number;
-  reset_date: Date;
-  color?: string;
+  name: string;
+  color: string;
 }
 
 export const LeaveRecordsView = () => {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [leaveQuotas, setLeaveQuotas] = useState<{ [employeeId: string]: LeaveQuota[] }>({});
-  const [leaveHistory, setLeaveHistory] = useState<{ [employeeId: string]: LeaveHistory[] }>({});
-  const [leaveTypes, setLeaveTypes] = useState<{ [id: string]: { name: string, color: string } }>({});
-  const [expandedEmployee, setExpandedEmployee] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [filteredRequests, setFilteredRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
-  const [isEditing, setIsEditing] = useState<{ employeeId: string, leaveTypeId: string, field: string } | null>(null);
-  const [showHistory, setShowHistory] = useState<{ [employeeId: string]: boolean }>({});
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
+  const [bulkAction, setBulkAction] = useState<string | null>(null);
+  const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
+  const [leaveTypeFilter, setLeaveTypeFilter] = useState<string | null>(null);
   const { toast } = useToast();
-
+  
+  // Fetch leave requests on component mount
   useEffect(() => {
-    loadEmployeesAndQuotas();
+    fetchLeaveRequests();
+    fetchLeaveTypes();
   }, []);
+  
+  // Apply filters when search term, status filter, or leave type filter changes
+  useEffect(() => {
+    applyFilters();
+  }, [searchTerm, statusFilter, leaveRequests, leaveTypeFilter]);
 
-  const loadEmployeesAndQuotas = async () => {
+  const fetchLeaveTypes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('leave_types')
+        .select('id, name, color')
+        .order('name');
+        
+      if (error) throw error;
+      setLeaveTypes(data || []);
+    } catch (err: any) {
+      console.error('Error fetching leave types:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to load leave types',
+        variant: 'destructive',
+      });
+    }
+  };
+  
+  const fetchLeaveRequests = async () => {
     setIsLoading(true);
     try {
-      const { data: employeesData, error: employeesError } = await supabase
-        .from('employees')
-        .select('id, full_name, email')
-        .order('full_name');
+      const { data, error } = await supabase
+        .from('leave_requests')
+        .select(`
+          id, start_date, end_date, status, half_day, half_day_type, created_at,
+          employees:employee_id (id, full_name),
+          leave_types:leave_type_id (id, name, color)
+        `)
+        .order('start_date', { ascending: false });
       
-      if (employeesError) throw employeesError;
+      if (error) throw error;
       
-      const { data: leaveTypesData, error: leaveTypesError } = await supabase
-        .from('leave_types')
-        .select('id, name, color');
-        
-      if (leaveTypesError) throw leaveTypesError;
+      const formattedData = data?.map(item => ({
+        id: item.id,
+        employee: item.employees || { id: '', full_name: 'Unknown' },
+        leave_type: item.leave_types || { id: '', name: 'Unknown', color: '#999' },
+        start_date: item.start_date,
+        end_date: item.end_date,
+        status: item.status as 'Pending' | 'Approved' | 'Rejected',
+        half_day: item.half_day || false,
+        half_day_type: item.half_day_type,
+        created_at: item.created_at
+      })) || [];
       
-      const leaveTypesMap = leaveTypesData.reduce((acc, type) => {
-        acc[type.id] = { name: type.name, color: type.color };
-        return acc;
-      }, {});
-      
-      setLeaveTypes(leaveTypesMap);
-      
-      const { data: quotasData, error: quotasError } = await supabase
-        .from('leave_quotas')
-        .select('*');
-        
-      if (quotasError) throw quotasError;
-      
-      const quotasByEmployee = {};
-      
-      const initialShowHistory = {};
-      
-      for (const employee of employeesData) {
-        quotasByEmployee[employee.id] = [];
-        initialShowHistory[employee.id] = false;
-        
-        for (const leaveType of leaveTypesData) {
-          const existingQuota = quotasData.find(q => 
-            q.employee_id === employee.id && q.leave_type_id === leaveType.id
-          );
-          
-          if (existingQuota) {
-            quotasByEmployee[employee.id].push({
-              ...existingQuota,
-              leave_type_name: leaveType.name,
-              color: leaveType.color,
-              reset_date: new Date(existingQuota.reset_date)
-            });
-          } else {
-            const defaultQuota = {
-              id: `temp-${employee.id}-${leaveType.id}`,
-              employee_id: employee.id,
-              leave_type_id: leaveType.id,
-              leave_type_name: leaveType.name,
-              quota_days: leaveType.name === 'Annual Leave' ? 14 : 
-                         leaveType.name === 'Sick Leave' ? 14 : 
-                         leaveType.name === 'Childcare Leave' ? 6 : 0,
-              taken_days: 0,
-              adjustment_days: 0,
-              reset_date: new Date(new Date().getFullYear(), 0, 1),
-              color: leaveType.color
-            };
-            
-            quotasByEmployee[employee.id].push(defaultQuota);
-            
-            await supabase
-              .from('leave_quotas')
-              .insert({
-                employee_id: employee.id,
-                leave_type_id: leaveType.id,
-                quota_days: defaultQuota.quota_days,
-                taken_days: 0,
-                adjustment_days: 0,
-                reset_date: defaultQuota.reset_date.toISOString().split('T')[0]
-              });
-          }
-        }
-      }
-      
-      setEmployees(employeesData);
-      setLeaveQuotas(quotasByEmployee);
-      setShowHistory(initialShowHistory);
-      
-    } catch (error) {
-      console.error('Error loading employees and leave quotas:', error);
+      setLeaveRequests(formattedData);
+      setFilteredRequests(formattedData);
+    } catch (err: any) {
+      console.error('Error fetching leave requests:', err);
+      setError(err.message);
       toast({
         title: 'Error',
         description: 'Failed to load leave records',
@@ -143,607 +149,389 @@ export const LeaveRecordsView = () => {
       setIsLoading(false);
     }
   };
-
-  const loadLeaveHistory = async (employeeId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('leave_requests')
-        .select(`
-          id,
-          start_date,
-          end_date,
-          status,
-          half_day,
-          half_day_type,
-          leave_types(id, name, color)
-        `)
-        .eq('employee_id', employeeId)
-        .order('start_date', { ascending: false });
-      
-      if (error) throw error;
-      
-      if (data) {
-        const formattedHistory: LeaveHistory[] = data.map(item => {
-          const start = new Date(item.start_date);
-          const end = new Date(item.end_date);
-          const days = item.half_day ? 0.5 : ((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
-          
-          return {
-            id: item.id,
-            start_date: start,
-            end_date: end,
-            status: (item.status as 'Pending' | 'Approved' | 'Rejected'),
-            leave_type: {
-              name: item.leave_types?.name || 'Unknown',
-              color: item.leave_types?.color || '#999'
-            },
-            days
-          };
-        });
-        
-        setLeaveHistory(prev => ({
-          ...prev,
-          [employeeId]: formattedHistory
-        }));
-      }
-    } catch (error) {
-      console.error('Error loading leave history:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load leave history',
-        variant: 'destructive',
-      });
+  
+  const applyFilters = () => {
+    let filtered = [...leaveRequests];
+    
+    // Apply search term filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(request => 
+        request.employee.full_name.toLowerCase().includes(term) ||
+        request.leave_type.name.toLowerCase().includes(term)
+      );
     }
+    
+    // Apply status filter
+    if (statusFilter) {
+      filtered = filtered.filter(request => request.status === statusFilter);
+    }
+    
+    // Apply leave type filter
+    if (leaveTypeFilter) {
+      filtered = filtered.filter(request => request.leave_type.id === leaveTypeFilter);
+    }
+    
+    setFilteredRequests(filtered);
+  };
+  
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+  
+  const handleStatusFilterChange = (status: string | null) => {
+    setStatusFilter(status === 'all' ? null : status);
   };
 
-  const handleToggleHistory = (employeeId: string) => {
-    const newValue = !showHistory[employeeId];
-    
-    setShowHistory(prev => ({
-      ...prev,
-      [employeeId]: newValue
-    }));
-    
-    if (newValue && (!leaveHistory[employeeId] || leaveHistory[employeeId].length === 0)) {
-      loadLeaveHistory(employeeId);
-    }
+  const handleLeaveTypeFilterChange = (typeId: string) => {
+    setLeaveTypeFilter(typeId === 'all' ? null : typeId);
   };
-
-  const handleSelectEmployee = (employeeId: string) => {
-    setSelectedEmployees(prev => 
-      prev.includes(employeeId) 
-        ? prev.filter(id => id !== employeeId)
-        : [...prev, employeeId]
+  
+  const toggleSelectRequest = (id: string) => {
+    setSelectedRequests(prev => 
+      prev.includes(id) ? 
+      prev.filter(requestId => requestId !== id) : 
+      [...prev, id]
     );
   };
-
-  const handleSelectAll = () => {
-    if (selectedEmployees.length === filteredEmployees.length) {
-      setSelectedEmployees([]);
+  
+  const toggleSelectAll = () => {
+    if (selectedRequests.length === filteredRequests.length) {
+      setSelectedRequests([]);
     } else {
-      setSelectedEmployees(filteredEmployees.map(employee => employee.id));
+      setSelectedRequests(filteredRequests.map(req => req.id));
     }
   };
-
-  const handleSaveEdit = async (employeeId: string, leaveTypeId: string, field: string, value: number) => {
-    try {
-      const quotas = [...leaveQuotas[employeeId]];
-      const quotaIndex = quotas.findIndex(q => q.leave_type_id === leaveTypeId);
-      
-      if (quotaIndex === -1) {
-        throw new Error('Leave quota not found');
-      }
-      
-      const updatedQuota = { ...quotas[quotaIndex] };
-      if (field === 'quota_days') {
-        updatedQuota.quota_days = value;
-      } else if (field === 'adjustment_days') {
-        updatedQuota.adjustment_days = value;
-      }
-      
-      const { error } = await supabase
-        .from('leave_quotas')
-        .update({ [field]: value })
-        .eq('employee_id', employeeId)
-        .eq('leave_type_id', leaveTypeId);
-      
-      if (error) {
-        throw error;
-      }
-      
-      quotas[quotaIndex] = updatedQuota;
-      setLeaveQuotas(prev => ({
-        ...prev,
-        [employeeId]: quotas
-      }));
-      
-      setIsEditing(null);
-      
-      toast({
-        title: 'Updated',
-        description: 'Leave quota has been updated',
-        duration: 3000,
-      });
-    } catch (error) {
-      console.error('Error updating leave quota:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update leave quota',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleDelete = async (employeeIds: string[]) => {
-    try {
-      toast({
-        title: 'Not Implemented',
-        description: 'Deletion functionality will be added soon',
-        duration: 3000,
-      });
-    } catch (error) {
-      console.error('Error deleting:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete selected records',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    }).format(date);
-  };
-
-  const getRemainingDays = (quota: LeaveQuota) => {
-    return quota.quota_days - quota.taken_days + quota.adjustment_days;
-  };
-
-  const getAnnualLeave = (employeeId: string) => {
-    if (!leaveQuotas[employeeId]) return null;
+  
+  const handleBulkAction = async () => {
+    if (!bulkAction || selectedRequests.length === 0) return;
     
-    return leaveQuotas[employeeId].find(quota => {
-      const leaveType = leaveTypes[quota.leave_type_id];
-      return leaveType && leaveType.name === 'Annual Leave';
+    try {
+      if (bulkAction === 'approve' || bulkAction === 'reject') {
+        const status = bulkAction === 'approve' ? 'Approved' : 'Rejected';
+        
+        const { error } = await supabase
+          .from('leave_requests')
+          .update({ status })
+          .in('id', selectedRequests);
+        
+        if (error) throw error;
+        
+        toast({
+          title: `Requests ${status}`,
+          description: `Successfully ${status.toLowerCase()} ${selectedRequests.length} request(s).`,
+        });
+        
+        // Refresh the data
+        fetchLeaveRequests();
+      } else if (bulkAction === 'export') {
+        exportSelectedRequests();
+      }
+      
+      // Reset selection and bulk action
+      setSelectedRequests([]);
+      setBulkAction(null);
+    } catch (err: any) {
+      console.error(`Error performing bulk action ${bulkAction}:`, err);
+      toast({
+        title: 'Error',
+        description: `Failed to ${bulkAction} requests. ${err.message}`,
+        variant: 'destructive',
+      });
+    }
+  };
+  
+  const exportSelectedRequests = () => {
+    const selectedData = leaveRequests.filter(request => 
+      selectedRequests.includes(request.id)
+    );
+    
+    // Transform data for export
+    const dataToExport = selectedData.map(request => ({
+      'Employee': request.employee.full_name,
+      'Leave Type': request.leave_type.name,
+      'Start Date': request.start_date,
+      'End Date': request.end_date,
+      'Status': request.status,
+      'Half Day': request.half_day ? (request.half_day_type || 'Yes') : 'No',
+      'Created On': new Date(request.created_at).toLocaleDateString()
+    }));
+    
+    // Create a new workbook
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    
+    // Add the worksheet to the workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Leave Requests');
+    
+    // Write the workbook and trigger a download
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/octet-stream' });
+    saveAs(blob, `leave_requests_${new Date().toISOString().split('T')[0]}.xlsx`);
+    
+    toast({
+      title: 'Export Complete',
+      description: `Successfully exported ${selectedData.length} leave request(s).`,
     });
   };
-
-  const getLeaveStatusBadge = (status: string) => {
-    switch (status) {
+  
+  const exportAllRequests = () => {
+    const dataToExport = leaveRequests.map(request => ({
+      'Employee': request.employee.full_name,
+      'Leave Type': request.leave_type.name,
+      'Start Date': request.start_date,
+      'End Date': request.end_date,
+      'Status': request.status,
+      'Half Day': request.half_day ? (request.half_day_type || 'Yes') : 'No',
+      'Created On': new Date(request.created_at).toLocaleDateString()
+    }));
+    
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'All Leave Requests');
+    
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/octet-stream' });
+    saveAs(blob, `all_leave_requests_${new Date().toISOString().split('T')[0]}.xlsx`);
+    
+    toast({
+      title: 'Export Complete',
+      description: `Successfully exported all ${leaveRequests.length} leave request(s).`,
+    });
+  };
+  
+  const clearSelection = () => {
+    setSelectedRequests([]);
+  };
+  
+  const getStatusBadge = (status: string) => {
+    switch(status) {
       case 'Approved':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Approved</Badge>;
+        return <Badge variant="success" className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Approved</Badge>;
       case 'Rejected':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-200">Rejected</Badge>;
+        return <Badge variant="destructive" className="flex items-center gap-1"><XCircle className="h-3 w-3" /> Rejected</Badge>;
       case 'Pending':
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">Pending</Badge>;
+        return <Badge variant="outline" className="flex items-center gap-1 bg-amber-50 text-amber-700 border-amber-200"><Clock className="h-3 w-3" /> Pending</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
-  const filteredEmployees = employees.filter(employee => 
-    employee.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
+  const computeLeaveDuration = (request: LeaveRequest) => {
+    const start = new Date(request.start_date);
+    const end = new Date(request.end_date);
+    const diffInDays = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    
+    if (diffInDays === 1 && request.half_day) {
+      return `0.5 day (${request.half_day_type})`;
+    }
+    
+    return `${diffInDays} day${diffInDays !== 1 ? 's' : ''}`;
+  };
+  
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <div className="relative w-72">
-          <Input
-            type="text"
-            placeholder="Search employees..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+    <div className="space-y-4">
+      {/* Controls */}
+      <div className="flex flex-col md:flex-row gap-3 justify-between">
+        <div className="flex-1 flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1">
+            <Input
+              placeholder="Search by employee or leave type..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              className="pl-8"
+            />
+            <Calendar className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
           </div>
+          
+          <Select value={statusFilter || 'all'} onValueChange={handleStatusFilterChange}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="Pending">Pending</SelectItem>
+              <SelectItem value="Approved">Approved</SelectItem>
+              <SelectItem value="Rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <Filter className="h-4 w-4" /> 
+                {leaveTypeFilter ? 'Type: ' + leaveTypes.find(t => t.id === leaveTypeFilter)?.name : 'Filter Types'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Filter by Leave Type</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleLeaveTypeFilterChange('all')}>
+                All Types
+                {!leaveTypeFilter && <Check className="ml-2 h-4 w-4" />}
+              </DropdownMenuItem>
+              {leaveTypes.map((type) => (
+                <DropdownMenuItem key={type.id} onClick={() => handleLeaveTypeFilterChange(type.id)}>
+                  <span className="flex items-center">
+                    <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: type.color }} />
+                    {type.name}
+                  </span>
+                  {leaveTypeFilter === type.id && <Check className="ml-2 h-4 w-4" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-
-        {selectedEmployees.length > 0 && (
-          <div className="flex gap-2">
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => handleDelete(selectedEmployees)}
-            >
-              <Trash2 className="h-4 w-4 mr-1" /> Delete Selected
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSelectedEmployees([])}
-            >
-              Clear Selection
-            </Button>
-          </div>
-        )}
-      </div>
-
-      <PremiumCard>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center items-center h-96">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-            </div>
+        
+        <div className="flex gap-2">
+          {selectedRequests.length > 0 ? (
+            <>
+              <Select value={bulkAction || ''} onValueChange={setBulkAction}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Bulk Actions" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="approve">Approve Selected</SelectItem>
+                  <SelectItem value="reject">Reject Selected</SelectItem>
+                  <SelectItem value="export">Export Selected</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Button 
+                variant="outline" 
+                disabled={!bulkAction} 
+                onClick={handleBulkAction}
+              >
+                Apply
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={clearSelection}
+              >
+                <X className="mr-2 h-4 w-4" />
+                Clear ({selectedRequests.length})
+              </Button>
+            </>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox 
-                        checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0} 
-                        onCheckedChange={handleSelectAll}
-                      />
-                    </TableHead>
-                    <TableHead>Employee</TableHead>
-                    <TableHead className="text-right">Annual Leave Quota</TableHead>
-                    <TableHead className="text-right">Used</TableHead>
-                    <TableHead className="text-right">Remaining</TableHead>
-                    <TableHead className="text-right">Last Reset</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredEmployees.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                        No employees found
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredEmployees.map(employee => {
-                      const annualLeave = getAnnualLeave(employee.id);
-                      const isExpanded = expandedEmployee === employee.id;
-                      const isHistoryShown = showHistory[employee.id] || false;
-                      
-                      return (
-                        <React.Fragment key={employee.id}>
-                          <TableRow 
-                            data-state={selectedEmployees.includes(employee.id) ? 'selected' : undefined}
-                            className={`cursor-pointer ${isExpanded ? 'bg-gray-50' : ''}`}
-                            onClick={() => setExpandedEmployee(isExpanded ? null : employee.id)}
-                          >
-                            <TableCell onClick={(e) => { e.stopPropagation(); }}>
-                              <Checkbox 
-                                checked={selectedEmployees.includes(employee.id)}
-                                onCheckedChange={() => handleSelectEmployee(employee.id)}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center">
-                                <div className="h-9 w-9 rounded-full bg-hrflow-blue/10 flex items-center justify-center text-hrflow-blue font-medium mr-2">
-                                  {employee.full_name.split(' ').map(n => n[0]).join('')}
-                                </div>
-                                <div>
-                                  <div className="font-medium">{employee.full_name}</div>
-                                  <div className="text-xs text-gray-500">{employee.email}</div>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {annualLeave && (
-                                <div 
-                                  className="cursor-pointer hover:text-blue-500"
-                                  onClick={(e) => { 
-                                    e.stopPropagation(); 
-                                    setIsEditing({
-                                      employeeId: employee.id,
-                                      leaveTypeId: annualLeave.leave_type_id,
-                                      field: 'quota_days'
-                                    });
-                                  }}
-                                >
-                                  {isEditing && 
-                                   isEditing.employeeId === employee.id && 
-                                   isEditing.leaveTypeId === annualLeave.leave_type_id && 
-                                   isEditing.field === 'quota_days' ? (
-                                    <Input 
-                                      type="number"
-                                      className="w-20 h-7 text-right"
-                                      defaultValue={annualLeave.quota_days}
-                                      min={0}
-                                      autoFocus
-                                      onClick={e => e.stopPropagation()}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          handleSaveEdit(
-                                            employee.id, 
-                                            annualLeave.leave_type_id, 
-                                            'quota_days', 
-                                            parseInt((e.target as HTMLInputElement).value)
-                                          );
-                                        }
-                                        e.stopPropagation();
-                                      }}
-                                      onBlur={(e) => handleSaveEdit(
-                                        employee.id, 
-                                        annualLeave.leave_type_id, 
-                                        'quota_days', 
-                                        parseInt(e.target.value)
-                                      )}
-                                    />
-                                  ) : (
-                                    annualLeave.quota_days
-                                  )}
-                                </div>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {annualLeave?.taken_days || 0}
-                            </TableCell>
-                            <TableCell className={`text-right font-medium ${
-                              annualLeave ? (
-                                getRemainingDays(annualLeave) < 0 ? 'text-red-600' : 
-                                getRemainingDays(annualLeave) === 0 ? 'text-orange-600' : 
-                                'text-green-600'
-                              ) : ''
-                            }`}>
-                              {annualLeave ? getRemainingDays(annualLeave) : 0}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {annualLeave ? formatDate(annualLeave.reset_date) : '-'}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div onClick={(e) => e.stopPropagation()}>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => setExpandedEmployee(isExpanded ? null : employee.id)}>
-                                      <Eye className="h-4 w-4 mr-2" /> View All Leave Types
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleToggleHistory(employee.id)}>
-                                      <History className="h-4 w-4 mr-2" /> {isHistoryShown ? 'Hide' : 'View'} Leave History
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-red-600">
-                                      <Trash2 className="h-4 w-4 mr-2" /> Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                          
-                          {isExpanded && leaveQuotas[employee.id] && (
-                            <TableRow className="bg-gray-50">
-                              <TableCell colSpan={7} className="py-0">
-                                <div className="py-4 px-4">
-                                  <div className="flex justify-between items-center mb-2">
-                                    <h4 className="text-sm font-medium">Employee Details</h4>
-                                    <ToggleGroup 
-                                      type="single"
-                                      value={isHistoryShown ? 'history' : 'summary'}
-                                      onValueChange={(value) => {
-                                        if (value) {
-                                          handleToggleHistory(employee.id);
-                                        }
-                                      }}
-                                      className="border rounded-md"
-                                    >
-                                      <ToggleGroupItem value="summary" className="px-3 py-1 text-sm">
-                                        Summary View
-                                      </ToggleGroupItem>
-                                      <ToggleGroupItem value="history" className="px-3 py-1 text-sm">
-                                        Leave History
-                                      </ToggleGroupItem>
-                                    </ToggleGroup>
-                                  </div>
-                                  
-                                  {!isHistoryShown ? (
-                                    <Table>
-                                      <TableHeader>
-                                        <TableRow>
-                                          <TableHead>Leave Type</TableHead>
-                                          <TableHead className="text-right">Quota</TableHead>
-                                          <TableHead className="text-right">Taken</TableHead>
-                                          <TableHead className="text-right">Adjustments</TableHead>
-                                          <TableHead className="text-right">Remaining</TableHead>
-                                          <TableHead className="text-right">Reset Date</TableHead>
-                                        </TableRow>
-                                      </TableHeader>
-                                      <TableBody>
-                                        {leaveQuotas[employee.id].map((quota) => (
-                                          <TableRow key={quota.leave_type_id}>
-                                            <TableCell>
-                                              <Badge style={{backgroundColor: quota.color, color: 'white'}}>
-                                                {leaveTypes[quota.leave_type_id]?.name || 'Unknown Type'}
-                                              </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                              <div 
-                                                className="cursor-pointer hover:text-blue-500"
-                                                onClick={() => setIsEditing({
-                                                  employeeId: employee.id,
-                                                  leaveTypeId: quota.leave_type_id,
-                                                  field: 'quota_days'
-                                                })}
-                                              >
-                                                {isEditing && 
-                                                 isEditing.employeeId === employee.id && 
-                                                 isEditing.leaveTypeId === quota.leave_type_id && 
-                                                 isEditing.field === 'quota_days' ? (
-                                                  <Input 
-                                                    type="number"
-                                                    className="w-20 h-7 text-right"
-                                                    defaultValue={quota.quota_days}
-                                                    min={0}
-                                                    autoFocus
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit(
-                                                      employee.id, 
-                                                      quota.leave_type_id, 
-                                                      'quota_days', 
-                                                      parseInt((e.target as HTMLInputElement).value)
-                                                    )}
-                                                    onBlur={(e) => handleSaveEdit(
-                                                      employee.id, 
-                                                      quota.leave_type_id, 
-                                                      'quota_days', 
-                                                      parseInt(e.target.value)
-                                                    )}
-                                                  />
-                                                ) : (
-                                                  quota.quota_days
-                                                )}
-                                              </div>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                              {quota.taken_days}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                              <div 
-                                                className={`cursor-pointer hover:text-blue-500 ${
-                                                  quota.adjustment_days !== 0 ? (
-                                                    quota.adjustment_days > 0 ? 'text-green-600' : 'text-red-600'
-                                                  ) : ''
-                                                }`}
-                                                onClick={() => setIsEditing({
-                                                  employeeId: employee.id,
-                                                  leaveTypeId: quota.leave_type_id,
-                                                  field: 'adjustment_days'
-                                                })}
-                                              >
-                                                {isEditing && 
-                                                 isEditing.employeeId === employee.id && 
-                                                 isEditing.leaveTypeId === quota.leave_type_id && 
-                                                 isEditing.field === 'adjustment_days' ? (
-                                                  <Input 
-                                                    type="number"
-                                                    className="w-20 h-7 text-right"
-                                                    defaultValue={quota.adjustment_days}
-                                                    autoFocus
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit(
-                                                      employee.id, 
-                                                      quota.leave_type_id, 
-                                                      'adjustment_days', 
-                                                      parseInt((e.target as HTMLInputElement).value)
-                                                    )}
-                                                    onBlur={(e) => handleSaveEdit(
-                                                      employee.id, 
-                                                      quota.leave_type_id, 
-                                                      'adjustment_days', 
-                                                      parseInt(e.target.value)
-                                                    )}
-                                                  />
-                                                ) : (
-                                                  quota.adjustment_days > 0 ? `+${quota.adjustment_days}` : quota.adjustment_days
-                                                )}
-                                              </div>
-                                            </TableCell>
-                                            <TableCell className={`text-right font-medium ${
-                                              getRemainingDays(quota) < 0 ? 'text-red-600' : 
-                                              getRemainingDays(quota) === 0 ? 'text-orange-600' : 
-                                              'text-green-600'
-                                            }`}>
-                                              {getRemainingDays(quota)}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                              {formatDate(quota.reset_date)}
-                                            </TableCell>
-                                          </TableRow>
-                                        ))}
-                                      </TableBody>
-                                    </Table>
-                                  ) : (
-                                    <div>
-                                      {(!leaveHistory[employee.id] || leaveHistory[employee.id]?.length === 0) ? (
-                                        <div className="text-center py-8 text-gray-500">
-                                          {leaveHistory[employee.id] ? 'No leave history found' : 'Loading leave history...'}
-                                        </div>
-                                      ) : (
-                                        <Table>
-                                          <TableHeader>
-                                            <TableRow>
-                                              <TableHead>Leave Type</TableHead>
-                                              <TableHead>Period</TableHead>
-                                              <TableHead className="text-center">Days</TableHead>
-                                              <TableHead className="text-right">Status</TableHead>
-                                            </TableRow>
-                                          </TableHeader>
-                                          <TableBody>
-                                            {leaveHistory[employee.id].map(leave => (
-                                              <TableRow key={leave.id}>
-                                                <TableCell>
-                                                  <Badge style={{backgroundColor: leave.leave_type.color, color: 'white'}}>
-                                                    {leave.leave_type.name}
-                                                  </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                  {format(leave.start_date, 'dd MMM yyyy')} - {format(leave.end_date, 'dd MMM yyyy')}
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                  {leave.days}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                  {getLeaveStatusBadge(leave.status)}
-                                                </TableCell>
-                                              </TableRow>
-                                            ))}
-                                          </TableBody>
-                                        </Table>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </React.Fragment>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <Button variant="outline" onClick={exportAllRequests}>
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              Export All
+            </Button>
           )}
-        </CardContent>
-      </PremiumCard>
-
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button className="mt-4" variant="outline">
-            <Download className="h-4 w-4 mr-2" /> Export Leave Data
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Export Leave Records</DialogTitle>
-            <DialogDescription>
-              Download employee leave data in your preferred format.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-            <Button variant="outline" className="flex flex-col items-center justify-center h-24">
-              <FileText className="h-8 w-8 mb-2" />
-              Export as CSV
-            </Button>
-            <Button variant="outline" className="flex flex-col items-center justify-center h-24">
-              <FileText className="h-8 w-8 mb-2" />
-              Export as Excel
-            </Button>
-          </div>
-          <div className="mt-4 flex items-center p-3 bg-amber-50 border border-amber-200 rounded-md">
-            <AlertCircle className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0" />
-            <div className="text-sm text-amber-800">
-              The export will include all leave records, including any filters currently applied.
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>
+      
+      {/* Error message */}
+      {error && (
+        <div className="p-4 bg-red-100 text-red-700 rounded-md flex items-center">
+          <AlertCircle className="h-5 w-5 mr-2" />
+          {error}
+        </div>
+      )}
+      
+      {/* Table */}
+      <div className="border rounded-md overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[50px]">
+                <Checkbox 
+                  checked={selectedRequests.length === filteredRequests.length && filteredRequests.length > 0} 
+                  onClick={toggleSelectAll}
+                />
+              </TableHead>
+              <TableHead>Employee</TableHead>
+              <TableHead>Leave Type</TableHead>
+              <TableHead>Duration</TableHead>
+              <TableHead>Date Range</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center">
+                  <div className="flex justify-center items-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : filteredRequests.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center">
+                  No leave records found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredRequests.map((request) => (
+                <TableRow key={request.id} className={selectedRequests.includes(request.id) ? 'bg-blue-50' : ''}>
+                  <TableCell>
+                    <Checkbox 
+                      checked={selectedRequests.includes(request.id)} 
+                      onClick={() => toggleSelectRequest(request.id)}
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium">{request.employee.full_name}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center">
+                      <div 
+                        className="w-3 h-3 rounded-full mr-2" 
+                        style={{ backgroundColor: request.leave_type.color }} 
+                      />
+                      {request.leave_type.name}
+                    </div>
+                  </TableCell>
+                  <TableCell>{computeLeaveDuration(request)}</TableCell>
+                  <TableCell>
+                    {format(new Date(request.start_date), 'dd MMM yyyy')}
+                    {' - '}
+                    {format(new Date(request.end_date), 'dd MMM yyyy')}
+                  </TableCell>
+                  <TableCell>{getStatusBadge(request.status)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-1">
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      {request.status === 'Pending' && (
+                        <>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-green-600 hover:text-green-700"
+                            onClick={() => {
+                              toggleSelectRequest(request.id);
+                              setBulkAction('approve');
+                              handleBulkAction();
+                            }}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => {
+                              toggleSelectRequest(request.id);
+                              setBulkAction('reject');
+                              handleBulkAction();
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Search, PlusCircle, Download, AlertCircle,
@@ -67,6 +66,7 @@ const EmployeesPage = () => {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
@@ -204,14 +204,12 @@ const EmployeesPage = () => {
   };
 
   const handleViewDetails = (employee: Employee) => {
-    // Don't trigger view details when in selection mode
     if (selectedEmployees.length > 0) return;
     
     setSelectedEmployee(employee);
     setIsDetailsOpen(true);
   };
 
-  // Multi-select functionality
   const toggleSelectEmployee = (employeeId: string, event?: React.MouseEvent) => {
     if (event) event.stopPropagation();
     
@@ -234,11 +232,15 @@ const EmployeesPage = () => {
     setSelectedEmployees([]);
   };
 
+  const showBulkDeleteDialog = () => {
+    setDeleteConfirmText('');
+    setIsBulkDeleteDialogOpen(true);
+  };
+
   const deleteSelectedEmployees = async () => {
-    if (selectedEmployees.length === 0) return;
+    if (selectedEmployees.length === 0 || deleteConfirmText !== 'DELETE') return;
     
     try {
-      // Delete all selected employees
       const { error } = await supabase
         .from('employees')
         .delete()
@@ -253,6 +255,8 @@ const EmployeesPage = () => {
 
       fetchEmployees();
       setSelectedEmployees([]);
+      setIsBulkDeleteDialogOpen(false);
+      setDeleteConfirmText('');
     } catch (error: any) {
       toast({
         title: "Error",
@@ -279,7 +283,7 @@ const EmployeesPage = () => {
                 variant="outline" 
                 size="sm" 
                 className="text-red-600 border-red-200 hover:bg-red-50"
-                onClick={deleteSelectedEmployees}
+                onClick={showBulkDeleteDialog}
               >
                 <Trash className="mr-2 h-4 w-4" />
                 Delete Selected ({selectedEmployees.length})
@@ -385,7 +389,7 @@ const EmployeesPage = () => {
                         }}
                       >
                         <AvatarImage src={emp.profile_photo || emp.profile_picture || undefined} />
-                        <AvatarFallback className={`${isSelected(emp.id) ? 'bg-hrflow-blue text-white' : 'bg-gray-200'}`}>
+                        <AvatarFallback className={isSelected(emp.id) ? "bg-hrflow-blue text-white" : "bg-gray-200"}>
                           {isSelected(emp.id) ? <Check className="h-5 w-5" /> : emp.full_name?.[0] || '?'}
                         </AvatarFallback>
                       </Avatar>
@@ -497,6 +501,42 @@ const EmployeesPage = () => {
               className={`${deleteConfirmText !== 'DELETE' ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Delete Employee
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete multiple employees?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete {selectedEmployees.length} employee 
+              {selectedEmployees.length > 1 ? 's' : ''} and all associated data.
+              <div className="mt-4">
+                <p className="font-medium mb-2">Type DELETE to confirm:</p>
+                <Input 
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Type DELETE here"
+                  className="mt-1"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setDeleteConfirmText('');
+              setIsBulkDeleteDialogOpen(false);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={deleteSelectedEmployees}
+              disabled={deleteConfirmText !== 'DELETE'}
+              className={`${deleteConfirmText !== 'DELETE' ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              Delete Employees
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

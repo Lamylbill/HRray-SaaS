@@ -16,6 +16,7 @@ const Leave = () => {
   const { toast } = useToast();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('calendar');
+  const [selectedLeaveTypes, setSelectedLeaveTypes] = useState<string[]>([]);
   
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate('/login');
@@ -65,6 +66,10 @@ const Leave = () => {
       description: `Exporting ${activeTab === 'calendar' ? 'calendar' : 'leave records'} data`,
       duration: 3000,
     });
+  };
+
+  const handleLeaveTypeFilter = (types: string[]) => {
+    setSelectedLeaveTypes(types);
   };
 
   return (
@@ -124,8 +129,8 @@ const Leave = () => {
           
           {/* Tab Content - Takes full height */}
           <div className="flex-1 flex flex-col">
-            {activeTab === 'calendar' && <LeaveCalendarView />}
-            {activeTab === 'records' && <LeaveRecordsView />}
+            {activeTab === 'calendar' && <LeaveCalendarView selectedLeaveTypes={selectedLeaveTypes} onLeaveTypeFilter={handleLeaveTypeFilter} />}
+            {activeTab === 'records' && <LeaveRecordsView selectedLeaveTypes={selectedLeaveTypes} onLeaveTypeFilter={handleLeaveTypeFilter} />}
           </div>
         </AnimatedSection>
       </div>

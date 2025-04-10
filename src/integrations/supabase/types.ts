@@ -506,6 +506,7 @@ export type Database = {
           tax_file_no: string | null
           tax_identification_number: string | null
           tax_residency: string | null
+          telegram_user_id: string | null
           telephone_no: string | null
           thirteenth_month_entitlement: boolean | null
           title: string | null
@@ -696,6 +697,7 @@ export type Database = {
           tax_file_no?: string | null
           tax_identification_number?: string | null
           tax_residency?: string | null
+          telegram_user_id?: string | null
           telephone_no?: string | null
           thirteenth_month_entitlement?: boolean | null
           title?: string | null
@@ -886,6 +888,7 @@ export type Database = {
           tax_file_no?: string | null
           tax_identification_number?: string | null
           tax_residency?: string | null
+          telegram_user_id?: string | null
           telephone_no?: string | null
           thirteenth_month_entitlement?: boolean | null
           title?: string | null

@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  addMonths, subMonths, format, differenceInDays, isWithinInterval, 
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  format, isToday, isSameMonth, 
   startOfWeek, addDays, startOfMonth, getMonth, getYear, endOfMonth,
   isSameDay, set, parseISO
 } from 'date-fns';
@@ -9,17 +9,17 @@ import { Info, Plus, Filter, Check } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { LeaveEvent, PublicHoliday, EventStyleProps, LeaveType } from './interfaces';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AddLeaveForm } from './AddLeaveForm';
-import { 
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { LeaveEvent, PublicHoliday } from './interfaces';
+import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -28,37 +28,40 @@ import {
 const safeFormat = (date: Date | null | undefined, fmt: string): string =>
   date instanceof Date && !isNaN(date.getTime()) ? format(date, fmt) : '';
 
-export const LeaveCalendarView = () => {
+interface CalendarProps {
+  selectedLeaveTypes: string[];
+  onLeaveTypeFilter: (types: string[]) => void;
+}
+
+export const LeaveCalendarView: React.FC<CalendarProps> = ({ selectedLeaveTypes, onLeaveTypeFilter }) => {
+  const [isAddLeaveOpen, setIsAddLeaveOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<LeaveEvent | null>(null);
   const [visibleMonths, setVisibleMonths] = useState<Date[]>([]);
-  const [leaveEvents, setLeaveEvents] = useState<LeaveEvent[]>([]);
+  const [events, setEvents] = useState<LeaveEvent[]>([]);
   const [publicHolidays, setPublicHolidays] = useState<PublicHoliday[]>([]);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [pendingRequests, setPendingRequests] = useState<LeaveEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [addLeaveDialogOpen, setAddLeaveDialogOpen] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
-  const [selectedLeaveType, setSelectedLeaveType] = useState<string | null>(null);
-  const [isFilterLoading, setIsFilterLoading] = useState(false);
-  const { toast } = useToast();
-  
   const calendarContainerRef = useRef<HTMLDivElement>(null);
-  const weekdayHeaderRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const isInitialLoad = useRef(true);
-  
-  // Initialize visible months on component mount
+  const [leaveTypes, setLeaveTypes] = useState<{id: string, name: string}[]>([]);
+  const [isFilteringTypes, setIsFilteringTypes] = useState(false);
+  const { toast } = useToast();
+
+  // Initialize calendar with current month and surrounding months
   useEffect(() => {
     const today = new Date();
-    const months: Date[] = [];
+    const initialMonths = [];
     
-    // Generate months for 5 years before and after current date
-    for (let i = -60; i <= 60; i++) {
-      months.push(addMonths(today, i));
+    // Add previous, current, and next months
+    for (let i = -12; i <= 12; i++) {
+      const month = new Date(today.getFullYear(), today.getMonth() + i, 1);
+      initialMonths.push(month);
     }
     
-    setVisibleMonths(months);
-    isInitialLoad.current = false;
+    setVisibleMonths(initialMonths);
   }, []);
 
   // Scroll to current month when component mounts
@@ -67,108 +70,87 @@ export const LeaveCalendarView = () => {
       setTimeout(() => {
         const currentMonthElement = document.getElementById(`month-${getYear(new Date())}-${getMonth(new Date())}`);
         if (currentMonthElement) {
-          currentMonthElement.scrollIntoView({ block: 'start', behavior: 'auto' });
+          currentMonthElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          isInitialLoad.current = false;
         }
-      }, 100);
+      }, 500);
     }
   }, [visibleMonths]);
-  
-  // Load calendar data when the component mounts
+
+  // Fetch leave types when component mounts
   useEffect(() => {
-    loadCalendarData();
-    fetchPublicHolidays();
+    const fetchLeaveTypes = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('leave_types')
+          .select('id, name');
+        
+        if (error) throw error;
+        
+        if (data) {
+          setLeaveTypes(data);
+        }
+      } catch (error) {
+        console.error('Error fetching leave types:', error);
+      }
+    };
+    
     fetchLeaveTypes();
   }, []);
 
-  // Update pending requests when leave events change
+  // Initialize the intersection observer for infinite scrolling
   useEffect(() => {
-    setPendingRequests(leaveEvents.filter(e => e.status === 'Pending'));
-  }, [leaveEvents]);
-  
-  // Fetch leave types for filtering
-  const fetchLeaveTypes = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('leave_types')
-        .select('id, name, color')
-        .order('name');
-        
-      if (error) throw error;
-      setLeaveTypes(data || []);
-    } catch (err: any) {
-      console.error('Error fetching leave types:', err);
-      toast({
-        title: 'Error',
-        description: 'Failed to load leave types',
-        variant: 'destructive',
-      });
-    }
-  };
-  
-  // Setup infinite scroll with Intersection Observer
-  const setupInfiniteScroll = useCallback(() => {
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
-    
-    const options = {
-      root: calendarContainerRef.current,
-      rootMargin: '1000px 0px',
-      threshold: 0.1
-    };
-    
-    observerRef.current = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const monthId = entry.target.id;
-          if (!monthId) return;
-          
-          const [_, yearStr, monthStr] = monthId.split('-');
-          if (!yearStr || !monthStr) return;
-          
-          const year = parseInt(yearStr, 10);
-          const month = parseInt(monthStr, 10);
-          
-          if (isNaN(year) || isNaN(month)) return;
-          
-          const monthDate = new Date(year, month);
-          
-          // Load more months if we're near the edges of our date range
-          if (visibleMonths.length > 0) {
-            if (month === getMonth(visibleMonths[0]) && year === getYear(visibleMonths[0])) {
-              loadMoreMonths('before');
-            } else if (visibleMonths.length > 1 && 
-                      month === getMonth(visibleMonths[visibleMonths.length - 1]) && 
-                      year === getYear(visibleMonths[visibleMonths.length - 1])) {
-              loadMoreMonths('after');
+    if (!observerRef.current && visibleMonths.length > 0) {
+      observerRef.current = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const monthId = entry.target.id;
+            if (!monthId) return;
+            
+            const [_, yearStr, monthStr] = monthId.split('-');
+            if (!yearStr || !monthStr) return;
+            
+            const year = parseInt(yearStr, 10);
+            const month = parseInt(monthStr, 10);
+            
+            if (isNaN(year) || isNaN(month)) return;
+            
+            const monthDate = new Date(year, month);
+            
+            // Load more months if we're near the edges of our date range
+            if (visibleMonths.length > 0) {
+              if (month === getMonth(visibleMonths[0]) && year === getYear(visibleMonths[0])) {
+                loadMoreMonths('before');
+              } else if (visibleMonths.length > 1 && 
+                        month === getMonth(visibleMonths[visibleMonths.length - 1]) && 
+                        year === getYear(visibleMonths[visibleMonths.length - 1])) {
+                loadMoreMonths('after');
+              }
             }
           }
+        });
+      }, { threshold: 0.1 });
+    
+      // Observe all month containers
+      document.querySelectorAll('.month-container').forEach(monthElement => {
+        if (monthElement) {
+          observerRef.current?.observe(monthElement);
         }
       });
-    }, options);
-    
-    // Observe all month containers
-    document.querySelectorAll('.month-container').forEach(monthElement => {
-      if (monthElement) {
-        observerRef.current?.observe(monthElement);
-      }
-    });
+    }
   }, [visibleMonths]);
   
-  // Setup intersection observers when visible months change
+  // Re-observe month containers when visible months change
   useEffect(() => {
-    if (visibleMonths.length > 0) {
-      setupInfiniteScroll();
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      
+      document.querySelectorAll('.month-container').forEach(monthElement => {
+        observerRef.current?.observe(monthElement);
+      });
     }
-    
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
-    };
-  }, [visibleMonths, setupInfiniteScroll]);
+  }, [visibleMonths]);
   
-  // Load more months in the specified direction
   const loadMoreMonths = (direction: 'before' | 'after') => {
     if (loadingMore) return;
     
@@ -183,461 +165,537 @@ export const LeaveCalendarView = () => {
       if (direction === 'before') {
         const firstMonth = prevMonths[0];
         const newMonths = [];
-        for (let i = 1; i <= 24; i++) {
-          newMonths.push(subMonths(firstMonth, i));
+        
+        for (let i = 1; i <= 3; i++) {
+          newMonths.push(new Date(firstMonth.getFullYear(), firstMonth.getMonth() - i, 1));
         }
+        
         return [...newMonths.reverse(), ...prevMonths];
       } else {
         const lastMonth = prevMonths[prevMonths.length - 1];
         const newMonths = [];
-        for (let i = 1; i <= 24; i++) {
-          newMonths.push(addMonths(lastMonth, i));
+        
+        for (let i = 1; i <= 3; i++) {
+          newMonths.push(new Date(lastMonth.getFullYear(), lastMonth.getMonth() + i, 1));
         }
+        
         return [...prevMonths, ...newMonths];
       }
     });
     
-    setTimeout(() => setLoadingMore(false), 300);
+    setTimeout(() => {
+      setLoadingMore(false);
+    }, 500);
   };
-
-  const fetchPublicHolidays = async () => {
-    try {
-      const year = new Date().getFullYear();
-      const { data: existingHolidays, error } = await supabase
-        .from('public_holidays')
-        .select('*')
-        .eq('country', 'SG')
-        .gte('date', `${year}-01-01`)
-        .lte('date', `${year}-12-31`);
-
-      if (error) {
-        console.error('Error checking for holidays:', error);
-        return;
-      }
-      
-      if (existingHolidays?.length) {
-        setPublicHolidays(existingHolidays.map(h => ({ ...h, date: new Date(h.date) })));
-        return;
-      }
-
-      try {
-        const { data, error: funcError } = await supabase.functions.invoke('fetch-public-holidays', {
-          body: { year, country: 'SG' }
-        });
-        
-        if (funcError) {
-          console.error('Error fetching holidays:', funcError);
-          return;
-        }
-        
-        if (data?.data) {
-          setPublicHolidays(data.data.map((h: any) => ({ ...h, date: new Date(h.date) })));
-        }
-      } catch (error) {
-        console.error('Error fetching public holidays:', error);
-      }
-    } catch (error) {
-      console.error('Error fetching public holidays:', error);
-    }
-  };
-
-  const loadCalendarData = async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('leave_requests')
-        .select(`
-          id, start_date, end_date, status, half_day, half_day_type,
-          employees:employee_id (id, full_name),
-          leave_types:leave_type_id (id, name, color)
-        `);
-
-      if (error) throw error;
-
-      const formatted = (data || []).map(leave => {
-        const start = new Date(leave.start_date);
-        const end = new Date(leave.end_date);
-        if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
-        return {
-          id: leave.id,
-          title: leave.leave_types?.name || 'Leave',
-          start,
-          end,
-          type: leave.leave_types?.name || 'Unknown',
-          employee: leave.employees?.full_name || 'Unknown Employee',
-          status: leave.status as 'Pending' | 'Approved' | 'Rejected',
-          color: leave.leave_types?.color || '#999'
-        };
-      }).filter(Boolean) as LeaveEvent[];
-
-      setLeaveEvents(formatted);
-    } catch (err) {
-      console.error('Error loading calendar data:', err);
-      toast({ title: 'Error', description: 'Failed to load calendar data', variant: 'destructive' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Filter leaves by leave type
-  const filterByLeaveType = async (typeId: string | null) => {
-    setIsFilterLoading(true);
-    setSelectedLeaveType(typeId);
-    
-    try {
-      let query = supabase
-        .from('leave_requests')
-        .select(`
-          id, start_date, end_date, status, half_day, half_day_type,
-          employees:employee_id (id, full_name),
-          leave_types:leave_type_id (id, name, color)
-        `);
-        
-      // Apply filter if a specific leave type is selected
-      if (typeId) {
-        query = query.eq('leave_type_id', typeId);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      
-      const formatted = (data || []).map(leave => {
-        const start = new Date(leave.start_date);
-        const end = new Date(leave.end_date);
-        if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
-        return {
-          id: leave.id,
-          title: leave.leave_types?.name || 'Leave',
-          start,
-          end,
-          type: leave.leave_types?.name || 'Unknown',
-          employee: leave.employees?.full_name || 'Unknown Employee',
-          status: leave.status as 'Pending' | 'Approved' | 'Rejected',
-          color: leave.leave_types?.color || '#999'
-        };
-      }).filter(Boolean) as LeaveEvent[];
-      
-      setLeaveEvents(formatted);
-      
-      toast({
-        title: typeId ? 'Filter Applied' : 'Filter Cleared',
-        description: typeId 
-          ? `Showing leaves of type: ${leaveTypes.find(t => t.id === typeId)?.name}`
-          : 'Showing all leave types',
-      });
-      
-    } catch (err) {
-      console.error('Error filtering leave data:', err);
-      toast({ 
-        title: 'Filter Error', 
-        description: 'Failed to apply leave type filter', 
-        variant: 'destructive' 
-      });
-    } finally {
-      setIsFilterLoading(false);
-    }
-  };
-
-  const renderLeaveEvents = (date: Date) => {
-    const dateStr = safeFormat(date, 'yyyy-MM-dd');
-    const events = leaveEvents.filter(event =>
-      isWithinInterval(date, { start: event.start, end: event.end })
-    );
-    events.sort((a, b) => ({ Approved: 0, Pending: 1, Rejected: 2 }[a.status] - { Approved: 0, Pending: 1, Rejected: 2 }[b.status]));
-
-    return events.map((event, index) => {
-      const isFirst = safeFormat(event.start, 'yyyy-MM-dd') === dateStr;
-      const isLast = safeFormat(event.end, 'yyyy-MM-dd') === dateStr;
-      const totalDays = differenceInDays(event.end, event.start) + 1;
-      const isMulti = totalDays > 1;
-
-      let style: EventStyleProps = {
-        backgroundColor: event.status === 'Approved' ? event.color : 'transparent',
-        color: event.status === 'Approved' ? 'white' : event.color,
-        borderRadius: '2px',
-        padding: '1px 4px',
-        fontSize: '0.7rem',
-        border: event.status === 'Approved' ? 'none' : `1px dashed ${event.color}`,
-        display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        marginBottom: '2px', marginTop: index === 0 ? '2px' : '0'
-      };
-
-      if (isMulti) {
-        if (isFirst) Object.assign(style, { borderTopRightRadius: '0', borderBottomRightRadius: '0', borderRight: 'none', paddingLeft: '6px' });
-        else if (isLast) Object.assign(style, { borderTopLeftRadius: '0', borderBottomLeftRadius: '0', borderLeft: 'none', paddingRight: '6px' });
-        else Object.assign(style, { borderRadius: '0', borderLeft: 'none', borderRight: 'none' });
-      }
-
-      if (event.status === 'Rejected') Object.assign(style, { textDecoration: 'line-through', opacity: 0.7 });
-
-      return (
-        <TooltipProvider key={`${event.id}-${dateStr}`}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div style={style}>
-                {(isFirst || !isMulti) && <span>{event.employee.split(' ')[0]} - {event.type}{isMulti && ` (${totalDays}d)`}</span>}
-                {!isFirst && isMulti && <span>⬤</span>}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <div className="text-xs">
-                <div className="font-bold">{event.type}</div>
-                <div>Employee: {event.employee}</div>
-                <div>Status: {event.status}</div>
-                <div>{safeFormat(event.start, 'MMM d')} – {safeFormat(event.end, 'MMM d, yyyy')} ({totalDays} day{totalDays > 1 ? 's' : ''})</div>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
-    });
-  };
-
-  const getHolidayForDate = (date: Date) => publicHolidays.find(h => 
-    isSameDay(new Date(h.date), date)
-  );
-
-  const renderCalendarDayCell = (date: Date) => {
-    if (!date || isNaN(date.getTime())) return <div className="p-2 text-xs text-gray-400">Invalid date</div>;
-    const holiday = getHolidayForDate(date);
-    const isToday = isSameDay(date, new Date());
-
-    return (
-      <div className={`relative h-32 overflow-y-auto ${isToday ? 'bg-blue-50/30' : ''}`}>
-        <div className={`absolute top-1 right-1 text-sm ${isToday ? 'font-bold text-blue-600' : ''}`}>
-          {safeFormat(date, 'd')}
-        </div>
-        {holiday && <div className="mt-5 mb-1 text-xs font-medium text-red-700 bg-red-100 rounded px-1 py-0.5 text-center">{holiday.name}</div>}
-        <div className="mt-6 space-y-1 overflow-y-auto max-h-24">{renderLeaveEvents(date)}</div>
-      </div>
-    );
-  };
-
-  // Create weekday header
-  const WeekdayHeader = () => {
-    const weekStart = startOfWeek(new Date());
-    const weekdays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-    
-    return (
-      <div ref={weekdayHeaderRef} className="grid grid-cols-7 w-full border-b pb-2 mb-2 sticky top-0 bg-white z-10 h-10">
-        {weekdays.map((day, i) => (
-          <div key={i} className="text-center font-medium text-gray-700">
-            {format(day, 'EEE')}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  const renderMonth = (month: Date, index: number) => {
-    const monthStart = startOfMonth(month);
-    const monthEnd = endOfMonth(month);
-    
-    // Get start of first week and end of last week
+  
+  // Create day cells for a month
+  const renderMonth = (monthDate: Date) => {
+    const monthStart = startOfMonth(monthDate);
+    const monthEnd = endOfMonth(monthStart);
     const startDate = startOfWeek(monthStart);
-    const endDate = startOfWeek(monthEnd);
-    endDate.setDate(endDate.getDate() + 6);
     
-    // Create days array
-    const days: Date[] = [];
-    let currentDate = new Date(startDate);
+    // Generate an array of dates for each day in the month view
+    const calendarDays = [];
+    let day = startDate;
     
-    while (currentDate <= endDate) {
-      days.push(new Date(currentDate));
-      currentDate.setDate(currentDate.getDate() + 1);
+    // Generate 6 weeks to ensure all months fit
+    for (let week = 0; week < 6; week++) {
+      for (let i = 0; i < 7; i++) {
+        calendarDays.push(day);
+        day = addDays(day, 1);
+      }
     }
-    
-    // Group days into weeks
-    const weeks: Date[][] = [];
-    for (let i = 0; i < days.length; i += 7) {
-      weeks.push(days.slice(i, i + 7));
-    }
-
-    const idStr = `month-${month.getFullYear()}-${month.getMonth()}`;
     
     return (
-      <div key={idStr} className="month-container mb-8" id={idStr}>
-        <h3 className="text-lg font-semibold mb-4 px-2">{format(month, 'MMMM yyyy')}</h3>
-        <div className="grid grid-cols-7 gap-1">
-          {weeks.map((week, weekIndex) => (
-            week.map((day, dayIndex) => (
-              <div 
-                key={`${weekIndex}-${dayIndex}`} 
-                className={`border p-1 ${
-                  day.getMonth() !== month.getMonth() ? 'bg-gray-50 text-gray-400' : 'bg-white'
-                } ${
-                  safeFormat(day, 'yyyy-MM-dd') === safeFormat(new Date(), 'yyyy-MM-dd') ? 'ring-2 ring-hrflow-blue ring-opacity-50' : ''
-                }`}
-              >
-                {renderCalendarDayCell(day)}
-              </div>
-            ))
+      <div 
+        id={`month-${getYear(monthDate)}-${getMonth(monthDate)}`} 
+        className="month-container py-2 flex flex-col" 
+        key={`${getYear(monthDate)}-${getMonth(monthDate)}`}
+      >
+        <div className="text-xl font-semibold px-2 mb-2 sticky top-0 bg-white py-2 z-10">
+          {format(monthStart, 'MMMM yyyy')}
+        </div>
+        
+        <div className="grid grid-cols-7 mb-2 sticky top-12 bg-white py-1 z-10">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+            <div 
+              key={index} 
+              className="text-center text-sm font-medium text-gray-500"
+            >
+              {day}
+            </div>
+          ))}
+        </div>
+        
+        <div className="grid grid-cols-7 gap-1 mb-4">
+          {calendarDays.map((day, dayIdx) => (
+            <CalendarDay 
+              key={dayIdx} 
+              day={day} 
+              monthDate={monthDate}
+              events={events}
+              holidays={publicHolidays}
+              onEventClick={(event) => {
+                setSelectedEvent(event);
+                setIsDetailsOpen(true);
+              }}
+              onDateClick={(date) => {
+                setSelectedDate(date);
+                setIsAddLeaveOpen(true);
+              }}
+            />
           ))}
         </div>
       </div>
     );
   };
+  
+  // Fetch leave and holiday data from Supabase
+  useEffect(() => {
+    const fetchCalendarData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch leave requests
+        const { data: leaveData, error: leaveError } = await supabase
+          .from('leave_requests')
+          .select(`
+            id,
+            employee_id,
+            employees:employee_id(id, full_name),
+            start_date,
+            end_date,
+            leave_type_id,
+            leave_types:leave_type_id(id, name, color),
+            half_day,
+            half_day_type,
+            status
+          `)
+          .order('start_date', { ascending: true });
+          
+        if (leaveError) throw leaveError;
+        
+        // Fetch public holidays
+        const { data: holidayData, error: holidayError } = await supabase
+          .from('public_holidays')
+          .select('*')
+          .order('date', { ascending: true });
+          
+        if (holidayError) throw holidayError;
+        
+        // Transform leave data into calendar events
+        const transformedLeaveData = leaveData?.map(leave => {
+          if (!leave.start_date || !leave.end_date) return null;
+          
+          const start = parseISO(leave.start_date);
+          const end = parseISO(leave.end_date);
+          
+          return {
+            id: leave.id,
+            title: `${leave.leave_types?.name || 'Leave'} - ${leave.employees?.full_name || 'Employee'}`,
+            start,
+            end,
+            type: leave.leave_types?.name || 'Unknown',
+            employee: leave.employees?.full_name || 'Unknown Employee',
+            status: leave.status as 'Pending' | 'Approved' | 'Rejected',
+            color: leave.leave_types?.color || '#999'
+          };
+        }).filter(Boolean) as LeaveEvent[];
+        
+        // Transform holiday data
+        const transformedHolidayData = holidayData?.map(holiday => {
+          if (!holiday.date) return null;
+          
+          return {
+            id: holiday.id,
+            name: holiday.name,
+            date: parseISO(holiday.date),
+            country: holiday.country
+          };
+        }).filter(Boolean) as PublicHoliday[];
+        
+        setEvents(transformedLeaveData || []);
+        setPublicHolidays(transformedHolidayData || []);
+      } catch (error) {
+        console.error('Error fetching calendar data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load calendar data",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchCalendarData();
+  }, []);
 
-  const handleLeaveAdded = () => {
-    loadCalendarData();
-    setAddLeaveDialogOpen(false);
-    toast({
-      title: "Leave Added",
-      description: "Leave request has been successfully created",
-      duration: 3000,
-    });
+  // Filter events when selected leave types change
+  useEffect(() => {
+    const fetchFilteredLeaves = async () => {
+      if (selectedLeaveTypes.length === 0) {
+        // If no types selected, fetch all
+        const { data: leaveData, error: leaveError } = await supabase
+          .from('leave_requests')
+          .select(`
+            id,
+            employee_id,
+            employees:employee_id(id, full_name),
+            start_date,
+            end_date,
+            leave_type_id,
+            leave_types:leave_type_id(id, name, color),
+            half_day,
+            half_day_type,
+            status
+          `)
+          .order('start_date', { ascending: true });
+          
+        if (leaveError) throw leaveError;
+        
+        const transformedLeaveData = leaveData?.map(leave => {
+          if (!leave.start_date || !leave.end_date) return null;
+          
+          const start = parseISO(leave.start_date);
+          const end = parseISO(leave.end_date);
+          
+          return {
+            id: leave.id,
+            title: `${leave.leave_types?.name || 'Leave'} - ${leave.employees?.full_name || 'Employee'}`,
+            start,
+            end,
+            type: leave.leave_types?.name || 'Unknown',
+            employee: leave.employees?.full_name || 'Unknown Employee',
+            status: leave.status as 'Pending' | 'Approved' | 'Rejected',
+            color: leave.leave_types?.color || '#999'
+          };
+        }).filter(Boolean) as LeaveEvent[];
+        
+        setEvents(transformedLeaveData || []);
+        return;
+      }
+
+      setIsFilteringTypes(true);
+      try {
+        const { data: leaveData, error: leaveError } = await supabase
+          .from('leave_requests')
+          .select(`
+            id,
+            employee_id,
+            employees:employee_id(id, full_name),
+            start_date,
+            end_date,
+            leave_type_id,
+            leave_types:leave_type_id(id, name, color),
+            half_day,
+            half_day_type,
+            status
+          `)
+          .in('leave_type_id', selectedLeaveTypes)
+          .order('start_date', { ascending: true });
+          
+        if (leaveError) throw leaveError;
+        
+        const transformedLeaveData = leaveData?.map(leave => {
+          if (!leave.start_date || !leave.end_date) return null;
+          
+          const start = parseISO(leave.start_date);
+          const end = parseISO(leave.end_date);
+          
+          return {
+            id: leave.id,
+            title: `${leave.leave_types?.name || 'Leave'} - ${leave.employees?.full_name || 'Employee'}`,
+            start,
+            end,
+            type: leave.leave_types?.name || 'Unknown',
+            employee: leave.employees?.full_name || 'Unknown Employee',
+            status: leave.status as 'Pending' | 'Approved' | 'Rejected',
+            color: leave.leave_types?.color || '#999'
+          };
+        }).filter(Boolean) as LeaveEvent[];
+        
+        setEvents(transformedLeaveData || []);
+      } catch (error) {
+        console.error('Error filtering leave types:', error);
+        toast({
+          title: "Error",
+          description: "Failed to filter leave types",
+          variant: "destructive",
+        });
+      } finally {
+        setIsFilteringTypes(false);
+      }
+    };
+    
+    fetchFilteredLeaves();
+  }, [selectedLeaveTypes]);
+
+  const getLeaveTypeSelected = (typeId: string) => {
+    return selectedLeaveTypes.includes(typeId);
   };
 
-  const handleApproveReject = async (id: string, status: 'Approved' | 'Rejected') => {
-    try {
-      const { error } = await supabase
-        .from('leave_requests')
-        .update({ status })
-        .eq('id', id);
-      
-      if (error) throw error;
-      
-      toast({
-        title: `Leave ${status}`,
-        description: `Leave request has been ${status.toLowerCase()}`,
-        duration: 3000,
-      });
-      
-      // Refresh data
-      loadCalendarData();
-      setSidebarOpen(false);
-    } catch (err) {
-      console.error(`Error ${status.toLowerCase()}ing leave:`, err);
-      toast({
-        title: "Error",
-        description: `Failed to ${status.toLowerCase()} leave request`,
-        variant: "destructive",
-        duration: 3000,
-      });
+  const toggleLeaveType = (typeId: string) => {
+    if (selectedLeaveTypes.includes(typeId)) {
+      onLeaveTypeFilter(selectedLeaveTypes.filter(id => id !== typeId));
+    } else {
+      onLeaveTypeFilter([...selectedLeaveTypes, typeId]);
     }
   };
 
   return (
-    <>
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Button variant="primary" size="sm" onClick={() => setAddLeaveDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Add Leave
-          </Button>
-          
+    <div className="bg-white rounded-lg shadow-sm border p-4 h-full flex flex-col overflow-hidden">
+      <div className="flex justify-between items-center mb-4 sticky top-0 bg-white z-20 pb-2">
+        <div>
+          <h3 className="text-lg font-medium">Leave Calendar</h3>
+        </div>
+        <div className="flex space-x-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="outline" 
-                size="sm"
-                disabled={isFilterLoading}
-                className={selectedLeaveType ? "border-blue-400 text-blue-600" : ""}
+                size="sm" 
+                className={`${selectedLeaveTypes.length > 0 ? 'bg-blue-50 border-blue-200' : ''}`}
+                disabled={isFilteringTypes}
               >
-                <Filter className="mr-2 h-4 w-4" /> 
-                {isFilterLoading ? "Loading..." : selectedLeaveType 
-                  ? `Type: ${leaveTypes.find(t => t.id === selectedLeaveType)?.name}` 
-                  : "Filter Types"}
+                <Filter className={`mr-2 h-4 w-4 ${isFilteringTypes ? 'animate-spin' : ''}`} />
+                Filter Types {selectedLeaveTypes.length > 0 && `(${selectedLeaveTypes.length})`}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuLabel>Filter by Leave Type</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Leave Types</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => filterByLeaveType(null)}>
-                All Types
-                {!selectedLeaveType && <Check className="ml-2 h-4 w-4" />}
-              </DropdownMenuItem>
-              {leaveTypes.map((type) => (
-                <DropdownMenuItem key={type.id} onClick={() => filterByLeaveType(type.id)}>
-                  <span className="flex items-center">
-                    <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: type.color }} />
-                    {type.name}
-                  </span>
-                  {selectedLeaveType === type.id && <Check className="ml-2 h-4 w-4" />}
-                </DropdownMenuItem>
+              {leaveTypes.map(type => (
+                <DropdownMenuCheckboxItem 
+                  key={type.id}
+                  checked={getLeaveTypeSelected(type.id)} 
+                  onCheckedChange={() => toggleLeaveType(type.id)}
+                >
+                  {type.name}
+                </DropdownMenuCheckboxItem>
               ))}
+              {leaveTypes.length === 0 && (
+                <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                  No leave types found
+                </div>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
+          <Button 
+            size="sm" 
+            onClick={() => {
+              setSelectedDate(new Date());
+              setIsAddLeaveOpen(true);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Leave
+          </Button>
         </div>
-        <div className="flex items-center space-x-2">
-          {pendingRequests.length > 0 && (
-            <Button variant="outline" size="sm" className="bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100" onClick={() => setSidebarOpen(true)}>
-              {pendingRequests.length} Pending
-            </Button>
+      </div>
+      
+      {isLoading ? (
+        <div className="space-y-4 p-4">
+          <Skeleton className="h-6 w-1/3 mb-2" />
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <Skeleton key={i} className="h-4 w-full" />
+            ))}
+          </div>
+          {Array.from({ length: 4 }).map((_, weekIdx) => (
+            <div key={weekIdx} className="grid grid-cols-7 gap-1">
+              {Array.from({ length: 7 }).map((_, dayIdx) => (
+                <Skeleton key={dayIdx} className="h-24 w-full" />
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div 
+          ref={calendarContainerRef} 
+          className="flex-1 overflow-y-auto space-y-6 px-1 pb-4 relative"
+          style={{ height: 'calc(100vh - 250px)' }}
+        >
+          {visibleMonths.map(month => renderMonth(month))}
+          
+          {loadingMore && (
+            <div className="py-4 text-center">
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-e-transparent align-[-0.125em] text-surface motion-reduce:animate-[spin_1.5s_linear_infinite] dark:text-white"></div>
+              <span className="ml-2">Loading more...</span>
+            </div>
           )}
         </div>
-      </div>
-      <div 
-        className="w-full flex-1 flex flex-col" 
-        style={{ height: 'calc(100vh - 280px)', minHeight: '700px' }}
-      >
-        {isLoading ? (
-          <div className="flex justify-center items-center h-full">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-          </div>
-        ) : (
-          <div className="calendar-container w-full flex-1 overflow-hidden flex flex-col">
-            <WeekdayHeader />
-            <div 
-              className="calendar-view h-full overflow-auto" 
-              ref={calendarContainerRef}
-            >
-              <div className="flex flex-col">
-                {visibleMonths.map(renderMonth)}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent className="w-full sm:max-w-md">
+      )}
+      
+      <Sheet open={isAddLeaveOpen} onOpenChange={setIsAddLeaveOpen}>
+        <SheetContent size="lg">
           <SheetHeader>
-            <SheetTitle>Pending Leave Requests</SheetTitle>
-            <SheetDescription>{pendingRequests.length} leave requests pending your approval</SheetDescription>
+            <SheetTitle>Request Leave</SheetTitle>
+            <SheetDescription>
+              Create a new leave request for {selectedDate ? format(selectedDate, 'MMMM dd, yyyy') : 'selected date'}.
+            </SheetDescription>
           </SheetHeader>
-          <div className="mt-8 space-y-4">
-            {pendingRequests.map(request => (
-              <div key={request.id} className="border rounded-md p-4 bg-white">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium">{request.employee}</h4>
-                    <div className="text-sm text-gray-600">{request.type}</div>
-                    <div className="text-sm mt-1">
-                      {safeFormat(request.start, 'MMM d')} - {safeFormat(request.end, 'MMM d, yyyy')}
-                      <Badge className="ml-2" variant="outline" style={{ color: request.color, borderColor: request.color }}>
-                        {differenceInDays(request.end, request.start) + 1} days
-                      </Badge>
-                    </div>
-                  </div>
-                  <Badge>Pending</Badge>
-                </div>
-                <div className="mt-4 flex justify-end space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => handleApproveReject(request.id, 'Rejected')}>Reject</Button>
-                  <Button variant="default" size="sm" onClick={() => handleApproveReject(request.id, 'Approved')}>Approve</Button>
-                </div>
-              </div>
-            ))}
-            {pendingRequests.length === 0 && (
-              <div className="text-center py-12 text-gray-500">
-                <Info className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 font-medium">No Pending Requests</h3>
-                <p className="text-sm">All leave requests have been processed</p>
-              </div>
-            )}
+          <div className="py-4">
+            <AddLeaveForm 
+              initialDate={selectedDate}
+              onSuccess={() => {
+                setIsAddLeaveOpen(false);
+                toast({
+                  title: "Leave Request Submitted",
+                  description: "Your leave request has been submitted for approval.",
+                });
+                // Refresh calendar data
+                // We would need to implement this
+              }}
+            />
           </div>
         </SheetContent>
       </Sheet>
+      
+      <Sheet open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <SheetContent size="lg">
+          <SheetHeader>
+            <SheetTitle>Leave Details</SheetTitle>
+          </SheetHeader>
+          {selectedEvent && (
+            <div className="py-4">
+              <div className="mb-4">
+                <div className="text-sm text-muted-foreground mb-1">Employee</div>
+                <div className="font-medium">{selectedEvent.employee}</div>
+              </div>
+              
+              <div className="mb-4">
+                <div className="text-sm text-muted-foreground mb-1">Leave Type</div>
+                <Badge style={{ backgroundColor: selectedEvent.color }}>
+                  {selectedEvent.type}
+                </Badge>
+              </div>
+              
+              <div className="mb-4">
+                <div className="text-sm text-muted-foreground mb-1">Status</div>
+                <Badge variant={
+                  selectedEvent.status === 'Approved' ? 'success' : 
+                  selectedEvent.status === 'Rejected' ? 'destructive' : 'outline'
+                }>
+                  {selectedEvent.status}
+                </Badge>
+              </div>
+              
+              <div className="mb-4">
+                <div className="text-sm text-muted-foreground mb-1">Duration</div>
+                <div className="font-medium">
+                  {format(selectedEvent.start, 'MMM dd, yyyy')} - {format(selectedEvent.end, 'MMM dd, yyyy')}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {Math.ceil((selectedEvent.end.getTime() - selectedEvent.start.getTime()) / (1000 * 60 * 60 * 24)) + 1} days
+                </div>
+              </div>
+              
+              <div className="mt-6">
+                <div className="text-sm text-muted-foreground mb-2">Actions</div>
+                <div className="flex space-x-2">
+                  <Button variant="outline" size="sm" onClick={() => setIsDetailsOpen(false)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+};
 
-      <Dialog open={addLeaveDialogOpen} onOpenChange={setAddLeaveDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Leave Request</DialogTitle>
-            <DialogDescription>Create a new leave request for an employee</DialogDescription>
-          </DialogHeader>
-          <AddLeaveForm onSuccess={handleLeaveAdded} onCancel={() => setAddLeaveDialogOpen(false)} />
-        </DialogContent>
-      </Dialog>
-    </>
+interface CalendarDayProps {
+  day: Date;
+  monthDate: Date;
+  events: LeaveEvent[];
+  holidays: PublicHoliday[];
+  onEventClick: (event: LeaveEvent) => void;
+  onDateClick: (date: Date) => void;
+}
+
+const CalendarDay: React.FC<CalendarDayProps> = ({ 
+  day, monthDate, events, holidays, onEventClick, onDateClick 
+}) => {
+  const isDayToday = isToday(day);
+  const isCurrentMonth = isSameMonth(day, monthDate);
+  
+  // Filter events for this day
+  const dayEvents = events.filter(event => 
+    isSameDay(day, event.start) || 
+    isSameDay(day, event.end) || 
+    (day > event.start && day < event.end)
+  );
+  
+  // Check if day is a holiday
+  const holiday = holidays.find(h => isSameDay(day, h.date));
+  
+  return (
+    <div 
+      className={`
+        min-h-[100px] p-1 border rounded-md relative flex flex-col
+        ${isDayToday ? 'bg-blue-50 border-blue-200' : ''}
+        ${!isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'}
+        hover:bg-gray-50 transition-colors
+      `}
+      onClick={() => onDateClick(day)}
+    >
+      <div 
+        className={`
+          text-right text-sm font-medium mb-1 sticky top-0
+          ${isDayToday ? 'text-blue-600' : ''}
+        `}
+      >
+        {format(day, 'd')}
+      </div>
+      
+      {holiday && (
+        <div className="mb-1">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="outline" className="text-xs truncate w-full justify-start bg-red-50 text-red-600 border-red-200">
+                  <Info className="h-3 w-3 mr-1" />
+                  {holiday.name}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{holiday.name}</p>
+                <p className="text-xs text-muted-foreground">Public Holiday</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      )}
+      
+      <div className="space-y-1 flex-1 overflow-y-auto max-h-[70px]">
+        {dayEvents.map((event, index) => (
+          <div 
+            key={`${event.id}-${index}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEventClick(event);
+            }}
+            className={`
+              text-xs p-1 rounded cursor-pointer truncate
+              ${event.status === 'Approved' ? 'opacity-100' : 'opacity-70'}
+            `}
+            style={{ backgroundColor: event.color, color: '#fff' }}
+          >
+            {event.employee}: {event.type}
+          </div>
+        ))}
+      </div>
+      
+      {dayEvents.length > 2 && (
+        <div className="mt-1">
+          <Progress 
+            value={100} 
+            indicatorColor={dayEvents.some(e => e.status === 'Approved') ? 'bg-blue-500' : 'bg-gray-300'} 
+            className="h-1"
+          />
+        </div>
+      )}
+    </div>
   );
 };

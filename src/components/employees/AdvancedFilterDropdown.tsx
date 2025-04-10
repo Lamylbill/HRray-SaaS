@@ -1,394 +1,244 @@
 
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui-custom/Button';
-import { Input } from '@/components/ui/input';
-import { Check, ChevronsUpDown, Filter, X } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from '@/components/ui/command';
-import { cn } from '@/lib/utils';
-import { Employee } from '@/types/employee';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui-custom/Button";
+import { Check, Filter } from "lucide-react";
 import { Badge } from '@/components/ui/badge';
+import { Employee } from '@/types/employee';
+
+const FILTER_CATEGORIES = {
+  "Personal": ["gender", "nationality", "marital_status", "race"],
+  "Employment": ["department", "job_title", "employment_type", "employment_status"],
+  "Contract": ["contract_type", "work_pass_type"],
+  "Compensation": ["salary", "ot_eligible", "benefits_tier"],
+  "Compliance": ["cpf_status", "tax_residency", "leave_category"]
+};
 
 interface AdvancedFilterDropdownProps {
   employees: Employee[];
   onFiltersChange: (filteredEmployees: Employee[]) => void;
 }
 
-type EmployeeCategory = {
-  name: string;
-  fields: {
-    name: string;
-    key: keyof Employee;
-  }[];
+type FilterValue = {
+  field: string;
+  value: string | number | boolean | null;
+  label: string;
 };
-
-const employeeCategories: EmployeeCategory[] = [
-  {
-    name: 'Personal Info',
-    fields: [
-      { name: 'Name', key: 'full_name' },
-      { name: 'Gender', key: 'gender' },
-      { name: 'Nationality', key: 'nationality' },
-      { name: 'Email', key: 'email' },
-      { name: 'Contact Number', key: 'contact_number' },
-      { name: 'Marital Status', key: 'marital_status' },
-      { name: 'NRIC', key: 'nric' },
-    ]
-  },
-  {
-    name: 'Employment',
-    fields: [
-      { name: 'Job Title', key: 'job_title' },
-      { name: 'Department', key: 'department' },
-      { name: 'Employment Type', key: 'employment_type' },
-      { name: 'Employment Status', key: 'employment_status' },
-      { name: 'Date of Hire', key: 'date_of_hire' },
-      { name: 'Supervisor', key: 'supervisor' },
-      { name: 'Contract Type', key: 'contract_type' },
-    ]
-  },
-  {
-    name: 'Compensation',
-    fields: [
-      { name: 'Gross Salary', key: 'gross_salary' },
-      { name: 'Basic Salary', key: 'basic_salary' },
-      { name: 'CPF Contribution', key: 'cpf_contribution' },
-      { name: 'Payroll Cycle', key: 'payroll_cycle' },
-      { name: 'Bank Name', key: 'bank_name' },
-    ]
-  },
-  {
-    name: 'Compliance',
-    fields: [
-      { name: 'CPF Status', key: 'cpf_status' },
-      { name: 'Work Pass Type', key: 'work_pass_type' },
-      { name: 'Tax File Number', key: 'tax_file_no' },
-      { name: 'NS Status', key: 'ns_status' },
-    ]
-  }
-];
 
 export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
   employees,
   onFiltersChange,
 }) => {
-  const [activeFilters, setActiveFilters] = useState<{
-    category?: EmployeeCategory,
-    field?: { name: string; key: keyof Employee },
-    value?: string
-  }>({});
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedField, setSelectedField] = useState<string | null>(null);
+  const [activeFilters, setActiveFilters] = useState<FilterValue[]>([]);
   
-  const [categoryOpen, setCategoryOpen] = useState(false);
-  const [fieldOpen, setFieldOpen] = useState(false);
-  const [filterValue, setFilterValue] = useState('');
-  const [filterOptions, setFilterOptions] = useState<string[]>([]);
-  const [appliedFilters, setAppliedFilters] = useState<{
-    field: { name: string; key: keyof Employee },
-    value: string
-  }[]>([]);
+  // Get unique values for the selected field
+  const fieldValues = useMemo(() => {
+    if (!selectedField) return [];
+    
+    const values = employees
+      .map(emp => emp[selectedField as keyof Employee])
+      .filter((value, index, self) => 
+        value !== undefined && 
+        value !== null && 
+        self.indexOf(value) === index
+      )
+      .sort();
+      
+    return values;
+  }, [selectedField, employees]);
 
-  // When category or field changes, update the available filter options
+  // Apply filters when activeFilters change
   useEffect(() => {
-    if (!activeFilters.field) return;
-    
-    // Get all unique values for the selected field
-    const fieldKey = activeFilters.field.key;
-    const uniqueValues = [...new Set(
-      employees
-        .map(emp => emp[fieldKey])
-        .filter(Boolean)
-        .map(val => String(val))
-    )].sort();
-    
-    setFilterOptions(uniqueValues);
-  }, [activeFilters.field, employees]);
-
-  // Filtering logic
-  const applyFilters = () => {
-    if (!activeFilters.field || !filterValue) return;
-    
-    const newFilter = {
-      field: activeFilters.field,
-      value: filterValue
-    };
-    
-    setAppliedFilters([...appliedFilters, newFilter]);
-    resetActiveFilters();
-    
-    // Apply all filters to the employee list
-    filterEmployees([...appliedFilters, newFilter]);
-  };
-
-  const filterEmployees = (filters: { field: { key: keyof Employee }, value: string }[]) => {
-    if (filters.length === 0) {
+    if (activeFilters.length === 0) {
       onFiltersChange(employees);
       return;
     }
     
-    const filteredEmployees = employees.filter(employee => {
-      // An employee must match ALL applied filters
-      return filters.every(filter => {
-        const fieldValue = employee[filter.field.key];
-        if (fieldValue === null || fieldValue === undefined) return false;
-        
-        // Handle different types of data
-        if (typeof fieldValue === 'boolean') {
-          return fieldValue.toString() === filter.value;
-        } else if (fieldValue instanceof Date) {
-          return fieldValue.toISOString().includes(filter.value);
-        } else {
-          return String(fieldValue).toLowerCase().includes(filter.value.toLowerCase());
-        }
+    const filtered = employees.filter(employee => {
+      return activeFilters.every(filter => {
+        const employeeValue = employee[filter.field as keyof Employee];
+        return employeeValue === filter.value;
       });
     });
     
-    onFiltersChange(filteredEmployees);
-  };
+    onFiltersChange(filtered);
+  }, [activeFilters, employees, onFiltersChange]);
 
-  const removeFilter = (indexToRemove: number) => {
-    const newFilters = appliedFilters.filter((_, i) => i !== indexToRemove);
-    setAppliedFilters(newFilters);
-    
-    if (newFilters.length === 0) {
-      onFiltersChange(employees); // Reset to show all employees
-    } else {
-      filterEmployees(newFilters);
+  // Add a filter
+  const addFilter = (field: string, value: string | number | boolean | null) => {
+    // Don't add duplicate filters
+    if (activeFilters.some(f => f.field === field && f.value === value)) {
+      return;
     }
+    
+    const label = value === null ? 'Not specified' : String(value);
+    
+    setActiveFilters(prev => [...prev, { field, value, label }]);
+    setSelectedCategory(null);
+    setSelectedField(null);
   };
 
-  const resetActiveFilters = () => {
-    setActiveFilters({});
-    setFilterValue('');
-    setFieldOpen(false);
-    setCategoryOpen(false);
+  // Remove a filter
+  const removeFilter = (index: number) => {
+    setActiveFilters(prev => prev.filter((_, i) => i !== index));
   };
 
-  const clearAllFilters = () => {
-    setAppliedFilters([]);
-    resetActiveFilters();
-    onFiltersChange(employees);
-  };
-
-  const handleCategorySelect = (category: EmployeeCategory) => {
-    setActiveFilters({ category });
-    setCategoryOpen(false);
-    setFieldOpen(true);
-  };
-  
-  const handleFieldSelect = (field: { name: string; key: keyof Employee }) => {
-    setActiveFilters({ ...activeFilters, field });
-    setFieldOpen(false);
+  // Clear all filters
+  const clearFilters = () => {
+    setActiveFilters([]);
+    setSelectedCategory(null);
+    setSelectedField(null);
   };
 
   return (
-    <div className="relative">
-      <Popover open={categoryOpen || fieldOpen} onOpenChange={(open) => {
-        // Only allow closing through explicit actions, not by clicking outside
-        if (!open) return;
-        setCategoryOpen(open);
-      }}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className={cn(
-            appliedFilters.length > 0 && "border-blue-500 text-blue-600"
-          )}>
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-            {appliedFilters.length > 0 && (
-              <Badge variant="secondary" className="ml-2 bg-blue-100">
-                {appliedFilters.length}
-              </Badge>
-            )}
+    <div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm">
+            <Filter className="mr-2 h-4 w-4" />
+            {activeFilters.length > 0 
+              ? `Filters (${activeFilters.length})` 
+              : "Filters"}
           </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-80 p-0" align="end">
-          <div className="grid gap-3 p-4">
-            <div className="space-y-1">
-              <h4 className="font-medium text-sm">Filter Employees</h4>
-              <p className="text-xs text-muted-foreground">
-                Select a category and field to filter by
-              </p>
-            </div>
-            
-            <div className="grid gap-2">
-              {/* Category selection */}
-              <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={categoryOpen}
-                    className="justify-between"
-                  >
-                    {activeFilters.category ? activeFilters.category.name : "Select category..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0">
-                  <Command>
-                    <CommandInput placeholder="Search categories..." />
-                    <CommandEmpty>No category found.</CommandEmpty>
-                    <CommandGroup>
-                      {employeeCategories.map((category) => (
-                        <CommandItem
-                          key={category.name}
-                          onSelect={() => handleCategorySelect(category)}
-                          className="cursor-pointer"
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56" align="end">
+          <DropdownMenuLabel>Filter by</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          
+          {/* Show categories if no field is selected */}
+          {!selectedField && (
+            <DropdownMenuGroup>
+              {Object.keys(FILTER_CATEGORIES).map(category => (
+                <DropdownMenuSub key={category}>
+                  <DropdownMenuSubTrigger>
+                    <span>{category}</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      {FILTER_CATEGORIES[category as keyof typeof FILTER_CATEGORIES].map(field => (
+                        <DropdownMenuItem 
+                          key={field}
+                          onClick={() => {
+                            setSelectedCategory(category);
+                            setSelectedField(field);
+                          }}
                         >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              activeFilters.category?.name === category.name ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {category.name}
-                        </CommandItem>
+                          <span className="capitalize">
+                            {field.replace(/_/g, ' ')}
+                          </span>
+                        </DropdownMenuItem>
                       ))}
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-              
-              {/* Field selection */}
-              {activeFilters.category && (
-                <Popover open={fieldOpen} onOpenChange={setFieldOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={fieldOpen}
-                      className="justify-between"
-                    >
-                      {activeFilters.field ? activeFilters.field.name : "Select field..."}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0">
-                    <Command>
-                      <CommandInput placeholder="Search fields..." />
-                      <CommandEmpty>No field found.</CommandEmpty>
-                      <CommandGroup>
-                        {activeFilters.category.fields.map((field) => (
-                          <CommandItem
-                            key={String(field.key)}
-                            onSelect={() => handleFieldSelect(field)}
-                            className="cursor-pointer"
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                activeFilters.field?.key === field.key ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {field.name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              )}
-              
-              {/* Value input */}
-              {activeFilters.field && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Filter by {activeFilters.field.name}:
-                  </label>
-                  {filterOptions.length > 0 ? (
-                    <div className="grid gap-2 max-h-32 overflow-auto border p-2 rounded">
-                      {filterOptions.map(option => (
-                        <div key={option} className="flex items-center">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-left justify-start h-auto py-1 w-full"
-                            onClick={() => setFilterValue(option)}
-                          >
-                            <div className="flex w-full items-center">
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  filterValue === option ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              <span className="truncate">{option}</span>
-                            </div>
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <Input
-                      placeholder="Enter filter value..."
-                      value={filterValue}
-                      onChange={(e) => setFilterValue(e.target.value)}
-                    />
-                  )}
-                </div>
-              )}
-              
-              {/* Applied filters */}
-              {appliedFilters.length > 0 && (
-                <div className="space-y-2 pt-2 border-t">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Applied Filters:</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearAllFilters}
-                      className="h-8 px-2 text-xs"
-                    >
-                      Clear All
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {appliedFilters.map((filter, index) => (
-                      <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                        <span>{filter.field.name}: {filter.value}</span>
-                        <X 
-                          className="h-3 w-3 cursor-pointer" 
-                          onClick={() => removeFilter(index)}
-                        />
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Action buttons */}
-              <div className="flex justify-end gap-2 pt-2">
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+              ))}
+            </DropdownMenuGroup>
+          )}
+          
+          {/* Show field values if a field is selected */}
+          {selectedField && (
+            <>
+              <DropdownMenuLabel className="flex justify-between items-center">
+                <span className="capitalize">
+                  {selectedField.replace(/_/g, ' ')}
+                </span>
                 <Button 
-                  variant="outline" 
-                  size="sm" 
+                  variant="ghost" 
+                  size="xs" 
+                  className="h-5 text-xs" 
                   onClick={() => {
-                    resetActiveFilters();
-                    setCategoryOpen(false);
+                    setSelectedField(null);
+                    setSelectedCategory(null);
                   }}
                 >
-                  Cancel
+                  Back
                 </Button>
-                <Button 
-                  size="sm" 
-                  disabled={!activeFilters.field || !filterValue}
-                  onClick={applyFilters}
-                >
-                  Apply Filter
-                </Button>
-              </div>
-            </div>
-          </div>
-        </PopoverContent>
-      </Popover>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              
+              {fieldValues.length > 0 ? (
+                fieldValues.map((value, index) => (
+                  <DropdownMenuItem 
+                    key={index}
+                    onClick={() => addFilter(selectedField, value)}
+                    className="flex justify-between"
+                  >
+                    <span>{String(value)}</span>
+                    {activeFilters.some(f => 
+                      f.field === selectedField && 
+                      f.value === value
+                    ) && <Check className="h-4 w-4" />}
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                <DropdownMenuItem disabled>
+                  No values found
+                </DropdownMenuItem>
+              )}
+              
+              {/* Add option for 'Not specified' */}
+              <DropdownMenuItem 
+                onClick={() => addFilter(selectedField, null)}
+                className="flex justify-between"
+              >
+                <span>Not specified</span>
+                {activeFilters.some(f => 
+                  f.field === selectedField && 
+                  f.value === null
+                ) && <Check className="h-4 w-4" />}
+              </DropdownMenuItem>
+            </>
+          )}
+          
+          {activeFilters.length > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={clearFilters}>
+                Clear all filters
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      
+      {/* Display active filters */}
+      {activeFilters.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-2">
+          {activeFilters.map((filter, index) => (
+            <Badge key={index} variant="outline" className="px-2 py-1">
+              <span className="capitalize mr-1">{filter.field.replace(/_/g, ' ')}:</span>
+              <span>{filter.label}</span>
+              <button 
+                className="ml-1 text-xs hover:text-red-500"
+                onClick={() => removeFilter(index)}
+              >
+                ✕
+              </button>
+            </Badge>
+          ))}
+          <Badge 
+            variant="outline" 
+            className="px-2 py-1 cursor-pointer bg-gray-100"
+            onClick={clearFilters}
+          >
+            Clear all
+          </Badge>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ListFilter, RefreshCw, Upload } from 'lucide-react';
+import { ListFilter, RefreshCw, Upload, Link } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
 import { AnimatedSection } from '@/components/ui-custom/AnimatedSection';
 import { useAuth } from '@/context/AuthContext';
@@ -9,12 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { LeaveCalendarView } from '@/components/leave/LeaveCalendarView';
 import { LeaveRecordsView } from '@/components/leave/LeaveRecordsView';
-
-// Define the props for LeaveRecordsView if they don't exist in the file
-interface LeaveRecordsViewProps {
-  selectedLeaveTypes: string[];
-  onLeaveTypeFilter: (types: string[]) => void;
-}
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 const Leave = () => {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -23,6 +18,8 @@ const Leave = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('calendar');
   const [selectedLeaveTypes, setSelectedLeaveTypes] = useState<string[]>([]);
+  const [botLinkDialogOpen, setBotLinkDialogOpen] = useState(false);
+  const [botLink, setBotLink] = useState('');
   
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate('/login');
@@ -78,6 +75,41 @@ const Leave = () => {
     setSelectedLeaveTypes(types);
   };
 
+  const handleGenerateBotLink = () => {
+    if (user) {
+      const botUsername = 'hrflow_leave_bot';
+      const generatedLink = `https://t.me/${botUsername}?start=${user.id}`;
+      setBotLink(generatedLink);
+      setBotLinkDialogOpen(true);
+    } else {
+      toast({
+        title: "Error",
+        description: "You need to be logged in to generate a bot link",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(botLink).then(() => {
+      toast({
+        title: "Copied",
+        description: "Bot link copied to clipboard",
+        duration: 3000,
+      });
+      setBotLinkDialogOpen(false);
+    }).catch(err => {
+      console.error('Failed to copy: ', err);
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+        duration: 3000,
+      });
+    });
+  };
+
   return (
     <div className="min-h-screen pt-20 pb-12 bg-gray-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl h-full">
@@ -130,6 +162,15 @@ const Leave = () => {
                 <ListFilter className="mr-2 h-4 w-4" />
                 Leave Records
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateBotLink}
+                className="flex items-center"
+              >
+                <Link className="mr-2 h-4 w-4" />
+                Generate Bot Link
+              </Button>
             </div>
           </div>
           
@@ -150,6 +191,25 @@ const Leave = () => {
           </div>
         </AnimatedSection>
       </div>
+
+      {/* Bot Link Dialog */}
+      <Dialog open={botLinkDialogOpen} onOpenChange={setBotLinkDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Telegram Bot Link</DialogTitle>
+          </DialogHeader>
+          <div className="p-4 bg-gray-50 rounded-md overflow-auto">
+            <p className="text-sm mb-2">Your Bot Link:</p>
+            <p className="text-xs md:text-sm break-all bg-white p-3 rounded border">{botLink}</p>
+            <p className="text-xs text-gray-500 mt-2">(Employee will click this to start leave application process)</p>
+          </div>
+          <DialogFooter className="sm:justify-start">
+            <Button type="button" onClick={copyToClipboard} className="w-full sm:w-auto">
+              Copy Link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

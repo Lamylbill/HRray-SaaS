@@ -1,3 +1,4 @@
+
 export interface LeaveEvent {
   id: string;
   title: string;
@@ -59,4 +60,14 @@ export interface AddLeaveFormProps {
   onSuccess: () => void;
   onCancel: () => void;
   initialDate?: Date | undefined;
+}
+
+export interface LeaveCalendarViewProps {
+  selectedLeaveTypes: string[];
+  onLeaveTypeFilter: (types: string[]) => void;
+}
+
+export interface LeaveRecordsViewProps {
+  selectedLeaveTypes: string[];
+  onLeaveTypeFilter: (types: string[]) => void;
 }

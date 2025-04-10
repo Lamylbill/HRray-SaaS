@@ -5,7 +5,7 @@ import {
   startOfWeek, addDays, startOfMonth, getMonth, getYear, endOfMonth,
   isSameDay, set, parseISO
 } from 'date-fns';
-import { Info, Plus, Filter } from 'lucide-react';
+import { Info, Plus, Filter, Check } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -24,7 +24,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Check } from 'lucide-react';
 
 const safeFormat = (date: Date | null | undefined, fmt: string): string =>
   date instanceof Date && !isNaN(date.getTime()) ? format(date, fmt) : '';
@@ -64,7 +63,7 @@ export const LeaveCalendarView = () => {
 
   // Scroll to current month when component mounts
   useEffect(() => {
-    if (isInitialLoad.current && calendarContainerRef.current && visibleMonths.length) {
+    if (isInitialLoad.current && calendarContainerRef.current && visibleMonths.length > 0) {
       setTimeout(() => {
         const currentMonthElement = document.getElementById(`month-${getYear(new Date())}-${getMonth(new Date())}`);
         if (currentMonthElement) {
@@ -122,17 +121,27 @@ export const LeaveCalendarView = () => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           const monthId = entry.target.id;
+          if (!monthId) return;
+          
           const [_, yearStr, monthStr] = monthId.split('-');
+          if (!yearStr || !monthStr) return;
+          
           const year = parseInt(yearStr, 10);
           const month = parseInt(monthStr, 10);
+          
+          if (isNaN(year) || isNaN(month)) return;
+          
           const monthDate = new Date(year, month);
           
           // Load more months if we're near the edges of our date range
-          if (month === getMonth(visibleMonths[0]) && year === getYear(visibleMonths[0])) {
-            loadMoreMonths('before');
-          } else if (month === getMonth(visibleMonths[visibleMonths.length - 1]) && 
-                    year === getYear(visibleMonths[visibleMonths.length - 1])) {
-            loadMoreMonths('after');
+          if (visibleMonths.length > 0) {
+            if (month === getMonth(visibleMonths[0]) && year === getYear(visibleMonths[0])) {
+              loadMoreMonths('before');
+            } else if (visibleMonths.length > 1 && 
+                      month === getMonth(visibleMonths[visibleMonths.length - 1]) && 
+                      year === getYear(visibleMonths[visibleMonths.length - 1])) {
+              loadMoreMonths('after');
+            }
           }
         }
       });
@@ -140,7 +149,9 @@ export const LeaveCalendarView = () => {
     
     // Observe all month containers
     document.querySelectorAll('.month-container').forEach(monthElement => {
-      observerRef.current?.observe(monthElement);
+      if (monthElement) {
+        observerRef.current?.observe(monthElement);
+      }
     });
   }, [visibleMonths]);
   
@@ -164,6 +175,11 @@ export const LeaveCalendarView = () => {
     setLoadingMore(true);
     
     setVisibleMonths(prevMonths => {
+      if (prevMonths.length === 0) {
+        const today = new Date();
+        return [today];
+      }
+      
       if (direction === 'before') {
         const firstMonth = prevMonths[0];
         const newMonths = [];
@@ -249,7 +265,7 @@ export const LeaveCalendarView = () => {
           end,
           type: leave.leave_types?.name || 'Unknown',
           employee: leave.employees?.full_name || 'Unknown Employee',
-          status: leave.status,
+          status: leave.status as 'Pending' | 'Approved' | 'Rejected',
           color: leave.leave_types?.color || '#999'
         };
       }).filter(Boolean) as LeaveEvent[];
@@ -297,7 +313,7 @@ export const LeaveCalendarView = () => {
           end,
           type: leave.leave_types?.name || 'Unknown',
           employee: leave.employees?.full_name || 'Unknown Employee',
-          status: leave.status,
+          status: leave.status as 'Pending' | 'Approved' | 'Rejected',
           color: leave.leave_types?.color || '#999'
         };
       }).filter(Boolean) as LeaveEvent[];

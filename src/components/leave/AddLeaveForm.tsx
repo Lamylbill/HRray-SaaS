@@ -26,11 +26,12 @@ interface Employee {
 interface AddLeaveFormProps {
   onSuccess: () => void;
   onCancel: () => void;
+  initialDate?: Date;
 }
 
-export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel }) => {
-  const [startDate, setStartDate] = useState<Date | undefined>(new Date());
-  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel, initialDate }) => {
+  const [startDate, setStartDate] = useState<Date | undefined>(initialDate || new Date());
+  const [endDate, setEndDate] = useState<Date | undefined>(initialDate || new Date());
   const [leaveTypeId, setLeaveTypeId] = useState<string>('');
   const [employeeId, setEmployeeId] = useState<string>('');
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);

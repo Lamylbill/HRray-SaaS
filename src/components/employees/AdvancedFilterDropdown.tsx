@@ -158,7 +158,7 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
                 </span>
                 <Button 
                   variant="ghost" 
-                  size="xs" 
+                  size="sm"  // Fixed: "xs" is not a valid size
                   className="h-5 text-xs" 
                   onClick={() => {
                     setSelectedField(null);
@@ -171,19 +171,23 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
               <DropdownMenuSeparator />
               
               {fieldValues.length > 0 ? (
-                fieldValues.map((value, index) => (
-                  <DropdownMenuItem 
-                    key={index}
-                    onClick={() => addFilter(selectedField, value)}
-                    className="flex justify-between"
-                  >
-                    <span>{String(value)}</span>
-                    {activeFilters.some(f => 
-                      f.field === selectedField && 
-                      f.value === value
-                    ) && <Check className="h-4 w-4" />}
-                  </DropdownMenuItem>
-                ))
+                fieldValues.map((value, index) => {
+                  // Fixed: Ensure value is of the correct type
+                  const typedValue = Array.isArray(value) ? value[0] : value;
+                  return (
+                    <DropdownMenuItem 
+                      key={index}
+                      onClick={() => addFilter(selectedField, typedValue)}
+                      className="flex justify-between"
+                    >
+                      <span>{String(typedValue)}</span>
+                      {activeFilters.some(f => 
+                        f.field === selectedField && 
+                        f.value === typedValue
+                      ) && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                  );
+                })
               ) : (
                 <DropdownMenuItem disabled>
                   No values found

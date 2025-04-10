@@ -1,4 +1,3 @@
-
 export interface LeaveEvent {
   id: string;
   title: string;
@@ -54,5 +53,10 @@ export interface LeaveRequest {
   created_at: string;
 }
 
-// Define the CSSProperties type for consistent styling
 export type EventStyleProps = React.CSSProperties;
+
+export interface AddLeaveFormProps {
+  onSuccess: () => void;
+  onCancel: () => void;
+  initialDate?: Date | undefined;
+}

@@ -10,6 +10,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { LeaveCalendarView } from '@/components/leave/LeaveCalendarView';
 import { LeaveRecordsView } from '@/components/leave/LeaveRecordsView';
 
+// Define the props for LeaveRecordsView if they don't exist in the file
+interface LeaveRecordsViewProps {
+  selectedLeaveTypes: string[];
+  onLeaveTypeFilter: (types: string[]) => void;
+}
+
 const Leave = () => {
   const { isAuthenticated, isLoading, user } = useAuth();
   const navigate = useNavigate();
@@ -129,8 +135,18 @@ const Leave = () => {
           
           {/* Tab Content - Takes full height */}
           <div className="flex-1 flex flex-col">
-            {activeTab === 'calendar' && <LeaveCalendarView selectedLeaveTypes={selectedLeaveTypes} onLeaveTypeFilter={handleLeaveTypeFilter} />}
-            {activeTab === 'records' && <LeaveRecordsView selectedLeaveTypes={selectedLeaveTypes} onLeaveTypeFilter={handleLeaveTypeFilter} />}
+            {activeTab === 'calendar' && (
+              <LeaveCalendarView 
+                selectedLeaveTypes={selectedLeaveTypes} 
+                onLeaveTypeFilter={handleLeaveTypeFilter} 
+              />
+            )}
+            {activeTab === 'records' && (
+              <LeaveRecordsView 
+                selectedLeaveTypes={selectedLeaveTypes} 
+                onLeaveTypeFilter={handleLeaveTypeFilter} 
+              />
+            )}
           </div>
         </AnimatedSection>
       </div>

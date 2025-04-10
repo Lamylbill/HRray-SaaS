@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import {
   format, isToday, isSameMonth, 
@@ -50,12 +49,10 @@ export const LeaveCalendarView: React.FC<CalendarProps> = ({ selectedLeaveTypes,
   const [isFilteringTypes, setIsFilteringTypes] = useState(false);
   const { toast } = useToast();
 
-  // Initialize calendar with current month and surrounding months
   useEffect(() => {
     const today = new Date();
     const initialMonths = [];
     
-    // Add previous, current, and next months
     for (let i = -12; i <= 12; i++) {
       const month = new Date(today.getFullYear(), today.getMonth() + i, 1);
       initialMonths.push(month);
@@ -64,7 +61,6 @@ export const LeaveCalendarView: React.FC<CalendarProps> = ({ selectedLeaveTypes,
     setVisibleMonths(initialMonths);
   }, []);
 
-  // Scroll to current month when component mounts
   useEffect(() => {
     if (isInitialLoad.current && calendarContainerRef.current && visibleMonths.length > 0) {
       setTimeout(() => {
@@ -77,7 +73,6 @@ export const LeaveCalendarView: React.FC<CalendarProps> = ({ selectedLeaveTypes,
     }
   }, [visibleMonths]);
 
-  // Fetch leave types when component mounts
   useEffect(() => {
     const fetchLeaveTypes = async () => {
       try {
@@ -98,7 +93,6 @@ export const LeaveCalendarView: React.FC<CalendarProps> = ({ selectedLeaveTypes,
     fetchLeaveTypes();
   }, []);
 
-  // Initialize the intersection observer for infinite scrolling
   useEffect(() => {
     if (!observerRef.current && visibleMonths.length > 0) {
       observerRef.current = new IntersectionObserver((entries) => {
@@ -117,7 +111,6 @@ export const LeaveCalendarView: React.FC<CalendarProps> = ({ selectedLeaveTypes,
             
             const monthDate = new Date(year, month);
             
-            // Load more months if we're near the edges of our date range
             if (visibleMonths.length > 0) {
               if (month === getMonth(visibleMonths[0]) && year === getYear(visibleMonths[0])) {
                 loadMoreMonths('before');
@@ -131,7 +124,6 @@ export const LeaveCalendarView: React.FC<CalendarProps> = ({ selectedLeaveTypes,
         });
       }, { threshold: 0.1 });
     
-      // Observe all month containers
       document.querySelectorAll('.month-container').forEach(monthElement => {
         if (monthElement) {
           observerRef.current?.observe(monthElement);
@@ -140,7 +132,6 @@ export const LeaveCalendarView: React.FC<CalendarProps> = ({ selectedLeaveTypes,
     }
   }, [visibleMonths]);
   
-  // Re-observe month containers when visible months change
   useEffect(() => {
     if (observerRef.current) {
       observerRef.current.disconnect();
@@ -187,18 +178,15 @@ export const LeaveCalendarView: React.FC<CalendarProps> = ({ selectedLeaveTypes,
       setLoadingMore(false);
     }, 500);
   };
-  
-  // Create day cells for a month
+
   const renderMonth = (monthDate: Date) => {
     const monthStart = startOfMonth(monthDate);
     const monthEnd = endOfMonth(monthStart);
     const startDate = startOfWeek(monthStart);
     
-    // Generate an array of dates for each day in the month view
     const calendarDays = [];
     let day = startDate;
     
-    // Generate 6 weeks to ensure all months fit
     for (let week = 0; week < 6; week++) {
       for (let i = 0; i < 7; i++) {
         calendarDays.push(day);
@@ -249,13 +237,11 @@ export const LeaveCalendarView: React.FC<CalendarProps> = ({ selectedLeaveTypes,
       </div>
     );
   };
-  
-  // Fetch leave and holiday data from Supabase
+
   useEffect(() => {
     const fetchCalendarData = async () => {
       setIsLoading(true);
       try {
-        // Fetch leave requests
         const { data: leaveData, error: leaveError } = await supabase
           .from('leave_requests')
           .select(`
@@ -274,7 +260,6 @@ export const LeaveCalendarView: React.FC<CalendarProps> = ({ selectedLeaveTypes,
           
         if (leaveError) throw leaveError;
         
-        // Fetch public holidays
         const { data: holidayData, error: holidayError } = await supabase
           .from('public_holidays')
           .select('*')
@@ -282,7 +267,6 @@ export const LeaveCalendarView: React.FC<CalendarProps> = ({ selectedLeaveTypes,
           
         if (holidayError) throw holidayError;
         
-        // Transform leave data into calendar events
         const transformedLeaveData = leaveData?.map(leave => {
           if (!leave.start_date || !leave.end_date) return null;
           
@@ -301,7 +285,6 @@ export const LeaveCalendarView: React.FC<CalendarProps> = ({ selectedLeaveTypes,
           };
         }).filter(Boolean) as LeaveEvent[];
         
-        // Transform holiday data
         const transformedHolidayData = holidayData?.map(holiday => {
           if (!holiday.date) return null;
           
@@ -330,11 +313,9 @@ export const LeaveCalendarView: React.FC<CalendarProps> = ({ selectedLeaveTypes,
     fetchCalendarData();
   }, []);
 
-  // Filter events when selected leave types change
   useEffect(() => {
     const fetchFilteredLeaves = async () => {
       if (selectedLeaveTypes.length === 0) {
-        // If no types selected, fetch all
         const { data: leaveData, error: leaveError } = await supabase
           .from('leave_requests')
           .select(`
@@ -526,7 +507,7 @@ export const LeaveCalendarView: React.FC<CalendarProps> = ({ selectedLeaveTypes,
       )}
       
       <Sheet open={isAddLeaveOpen} onOpenChange={setIsAddLeaveOpen}>
-        <SheetContent size="lg">
+        <SheetContent className="overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Request Leave</SheetTitle>
             <SheetDescription>
@@ -542,16 +523,15 @@ export const LeaveCalendarView: React.FC<CalendarProps> = ({ selectedLeaveTypes,
                   title: "Leave Request Submitted",
                   description: "Your leave request has been submitted for approval.",
                 });
-                // Refresh calendar data
-                // We would need to implement this
               }}
+              onCancel={() => setIsAddLeaveOpen(false)}
             />
           </div>
         </SheetContent>
       </Sheet>
       
       <Sheet open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <SheetContent size="lg">
+        <SheetContent className="overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Leave Details</SheetTitle>
           </SheetHeader>
@@ -620,14 +600,12 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
   const isDayToday = isToday(day);
   const isCurrentMonth = isSameMonth(day, monthDate);
   
-  // Filter events for this day
   const dayEvents = events.filter(event => 
     isSameDay(day, event.start) || 
     isSameDay(day, event.end) || 
     (day > event.start && day < event.end)
   );
   
-  // Check if day is a holiday
   const holiday = holidays.find(h => isSameDay(day, h.date));
   
   return (

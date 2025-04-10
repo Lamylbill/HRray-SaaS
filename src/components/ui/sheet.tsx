@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as SheetPrimitive from "@radix-ui/react-dialog"
 
@@ -26,9 +27,13 @@ const SheetOverlay = React.forwardRef<
 ))
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName
 
+type SheetContentProps = React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content> & {
+  side?: "top" | "right" | "bottom" | "left"
+}
+
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>
+  SheetContentProps
 >(({ className, children, side = "right", ...props }, ref) => (
   <SheetPortal>
     <SheetOverlay />

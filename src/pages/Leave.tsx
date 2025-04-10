@@ -75,12 +75,35 @@ const Leave = () => {
     setSelectedLeaveTypes(types);
   };
 
-  const handleGenerateBotLink = () => {
+  const handleGenerateBotLink = async () => {
     if (user) {
-      const botUsername = 'hrflow_leave_bot';
-      const generatedLink = `https://t.me/${botUsername}?start=${user.id}`;
-      setBotLink(generatedLink);
-      setBotLinkDialogOpen(true);
+      try {
+        // Fetch the employer_code from the profiles table
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('employer_code')
+          .eq('id', user.id)
+          .single();
+        
+        if (error) {
+          throw error;
+        }
+        
+        const employerCode = data?.employer_code || user.id;
+        const botUsername = 'hrflow_leave_bot';
+        const generatedLink = `https://t.me/${botUsername}?start=${employerCode}`;
+        
+        setBotLink(generatedLink);
+        setBotLinkDialogOpen(true);
+      } catch (error) {
+        console.error('Error fetching employer code:', error);
+        toast({
+          title: "Error",
+          description: "Failed to generate bot link",
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
     } else {
       toast({
         title: "Error",

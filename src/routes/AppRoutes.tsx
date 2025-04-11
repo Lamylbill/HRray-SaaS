@@ -17,7 +17,7 @@ import { LoadingSpinner } from "@/components/ui-custom/LoadingSpinner";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();  // Ensure this is properly checking JWT
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,6 +33,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         <LoadingSpinner size="lg" />
       </div>
     );
+  }
+
+  return isAuthenticated ? <>{children}</> : null;
+};
   }
 
   return isAuthenticated ? <>{children}</> : null; // Protect the route, show nothing if unauthenticated

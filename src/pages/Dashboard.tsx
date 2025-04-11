@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Employee } from '@/types/employee';
 import { standardizeEmployee } from '@/utils/employeeFieldUtils';
-import LeaveRecordsView from '@/components/leave/LeaveRecordsView'; // Import LeaveRecordsView
+import LeaveRecordsView from '@/components/leave/LeaveRecordsView';
 
 const Dashboard = () => {
   const [employeeCount, setEmployeeCount] = useState<number>(0);

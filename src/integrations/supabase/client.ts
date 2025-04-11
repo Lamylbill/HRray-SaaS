@@ -87,3 +87,5 @@ export const ensureStorageBucket = async (bucketName: string) => {
     return false;
   }
 };
+
+export { ensureStorageBucket };

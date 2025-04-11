@@ -17,6 +17,9 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   },
 });
 
+// Define and export the storage bucket name
+export const STORAGE_BUCKET = 'your-bucket-name'; // Replace 'your-bucket-name' with your actual bucket name
+
 // User login function to fetch JWT
 export const login = async (email: string, password: string): Promise<string | null> => {
   const { user, session, error } = await supabase.auth.signIn({

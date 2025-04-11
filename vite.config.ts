@@ -1,37 +1,19 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
-import path from "path";
-import { componentTagger } from "lovable-tagger";
+// src/vite.config.ts
 
-// https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  server: {
-    host: "::",
-    port: 8080,
-  },
-  plugins: [
-    react(),
-    mode === 'development' && componentTagger(),
-  ].filter(Boolean),
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react-swc';
+import path from 'path';
+
+export default defineConfig({
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      '@': path.resolve(__dirname, './src'),
     },
   },
+  plugins: [react()],
   build: {
-    outDir: "dist",
-    emptyOutDir: true,
-    sourcemap: false,
-    // Ensure the production build handles chunk loading correctly
     rollupOptions: {
-      external: ['@rollup/pluginutils'], // ✅ Added this line
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-        },
-      },
+      external: ['canvas'], // Skip canvas from build (Netlify safe)
     },
   },
-  // Add a base configuration for the project to ensure correct asset paths
-  base: "./",
-}));
+});

@@ -97,6 +97,17 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
         })
         .auth(token);
       
+      if (uploadError) throw uploadError;
+      
+      // Get public URL after upload
+      const { data: urlData } = supabase.storage
+        .from(AVATAR_BUCKET)
+        .getPublicUrl(filePath);
+      
+      const publicUrl = urlData.publicUrl;
+      setAvatarUrl(publicUrl);
+      
+      // If employeeId exists, update profile_picture in DB
       if (employeeId) {
         const { error: updateError } = await supabase
           .from('employees')
@@ -106,6 +117,10 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
           .auth(token);
       
         if (updateError) throw updateError;
+      }
+            
+        const publicUrl = urlData.publicUrl;
+        setAvatarUrl(publicUrl);
       }
 
       toast({

@@ -1,4 +1,4 @@
-
+import React from 'react';
 import React, { useState, useEffect } from 'react';
 import { LeaveRecordsViewProps, LeaveRequest } from './interfaces';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -67,6 +67,8 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
         setIsLoading(false);
       }
     };
+
+  export default LeaveRecordsView;  // Ensure it's the default export
     
     fetchLeaveRequests();
   }, [user]);
@@ -203,5 +205,3 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
   );
 };
 
-
-export default LeaveRecordsView;  // Ensure it's the default export

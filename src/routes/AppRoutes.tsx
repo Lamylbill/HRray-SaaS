@@ -37,7 +37,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   return isAuthenticated ? <>{children}</> : null;
 };
-  }
 
   return isAuthenticated ? <>{children}</> : null; // Protect the route, show nothing if unauthenticated
 };

@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { LeaveCalendarView } from '@/components/leave/LeaveCalendarView';
 import { LeaveRecordsView } from '@/components/leave/LeaveRecordsView';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { LeaveCalendarViewProps, LeaveRecordsViewProps } from '@/components/leave/interfaces';
 
 const Leave = () => {
   const { isAuthenticated, isLoading, user } = useAuth();

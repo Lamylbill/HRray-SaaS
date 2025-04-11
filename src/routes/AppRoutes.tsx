@@ -1,7 +1,5 @@
-
 import React, { Suspense, useEffect } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
-
 import { useAuth } from "@/context/AuthContext";
 
 import Index from "@/pages/Index";
@@ -17,6 +15,7 @@ import { DashNavbar } from "@/components/layout/DashNavbar";
 import { LandNavbar } from "@/components/layout/LandNavbar";
 import { LoadingSpinner } from "@/components/ui-custom/LoadingSpinner";
 
+// Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
@@ -36,9 +35,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  return isAuthenticated ? <>{children}</> : null;
+  return isAuthenticated ? <>{children}</> : null; // Protect the route, show nothing if unauthenticated
 };
 
+// Dashboard Layout
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex flex-col h-screen bg-gray-50">
@@ -58,6 +58,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+// Settings Wrapper
 const SettingsWrapper = () => {
   const location = useLocation();
   const from = location.state?.from || "/dashboard";
@@ -65,6 +66,7 @@ const SettingsWrapper = () => {
   return <Settings returnTo={from} />;
 };
 
+// Routes Setup
 const AppRoutes = () => {
   return (
     <Routes>

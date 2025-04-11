@@ -67,3 +67,20 @@ export const getCurrentUser = () => {
 export const getJwtToken = () => {
   return localStorage.getItem('jwt_token');
 };
+
+// Function to ensure the storage bucket exists
+export const ensureStorageBucket = async (bucketName: string) => {
+  try {
+    const { data, error } = await supabase.storage.getBucket(bucketName);
+    if (error) throw error;
+
+    if (!data) {
+      const { error: createError } = await supabase.storage.createBucket(bucketName);
+      if (createError) throw createError;
+    }
+    return true;
+  } catch (error) {
+    console.error('Error ensuring storage bucket:', error);
+    return false;
+  }
+};

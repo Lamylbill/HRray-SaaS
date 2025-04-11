@@ -147,6 +147,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Login successful:', data.user?.id);
       setUser(data.user);
       setSession(data.session);
+
+       // Store the JWT token in localStorage
+      localStorage.setItem('jwt_token', data.session?.access_token || '');  // Store JWT token
       
       navigate('/dashboard');
       return {};

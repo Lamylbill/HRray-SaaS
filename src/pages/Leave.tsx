@@ -7,9 +7,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { LeaveCalendarView } from '@/components/leave/LeaveCalendarView';
-import { LeaveRecordsView } from '@/components/leave/LeaveRecordsView';
+import LeaveRecordsView from '@/components/leave/LeaveRecordsView';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { LeaveCalendarViewProps, LeaveRecordsViewProps } from '@/components/leave/interfaces';
 
 const Leave = () => {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -20,7 +19,7 @@ const Leave = () => {
   const [selectedLeaveTypes, setSelectedLeaveTypes] = useState<string[]>([]);
   const [botLinkDialogOpen, setBotLinkDialogOpen] = useState(false);
   const [botLink, setBotLink] = useState('');
-  
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate('/login');
   }, [isAuthenticated, isLoading, navigate]);
@@ -42,7 +41,7 @@ const Leave = () => {
           .from('shifts')
           .select('*')
       ]);
-      
+
       toast({
         title: "Refreshed",
         description: "Leave data has been refreshed",
@@ -77,10 +76,10 @@ const Leave = () => {
     if (user) {
       const botUsername = 'hrflow_leave_bot';
       const generatedLink = `https://t.me/${botUsername}?start=${user.id}`;
-      
+
       setBotLink(generatedLink);
       setBotLinkDialogOpen(true);
-      
+
       console.log('Generated bot link with user ID:', user.id);
     } else {
       toast({
@@ -120,7 +119,7 @@ const Leave = () => {
               <h1 className="text-3xl font-bold text-gray-900">Leave Management</h1>
               <p className="mt-1 text-gray-600">Manage employee leave, shifts, and attendance</p>
             </div>
-            
+
             <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
               <Button 
                 variant="outline" 
@@ -140,7 +139,7 @@ const Leave = () => {
               </Button>
             </div>
           </div>
-          
+
           <div className="mb-6">
             <div className="flex flex-wrap gap-2">
               <Button
@@ -172,7 +171,7 @@ const Leave = () => {
               </Button>
             </div>
           </div>
-          
+
           <div className="flex-1 flex flex-col">
             {activeTab === 'calendar' && (
               <LeaveCalendarView 

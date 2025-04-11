@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { LeaveRecordsViewProps, LeaveRequest } from './interfaces';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -168,7 +169,7 @@ export const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {leaveRequests.map(request => (
+              {filteredLeaveRequests.map(request => (
                 <TableRow key={request.id}>
                   <TableCell className="font-medium">{request.employee.full_name}</TableCell>
                   <TableCell>

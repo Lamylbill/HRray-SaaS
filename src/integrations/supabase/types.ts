@@ -1257,6 +1257,10 @@ export type Database = {
         Args: { year: number; country: string }
         Returns: undefined
       }
+      get_user_employee_id: {
+        Args: { user_uuid: string }
+        Returns: string
+      }
       sync_employee_schema: {
         Args: Record<PropertyKey, never>
         Returns: undefined

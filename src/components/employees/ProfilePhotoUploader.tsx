@@ -87,29 +87,24 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
       const fileName = `${tempId}_${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
+      const token = localStorage.getItem('jwt_token');
+
       const { error: uploadError } = await supabase.storage
         .from(AVATAR_BUCKET)
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true,
-        });
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from(AVATAR_BUCKET)
-        .getPublicUrl(filePath);
-
-      const publicUrl = urlData.publicUrl;
-      setAvatarUrl(publicUrl);
-
+        })
+        .auth(token);
+      
       if (employeeId) {
         const { error: updateError } = await supabase
           .from('employees')
           .update({ profile_picture: publicUrl })
           .eq('id', employeeId)
-          .eq('user_id', user.id);
-
+          .eq('user_id', user.id)
+          .auth(token);
+      
         if (updateError) throw updateError;
       }
 

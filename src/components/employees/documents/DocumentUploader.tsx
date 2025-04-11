@@ -17,6 +17,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { supabase, STORAGE_BUCKET, ensureStorageBucket } from '@/integrations/supabase/client';
+import { ensureStorageBucket } from '@/integrations/supabase/client';
+
 
 interface DocumentUploaderProps {
   employeeId: string;

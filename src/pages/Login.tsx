@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,29 +5,27 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client'; // Import your supabase client
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   // Redirect if already authenticated
   useEffect(() => {
-    console.log("Login page - Auth state:", { isAuthenticated, isLoading });
-    if (isAuthenticated && !isLoading) {
-      console.log("Already authenticated, redirecting to dashboard");
-      navigate('/dashboard');
+    const user = supabase.auth.user();
+    if (user) {
+      navigate('/dashboard'); // Redirect to dashboard if already logged in
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast({
         title: "Missing fields",
@@ -37,12 +34,14 @@ const Login = () => {
       });
       return;
     }
-    
+
     try {
       setIsSubmitting(true);
-      console.log("Submitting login form");
-      const { error } = await login(email, password);
-      
+      const { user, session, error } = await supabase.auth.signIn({
+        email,
+        password,
+      });
+
       if (error) {
         console.error("Login error:", error.message);
         toast({
@@ -52,6 +51,7 @@ const Login = () => {
         });
       } else {
         console.log("Login successful, redirecting...");
+        navigate('/dashboard'); // Redirect to dashboard after successful login
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -66,7 +66,8 @@ const Login = () => {
   };
 
   // Show loading spinner while checking auth
-  if (isLoading) {
+  const user = supabase.auth.user();
+  if (!user && isSubmitting) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />

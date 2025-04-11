@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Employee } from '@/types/employee';
 import { standardizeEmployee } from '@/utils/employeeFieldUtils';
+import LeaveRecords from './LeaveRecords'; // Import the LeaveRecords component
 
 const Dashboard = () => {
   const [employeeCount, setEmployeeCount] = useState<number>(0);
@@ -86,6 +86,12 @@ const Dashboard = () => {
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <p className="text-gray-600">No recent activity to display.</p>
         </div>
+      </div>
+      
+      {/* Add Leave Records Section */}
+      <div className="mt-8">
+        <h2 className="text-base font-semibold mb-4">Leave Records</h2>
+        <LeaveRecords user={user} /> {/* Add the LeaveRecords component */}
       </div>
     </div>
   );

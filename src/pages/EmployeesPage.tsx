@@ -84,11 +84,14 @@ const EmployeesPage = () => {
         return;
       }
 
+      const token = localStorage.getItem('jwt_token');
+      
       const { data, error } = await supabase
         .from('employees')
         .select('*')
         .eq('user_id', user.id)
-        .order('full_name', { ascending: true });
+        .order('full_name', { ascending: true })
+        .auth(token);
 
       if (error) throw error;
 

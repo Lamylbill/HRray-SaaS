@@ -30,10 +30,13 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
 
   const handleDelete = async () => {
     try {
+      const token = localStorage.getItem('jwt_token');
+      
       const { error } = await supabase
         .from('employees')
         .delete()
-        .eq('id', employee.id);
+        .eq('id', employee.id)
+        .auth(token);
 
       if (error) throw error;
 

@@ -90,11 +90,14 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
     setError(null);
 
     try {
+      const token = localStorage.getItem('jwt_token');
+
       const { data: dbDocuments, error: fetchError } = await supabase
         .from('employee_documents')
         .select('*')
         .eq('employee_id', employeeId)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .auth(token);
 
       if (fetchError) throw fetchError;
 
@@ -175,20 +178,23 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
         .from('employee_documents')
         .select('file_path')
         .eq('id', documentId)
-        .single();
+        .single()
+        .auth(token);
 
       if (error) throw error;
 
       const { error: storageErr } = await supabase.storage
         .from(STORAGE_BUCKET)
-        .remove([data.file_path]);
+        .remove([data.file_path])
+        .auth(token);
 
       if (storageErr) throw storageErr;
 
       const { error: dbErr } = await supabase
         .from('employee_documents')
         .delete()
-        .eq('id', documentId);
+        .eq('id', documentId)
+        .auth(token);
 
       if (dbErr) throw dbErr;
 

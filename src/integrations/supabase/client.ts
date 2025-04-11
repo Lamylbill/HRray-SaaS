@@ -1,66 +1,69 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://ezvdmuahwliqotnbocdd.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6dmRtdWFod2xpcW90bmJvY2RkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIyMjAzMTksImV4cCI6MjA1Nzc5NjMxOX0.NjZ8o0b71gTScc2B2yoB_dNzDXHZrV8RP1T13WX2I3U";
+// Your Supabase URL and Public Key
+const SUPABASE_URL = 'https://ezvdmuahwliqotnbocdd.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6dmRtdWFod2xpcW90bmJvY2RkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIyMjAzMTksImV4cCI6MjA1Nzc5NjMxOX0.NjZ8o0b71gTScc2B2yoB_dNzDXHZrV8RP1T13WX2I3U'; // Replace with actual key
 
-// Initialize Supabase client
+// Initialize the Supabase client
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    persistSession: true, // Keep the session persistent
+    persistSession: true, // Keep session across browser refresh
   },
   global: {
     headers: {
-      'x-application-name': 'HRFlow', // Optional: Set a custom header
+      'x-application-name': 'HRFlow',
     },
   },
 });
 
-// Login function to get JWT token
-export const login = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
+// User login function to fetch JWT
+export const login = async (email: string, password: string): Promise<string | null> => {
+  const { user, session, error } = await supabase.auth.signIn({
     email,
     password,
   });
 
   if (error) {
-    console.error("Error logging in:", error.message);
+    console.error('Error during login:', error);
     return null;
   }
 
-  return data?.session?.access_token;  // Return the JWT token
+  // Store JWT token (session.access_token)
+  if (session) {
+    localStorage.setItem('jwt_token', session.access_token); // Storing JWT in localStorage
+    return session.access_token;
+  }
+  return null;
 };
 
-// Logout function
-export const logout = async () => {
-  await supabase.auth.signOut();
-};
-
-// Function to fetch protected data with JWT token
+// Fetch protected data using JWT token
 export const fetchProtectedData = async (jwt: string) => {
   const { data, error } = await supabase
-    .from("your_table") // Replace "your_table" with your table name
-    .select("*")
-    .single()
-    .auth(jwt); // Attach the JWT token to the request
+    .from('your_table') // Replace with your actual table
+    .select('*')
+    .auth(jwt);
 
   if (error) {
-    console.error("Error fetching protected data:", error.message);
+    console.error('Error fetching protected data:', error);
     return null;
   }
 
   return data;
 };
 
-// Example function to use the JWT and fetch data
-export const fetchDataWithJwt = async () => {
-  const jwt = await login("email@example.com", "password"); // Replace with actual login credentials
+// Logout function to clear JWT token
+export const logout = () => {
+  localStorage.removeItem('jwt_token'); // Clear JWT from storage
+  console.log('User logged out');
+};
 
-  if (!jwt) {
-    console.error("Failed to retrieve JWT");
-    return;
-  }
+// Get currently authenticated user
+export const getCurrentUser = () => {
+  return supabase.auth.user();
+};
 
-  const result = await fetchProtectedData(jwt);
-  console.log("Protected data:", result);
+// Get the JWT token (if any) from localStorage
+export const getJwtToken = () => {
+  return localStorage.getItem('jwt_token');
 };

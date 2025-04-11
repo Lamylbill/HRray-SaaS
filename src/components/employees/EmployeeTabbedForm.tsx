@@ -133,20 +133,24 @@ export const EmployeeTabbedForm: React.FC<EmployeeTabbedFormProps> = ({
       }
 
       if (mode === 'edit' && employeeForDb.id) {
+        const token = localStorage.getItem('jwt_token');
         const { error } = await supabase
           .from('employees')
           .update(employeeForDb)
           .eq('id', employeeForDb.id)
-          .eq('user_id', userId);
+          .eq('user_id', userId)
+          .auth(token);
 
         if (error) throw error;
       } else if (mode === 'create') {
         const { id, ...createData } = employeeForDb;
+        const token = localStorage.getItem('jwt_token');
         const { data: newEmployee, error } = await supabase
           .from('employees')
           .insert({ ...createData, user_id: userId })
           .select()
-          .single();
+          .single()
+          .auth(token);;
 
         if (error) throw error;
         if (newEmployee) {

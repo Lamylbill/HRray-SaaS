@@ -23,10 +23,13 @@ const Dashboard = () => {
       try {
         setIsLoading(true);
         // Fetch total employee count
+        const token = localStorage.getItem('jwt_token');
+
         const { count: totalCount, error: countError } = await supabase
           .from('employees')
           .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .auth(token); // pass JWT token here
 
         if (countError) throw countError;
 

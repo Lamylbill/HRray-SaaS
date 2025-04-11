@@ -8,7 +8,7 @@ import { Eye, Filter } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
-export const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ 
+const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ 
   selectedLeaveTypes,
   onLeaveTypeFilter
 }) => {
@@ -202,3 +202,6 @@ export const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
     </div>
   );
 };
+
+
+export default LeaveRecordsView;  // Ensure it's the default export

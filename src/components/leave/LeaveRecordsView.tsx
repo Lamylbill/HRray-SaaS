@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { LeaveRecordsViewProps, LeaveRequest } from './interfaces';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -39,8 +38,8 @@ export const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
         
         if (error) throw error;
         
-        // Transform the data into the expected format
-        const formattedData = data.map(item => ({
+        // Transform the data into the expected format with proper typing
+        const formattedData: LeaveRequest[] = data.map(item => ({
           id: item.id,
           employee: {
             id: item.employee.id,
@@ -53,9 +52,10 @@ export const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
           },
           start_date: item.start_date,
           end_date: item.end_date,
-          status: item.status,
-          half_day: item.half_day,
-          half_day_type: item.half_day_type,
+          // Ensure status is one of the expected enum values
+          status: item.status as "Approved" | "Rejected" | "Pending",
+          half_day: item.half_day || false,
+          half_day_type: item.half_day_type as "AM" | "PM" | null,
           created_at: item.created_at
         }));
         
@@ -83,7 +83,7 @@ export const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
     });
   };
   
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: "Approved" | "Rejected" | "Pending") => {
     switch (status) {
       case 'Approved':
         return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
@@ -147,7 +147,7 @@ export const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
         <div className="py-8 text-center">
           <p className="text-gray-500">Loading leave records...</p>
         </div>
-      ) : filteredLeaveRequests.length === 0 ? (
+      ) : leaveRequests.length === 0 ? (
         <div className="py-8 text-center border border-dashed border-gray-200 rounded-md">
           <p className="text-gray-500">No leave records found</p>
           {selectedLeaveTypes.length > 0 && (
@@ -168,7 +168,7 @@ export const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredLeaveRequests.map(request => (
+              {leaveRequests.map(request => (
                 <TableRow key={request.id}>
                   <TableCell className="font-medium">{request.employee.full_name}</TableCell>
                   <TableCell>

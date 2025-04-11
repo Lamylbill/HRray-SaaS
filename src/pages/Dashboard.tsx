@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Employee } from '@/types/employee';
 import { standardizeEmployee } from '@/utils/employeeFieldUtils';
-import LeaveRecords from './LeaveRecords'; // Import the LeaveRecords component
+import LeaveRecordsView from './LeaveRecordsView'; // Import LeaveRecordsView
 
 const Dashboard = () => {
   const [employeeCount, setEmployeeCount] = useState<number>(0);
@@ -11,6 +11,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const [selectedLeaveTypes, setSelectedLeaveTypes] = useState<string[]>([]); // State for leave type filters
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -52,6 +53,11 @@ const Dashboard = () => {
     fetchStats();
   }, [user]);
 
+  // Handle leave type filter change
+  const handleLeaveTypeFilter = (types: string[]) => {
+    setSelectedLeaveTypes(types);
+  };
+
   return (
     <div className="p-6 dashboard">
       <h1 className="text-base font-bold mb-6">Dashboard</h1>
@@ -91,7 +97,10 @@ const Dashboard = () => {
       {/* Add Leave Records Section */}
       <div className="mt-8">
         <h2 className="text-base font-semibold mb-4">Leave Records</h2>
-        <LeaveRecords user={user} /> {/* Add the LeaveRecords component */}
+        <LeaveRecordsView 
+          selectedLeaveTypes={selectedLeaveTypes} 
+          onLeaveTypeFilter={handleLeaveTypeFilter} 
+        />
       </div>
     </div>
   );

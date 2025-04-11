@@ -27,19 +27,21 @@ const Leave = () => {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
+      const token = localStorage.getItem('jwt_token');
+      
       await Promise.all([
         supabase
           .from('leave_requests')
-          .select('*'),
+          .select('*').auth(token),
         supabase
           .from('public_holidays')
-          .select('*'),
+          .select('*').auth(token),
         supabase
           .from('leave_quotas')
-          .select('*'),
+          .select('*').auth(token),
         supabase
           .from('shifts')
-          .select('*')
+          .select('*').auth(token)
       ]);
 
       toast({

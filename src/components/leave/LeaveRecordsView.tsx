@@ -21,6 +21,8 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
       
       setIsLoading(true);
       try {
+        const token = localStorage.getItem('jwt_token');
+        
         const { data, error } = await supabase
           .from('leave_requests')
           .select(`
@@ -34,7 +36,8 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
             employee:employees(id, full_name),
             leave_type:leave_types(id, name, color)
           `)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .auth(token);
         
         if (error) throw error;
         

@@ -156,39 +156,29 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
             f.id === fileItem.id ? { ...f, progress: 30 } : f
           ));
 
+          const token = localStorage.getItem('jwt_token');
+
           const { error: uploadError, data: uploadData } = await supabase.storage
             .from(STORAGE_BUCKET)
             .upload(filePath, fileItem.file, {
               cacheControl: '3600',
               upsert: false
-            });
-
+            })
+            .auth(token);
+          
           if (uploadError) throw uploadError;
-
-          setFiles(prev => prev.map(f =>
-            f.id === fileItem.id ? { ...f, progress: 70 } : f
-          ));
-
-          const safeUserId = user.id?.trim();
-          if (!safeUserId) {
-            throw new Error('Missing user ID. Please log in again.');
-          }
-
+          
           const { error: dbError } = await supabase
             .from('employee_documents')
             .insert({
               employee_id: employeeId,
               user_id: safeUserId,
-              file_name: fileItem.file.name,
-              file_type: fileItem.file.type,
-              file_size: fileItem.file.size,
-              file_path: filePath,
-              category: fileItem.category,
-              document_type: fileItem.documentType,
-              notes: fileItem.notes
-            });
-
+              ...
+            })
+            .auth(token);
+          
           if (dbError) throw dbError;
+
 
           setFiles(prev => prev.map(f =>
             f.id === fileItem.id ? { ...f, status: 'success', progress: 100 } : f

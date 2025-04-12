@@ -39,7 +39,7 @@ const Employees = () => {
       const supabase = getAuthorizedClient();
     
       const { data, error } = await supabase
-        .from('employees')
+        .from('employees_with_documents')
         .select('*')
         .eq('user_id', user.id)
         .order('full_name', { ascending: true });

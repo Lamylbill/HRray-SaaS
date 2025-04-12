@@ -25,7 +25,7 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
         const authorizedClient = getAuthorizedClient();
         
         const { data, error } = await authorizedClient
-          .from('leave_requests')
+          .from('leave_requests_with_employees')
           .select(`
             id,
             start_date,

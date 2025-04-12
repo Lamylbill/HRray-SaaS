@@ -59,7 +59,7 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
         
         // Fetch employees
         const { data: employeesData, error: employeesError } = await supabase
-          .from('employees')
+          .from('employees_with_documents')
           .select('id, full_name')
           .order('full_name');
         

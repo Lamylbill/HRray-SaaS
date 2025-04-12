@@ -35,7 +35,7 @@ const Dashboard = () => {
 
         // Fetch active employees
         const { data: activeData, error: activeError } = await authorizedClient
-          .from('employees')
+          .from('employees_with_documents')
           .select('id')
           .eq('user_id', user.id)
           .eq('employment_status', 'Active');

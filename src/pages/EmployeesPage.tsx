@@ -87,7 +87,7 @@ const EmployeesPage = () => {
       const authorizedClient = getAuthorizedClient();
       
       const { data, error } = await authorizedClient
-        .from('employees')
+        .from('employees_with_documents')
         .select('*')
         .eq('user_id', user.id)
         .order('full_name', { ascending: true });

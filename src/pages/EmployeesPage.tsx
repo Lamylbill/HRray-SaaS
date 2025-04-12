@@ -183,7 +183,7 @@ const EmployeesPage = () => {
       const authorizedClient = getAuthorizedClient();
       
       const { error } = await authorizedClient
-        .from('employees')
+        .from('employees_with_documents')
         .delete()
         .eq('id', employeeToDelete.id);
 
@@ -248,7 +248,7 @@ const EmployeesPage = () => {
       const authorizedClient = getAuthorizedClient();
       
       const { error } = await authorizedClient
-        .from('employees')
+        .from('employees_with_documents')
         .delete()
         .in('id', selectedEmployees);
 

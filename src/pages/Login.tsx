@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -12,15 +13,21 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   // Redirect if already authenticated
   useEffect(() => {
-    const user = supabase.auth.user();
-    if (user) {
-      navigate('/dashboard'); // Redirect to dashboard if already logged in
-    }
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        navigate('/dashboard'); // Redirect to dashboard if already logged in
+      }
+      setCheckingAuth(false);
+    };
+    
+    checkUser();
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,7 +44,7 @@ const Login = () => {
 
     try {
       setIsSubmitting(true);
-      const { user, session, error } = await supabase.auth.signIn({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -66,8 +73,7 @@ const Login = () => {
   };
 
   // Show loading spinner while checking auth
-  const user = supabase.auth.user();
-  if (!user && isSubmitting) {
+  if (checkingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />

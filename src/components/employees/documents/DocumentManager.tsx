@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   PlusCircle, Filter, Download, Trash, Edit, Eye, FileText,
@@ -14,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { supabase, STORAGE_BUCKET, ensureStorageBucket } from '@/integrations/supabase/client';
+import { supabase, STORAGE_BUCKET, ensureStorageBucket, getAuthorizedClient } from '@/integrations/supabase/client';
 import {
   getDisplayLabel, DOCUMENT_CATEGORIES, getCategoryFromValue
 } from './DocumentCategoryTypes';
@@ -52,7 +51,7 @@ interface DocumentManagerProps {
   employeeId: string;
   refreshTrigger?: number;
   isTabbed?: boolean;
-  isReadOnly?: boolean; // Use consistent naming with DocumentsTab
+  isReadOnly?: boolean;
 }
 
 export const DocumentManager: React.FC<DocumentManagerProps> = ({
@@ -90,14 +89,13 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
     setError(null);
 
     try {
-      const token = localStorage.getItem('jwt_token');
+      const supabase = getAuthorizedClient();
 
       const { data: dbDocuments, error: fetchError } = await supabase
         .from('employee_documents')
         .select('*')
         .eq('employee_id', employeeId)
-        .eq('user_id', user.id)
-        .auth(token);
+        .eq('user_id', user.id);
 
       if (fetchError) throw fetchError;
 
@@ -143,21 +141,17 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
     }
   }, [employeeId, refreshTrigger, user, bucketError]);
 
-  // Apply filters when search term or category changes
   useEffect(() => {
     applyFilters(documents, searchTerm, selectedCategory);
   }, [searchTerm, selectedCategory, documents]);
 
-  // Filter function that applies both search term and category filters
   const applyFilters = (docs: Document[], search: string, category: string | null) => {
     let filtered = [...docs];
     
-    // Apply category filter
     if (category) {
       filtered = filtered.filter(doc => doc.document_category === category);
     }
     
-    // Apply search filter
     if (search) {
       const searchLower = search.toLowerCase();
       filtered = filtered.filter(doc => 
@@ -174,27 +168,26 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
     if (!user) return;
 
     try {
+      const supabase = getAuthorizedClient();
+
       const { data, error } = await supabase
         .from('employee_documents')
         .select('file_path')
         .eq('id', documentId)
-        .single()
-        .auth(token);
+        .single();
 
       if (error) throw error;
 
       const { error: storageErr } = await supabase.storage
         .from(STORAGE_BUCKET)
-        .remove([data.file_path])
-        .auth(token);
+        .remove([data.file_path]);
 
       if (storageErr) throw storageErr;
 
       const { error: dbErr } = await supabase
         .from('employee_documents')
         .delete()
-        .eq('id', documentId)
-        .auth(token);
+        .eq('id', documentId);
 
       if (dbErr) throw dbErr;
 
@@ -225,10 +218,8 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
 
   const hasActiveFilters = searchTerm || selectedCategory;
 
-  // Convert object keys to array for mapping
   const documentCategoryKeys = Object.keys(DOCUMENT_CATEGORIES);
 
-  // Calculate and memoize category counts
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     documents.forEach(doc => {
@@ -275,7 +266,6 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
         )}
       </div>
       
-      {/* Category filter buttons - Fixed: using Object.keys to get categories */}
       <div className="flex flex-wrap gap-2">
         {documentCategoryKeys.map(key => {
           const category = DOCUMENT_CATEGORIES[key as keyof typeof DOCUMENT_CATEGORIES];

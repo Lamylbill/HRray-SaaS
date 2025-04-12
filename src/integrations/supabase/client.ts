@@ -87,7 +87,7 @@ export const fetchProtectedData = async () => {
   const authorizedClient = getAuthorizedClient();
   
   const { data, error } = await authorizedClient
-    .from('your_table') // Replace with your table
+    .from('employees') // Updated to a known table instead of generic 'your_table'
     .select('*');
 
   if (error) {

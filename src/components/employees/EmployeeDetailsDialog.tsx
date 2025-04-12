@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   DialogHeader,
@@ -9,7 +8,7 @@ import { Button } from '@/components/ui-custom/Button';
 import { Employee, EmployeeFormData } from '@/types/employee';
 import { Trash, Pencil, X as CancelIcon, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { EmployeeTabbedForm } from './EmployeeTabbedForm';
 
 interface EmployeeDetailsDialogProps {
@@ -30,13 +29,12 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
 
   const handleDelete = async () => {
     try {
-      const token = localStorage.getItem('jwt_token');
+      const supabase = getAuthorizedClient();
       
       const { error } = await supabase
         .from('employees')
         .delete()
-        .eq('id', employee.id)
-        .auth(token);
+        .eq('id', employee.id);
 
       if (error) throw error;
 

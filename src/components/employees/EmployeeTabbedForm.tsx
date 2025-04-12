@@ -1,7 +1,7 @@
 // src/components/employees/EmployeeTabbedForm.tsx
 import React, { useState, useEffect } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, getAuthorizedClient } from '@/integrations/supabase/client';
 import { Employee, EmployeeFormData } from '@/types/employee';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -132,25 +132,23 @@ export const EmployeeTabbedForm: React.FC<EmployeeTabbedFormProps> = ({
                                            employeeForDb.disciplinary_flags === true;
       }
 
+      const supabase = getAuthorizedClient();
+
       if (mode === 'edit' && employeeForDb.id) {
-        const token = localStorage.getItem('jwt_token');
         const { error } = await supabase
           .from('employees')
           .update(employeeForDb)
           .eq('id', employeeForDb.id)
-          .eq('user_id', userId)
-          .auth(token);
+          .eq('user_id', userId);
 
         if (error) throw error;
       } else if (mode === 'create') {
         const { id, ...createData } = employeeForDb;
-        const token = localStorage.getItem('jwt_token');
         const { data: newEmployee, error } = await supabase
           .from('employees')
           .insert({ ...createData, user_id: userId })
           .select()
-          .single()
-          .auth(token);;
+          .single();
 
         if (error) throw error;
         if (newEmployee) {

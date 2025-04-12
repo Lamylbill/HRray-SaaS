@@ -1,8 +1,7 @@
-
-// src/pages/Employees.tsx
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 import {
   Search, UserPlus, Filter, Download, MoreHorizontal,
   SortAsc, SortDesc, Trash, Check
@@ -12,7 +11,6 @@ import {
   PremiumCard, CardContent, CardHeader, CardTitle, CardDescription
 } from '@/components/ui-custom/Card';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/context/AuthContext';
 import { AnimatedSection } from '@/components/ui-custom/AnimatedSection';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -22,44 +20,57 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
 
-const employees = [
-  { id: 1, name: 'Sarah Johnson', email: 'sarah.j@example.com', department: 'Marketing', position: 'Marketing Director', status: 'Active', joinDate: '2021-05-12' },
-  { id: 2, name: 'Michael Chen', email: 'michael.c@example.com', department: 'Engineering', position: 'Senior Developer', status: 'Active', joinDate: '2022-01-15' },
-  { id: 3, name: 'Priya Patel', email: 'priya.p@example.com', department: 'HR', position: 'HR Manager', status: 'Active', joinDate: '2020-11-03' },
-  { id: 4, name: 'David Kim', email: 'david.k@example.com', department: 'Finance', position: 'Financial Analyst', status: 'On Leave', joinDate: '2022-03-22' },
-  { id: 5, name: 'Lisa Wong', email: 'lisa.w@example.com', department: 'Sales', position: 'Sales Representative', status: 'Active', joinDate: '2021-08-07' },
-  { id: 6, name: 'James Wilson', email: 'james.w@example.com', department: 'Operations', position: 'Operations Manager', status: 'Inactive', joinDate: '2019-12-10' }
-];
-
-const sortFunctions = {
-  name: (a, b, dir) => dir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name),
-  department: (a, b, dir) => dir === 'asc' ? a.department.localeCompare(b.department) : b.department.localeCompare(a.department),
-  position: (a, b, dir) => dir === 'asc' ? a.position.localeCompare(b.position) : b.position.localeCompare(a.position),
-  status: (a, b, dir) => dir === 'asc' ? a.status.localeCompare(b.status) : b.status.localeCompare(a.status),
-  joinDate: (a, b, dir) => {
-    const dateA = new Date(a.joinDate);
-    const dateB = new Date(b.joinDate);
-    return dir === 'asc' ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
-  }
-};
-
 const Employees = () => {
-  const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  const [employees, setEmployees] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
-  const [sortDirection, setSortDirection] = useState('asc');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate('/login');
   }, [isAuthenticated, isLoading, navigate]);
 
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      if (!user) return;
+      const token = localStorage.getItem('jwt_token');
+
+      const { data, error } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('full_name', { ascending: true })
+        .auth(token);
+
+      if (error) {
+        console.error('Error fetching employees:', error);
+        return;
+      }
+
+      setEmployees(data || []);
+    };
+
+    fetchEmployees();
+  }, [user]);
+
+  const sortFunctions = {
+    name: (a, b, dir) => dir === 'asc' ? a.full_name.localeCompare(b.full_name) : b.full_name.localeCompare(a.full_name),
+    department: (a, b, dir) => dir === 'asc' ? (a.department || '').localeCompare(b.department || '') : (b.department || '').localeCompare(a.department || ''),
+    position: (a, b, dir) => dir === 'asc' ? (a.job_title || '').localeCompare(b.job_title || '') : (b.job_title || '').localeCompare(a.job_title || ''),
+    status: (a, b, dir) => dir === 'asc' ? (a.employment_status || '').localeCompare(b.employment_status || '') : (b.employment_status || '').localeCompare(a.employment_status || ''),
+    joinDate: (a, b, dir) => dir === 'asc' ? new Date(a.date_of_hire).getTime() - new Date(b.date_of_hire).getTime() : new Date(b.date_of_hire).getTime() - new Date(a.date_of_hire).getTime(),
+  };
+
   const filteredEmployees = employees
     .filter(e =>
-      e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      e.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      e.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      e.position.toLowerCase().includes(searchTerm.toLowerCase()))
+      e.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      e.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      e.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      e.job_title?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
     .sort((a, b) => sortFunctions[sortBy](a, b, sortDirection));
 
   const handleSort = (key: string) => {
@@ -71,12 +82,8 @@ const Employees = () => {
     }
   };
 
-  const SortIndicator = ({ column }: { column: string }) => {
-    if (sortBy !== column) return null;
-    return sortDirection === 'asc'
-      ? <SortAsc className="inline h-4 w-4 ml-1" />
-      : <SortDesc className="inline h-4 w-4 ml-1" />;
-  };
+  const SortIndicator = ({ column }: { column: string }) =>
+    sortBy === column ? (sortDirection === 'asc' ? <SortAsc className="inline h-4 w-4 ml-1" /> : <SortDesc className="inline h-4 w-4 ml-1" />) : null;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -154,28 +161,21 @@ const Employees = () => {
                   <TableBody>
                     {filteredEmployees.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                           No employees found. Try adjusting your search.
                         </TableCell>
                       </TableRow>
                     ) : (
                       filteredEmployees.map(employee => (
                         <TableRow key={employee.id}>
-                          <TableCell className="font-medium">
-                            <div className="flex items-center">
-                              <div className="h-9 w-9 rounded-full bg-hrflow-blue/10 flex items-center justify-center text-hrflow-blue font-medium mr-2">
-                                {employee.name.split(' ').map(n => n[0]).join('')}
-                              </div>
-                              {employee.name}
-                            </div>
-                          </TableCell>
+                          <TableCell className="font-medium">{employee.full_name}</TableCell>
                           <TableCell>{employee.email}</TableCell>
-                          <TableCell>{employee.department}</TableCell>
-                          <TableCell>{employee.position}</TableCell>
+                          <TableCell>{employee.department || 'N/A'}</TableCell>
+                          <TableCell>{employee.job_title || 'N/A'}</TableCell>
                           <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(employee.status)}`}>{employee.status}</span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(employee.employment_status)}`}>{employee.employment_status || 'N/A'}</span>
                           </TableCell>
-                          <TableCell>{new Date(employee.joinDate).toLocaleDateString()}</TableCell>
+                          <TableCell>{employee.date_of_hire ? new Date(employee.date_of_hire).toLocaleDateString() : 'N/A'}</TableCell>
                           <TableCell className="text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>

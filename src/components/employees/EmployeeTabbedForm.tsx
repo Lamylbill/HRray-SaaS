@@ -2,7 +2,7 @@
 // src/components/employees/EmployeeTabbedForm.tsx
 import React, { useState, useEffect } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
-import { supabase, getAuthorizedClient } from '@/integrations/supabase/client';
+import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { Employee, EmployeeFormData } from '@/types/employee';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -80,6 +80,7 @@ export const EmployeeTabbedForm: React.FC<EmployeeTabbedFormProps> = ({
       }
 
       try {
+        const authorizedClient = getAuthorizedClient();
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           setAuthError('Unable to verify session. Please log in again.');
@@ -136,6 +137,7 @@ export const EmployeeTabbedForm: React.FC<EmployeeTabbedFormProps> = ({
       const authorizedClient = getAuthorizedClient();
 
       if (mode === 'edit' && employeeForDb.id) {
+        const authorizedClient = getAuthorizedClient();
         const { error } = await authorizedClient
           .from('employees')
           .update(employeeForDb)
@@ -145,6 +147,8 @@ export const EmployeeTabbedForm: React.FC<EmployeeTabbedFormProps> = ({
         if (error) throw error;
       } else if (mode === 'create') {
         const { id, ...createData } = employeeForDb;
+        const authorizedClient = getAuthorizedClient();
+
         const { data: newEmployee, error } = await authorizedClient
           .from('employees')
           .insert({ ...createData, user_id: userId })

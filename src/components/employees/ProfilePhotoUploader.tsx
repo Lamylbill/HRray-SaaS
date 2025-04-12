@@ -111,7 +111,7 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
       // If employeeId exists, update profile_picture in DB
       if (employeeId) {
         const { error: updateError } = await authorizedClient
-          .from('employees')
+          .from('employees_with_documents')
           .update({ profile_picture: publicUrl })
           .eq('id', employeeId)
           .eq('user_id', user.id);

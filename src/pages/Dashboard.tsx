@@ -27,7 +27,7 @@ const Dashboard = () => {
         
         // Fetch total employee count
         const { count: totalCount, error: countError } = await authorizedClient
-          .from('employees')
+          .from('employees_with_documents')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user.id);
 

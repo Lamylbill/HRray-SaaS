@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { supabase, STORAGE_BUCKET, ensureStorageBucket, getAuthorizedClient } from '@/integrations/supabase/client';
+import { getAuthorizedClient, STORAGE_BUCKET, ensureStorageBucket } from '@/integrations/supabase/client';
 import {
   getDisplayLabel, DOCUMENT_CATEGORIES, getCategoryFromValue
 } from './DocumentCategoryTypes';

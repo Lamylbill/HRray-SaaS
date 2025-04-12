@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { LeaveRecordsViewProps, LeaveRequest } from './interfaces';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -5,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui-custom/Button';
 import { Eye, Filter } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { getAuthorizedClient } from '@/integrations/supabase/client';
 
 const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ 
   selectedLeaveTypes,
@@ -21,9 +22,9 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
       
       setIsLoading(true);
       try {
-        const token = localStorage.getItem('jwt_token');
+        const authorizedClient = getAuthorizedClient();
         
-        const { data, error } = await supabase
+        const { data, error } = await authorizedClient
           .from('leave_requests')
           .select(`
             id,
@@ -36,13 +37,12 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
             employee:employees(id, full_name),
             leave_type:leave_types(id, name, color)
           `)
-          .order('created_at', { ascending: false })
-          .auth(token);
+          .order('created_at', { ascending: false });
         
         if (error) throw error;
         
         // Transform the data into the expected format with proper typing
-        const formattedData: LeaveRequest[] = data.map(item => ({
+        const formattedData: LeaveRequest[] = data?.map(item => ({
           id: item.id,
           employee: {
             id: item.employee.id,
@@ -60,7 +60,7 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
           half_day: item.half_day || false,
           half_day_type: item.half_day_type as "AM" | "PM" | null,
           created_at: item.created_at
-        }));
+        })) || [];
         
         setLeaveRequests(formattedData);
       } catch (error) {
@@ -205,4 +205,4 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
   );
 };
 
-export default LeaveRecordsView;  // Ensure it's the default export
+export default LeaveRecordsView;

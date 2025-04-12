@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Employee } from '@/types/employee';
 import { standardizeEmployee } from '@/utils/employeeFieldUtils';
@@ -22,19 +23,18 @@ const Dashboard = () => {
 
       try {
         setIsLoading(true);
+        const authorizedClient = getAuthorizedClient();
+        
         // Fetch total employee count
-        const token = localStorage.getItem('jwt_token');
-
-        const { count: totalCount, error: countError } = await supabase
+        const { count: totalCount, error: countError } = await authorizedClient
           .from('employees')
           .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-          .auth(token); // pass JWT token here
+          .eq('user_id', user.id);
 
         if (countError) throw countError;
 
         // Fetch active employees
-        const { data: activeData, error: activeError } = await supabase
+        const { data: activeData, error: activeError } = await authorizedClient
           .from('employees')
           .select('id')
           .eq('user_id', user.id)

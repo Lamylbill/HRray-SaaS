@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import {
@@ -16,9 +15,7 @@ import { DocumentSelector } from './DocumentSelector';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { supabase, STORAGE_BUCKET, ensureStorageBucket } from '@/integrations/supabase/client';
-import { ensureStorageBucket } from '@/integrations/supabase/client';
-
+import { STORAGE_BUCKET, ensureStorageBucket, getAuthorizedClient } from '@/integrations/supabase/client';
 
 interface DocumentUploaderProps {
   employeeId: string;
@@ -136,6 +133,7 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
       }
       
       let successCount = 0;
+      const authorizedClient = getAuthorizedClient();
 
       for (const fileItem of files) {
         if (fileItem.status === 'success') {
@@ -156,19 +154,16 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
             f.id === fileItem.id ? { ...f, progress: 30 } : f
           ));
 
-          const token = localStorage.getItem('jwt_token');
-
-          const { error: uploadError } = await supabase.storage
+          const { error: uploadError } = await authorizedClient.storage
             .from(STORAGE_BUCKET)
             .upload(filePath, fileItem.file, {
               cacheControl: '3600',
               upsert: false
-            })
-            .auth(token);
+            });
 
           if (uploadError) throw uploadError;
 
-          const { error: dbError } = await supabase
+          const { error: dbError } = await authorizedClient
             .from('employee_documents')
             .insert({
               employee_id: employeeId,
@@ -180,8 +175,7 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
               category: fileItem.category,
               document_type: fileItem.documentType,
               notes: fileItem.notes
-            })
-            .auth(token);
+            });
 
           if (dbError) throw dbError;
 

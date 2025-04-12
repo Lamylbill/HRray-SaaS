@@ -1,3 +1,4 @@
+
 // src/integrations/supabase/client.ts
 
 import { createClient } from '@supabase/supabase-js';
@@ -25,7 +26,7 @@ export const STORAGE_BUCKET = 'employee-documents'; // Update with your bucket n
 
 // Login function - fetch JWT
 export const login = async (email: string, password: string): Promise<string | null> => {
-  const { session, error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -35,9 +36,9 @@ export const login = async (email: string, password: string): Promise<string | n
     return null;
   }
 
-  if (session) {
-    localStorage.setItem('jwt_token', session.access_token);
-    return session.access_token;
+  if (data.session) {
+    localStorage.setItem('jwt_token', data.session.access_token);
+    return data.session.access_token;
   }
 
   return null;
@@ -59,12 +60,35 @@ export const getJwtToken = () => {
   return localStorage.getItem('jwt_token');
 };
 
-// Fetch protected data example
-export const fetchProtectedData = async (jwt: string) => {
-  const { data, error } = await supabase
+// Create a function to get an authorized Supabase client with JWT
+export const getAuthorizedClient = () => {
+  const token = localStorage.getItem('jwt_token');
+  
+  if (!token) {
+    return supabase; // Return the default client if no token
+  }
+  
+  // Create a new client with the token in the headers for this session
+  return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-application-name': 'HRFlow',
+      },
+    },
+    auth: {
+      persistSession: true,
+    },
+  });
+};
+
+// Fetch protected data example - using proper authorization
+export const fetchProtectedData = async () => {
+  const authorizedClient = getAuthorizedClient();
+  
+  const { data, error } = await authorizedClient
     .from('your_table') // Replace with your table
-    .select('*')
-    .auth(jwt);
+    .select('*');
 
   if (error) {
     console.error('Error fetching protected data:', error);
@@ -77,11 +101,12 @@ export const fetchProtectedData = async (jwt: string) => {
 // Ensure storage bucket exists
 export const ensureStorageBucket = async (bucketName: string) => {
   try {
-    const { data, error } = await supabase.storage.getBucket(bucketName);
+    const authorizedClient = getAuthorizedClient();
+    const { data, error } = await authorizedClient.storage.getBucket(bucketName);
     if (error) throw error;
 
     if (!data) {
-      const { error: createError } = await supabase.storage.createBucket(bucketName, {
+      const { error: createError } = await authorizedClient.storage.createBucket(bucketName, {
         public: true,
       });
       if (createError) throw createError;

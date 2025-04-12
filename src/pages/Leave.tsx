@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ListFilter, RefreshCw, Upload, Link } from 'lucide-react';
@@ -5,7 +6,7 @@ import { Button } from '@/components/ui-custom/Button';
 import { AnimatedSection } from '@/components/ui-custom/AnimatedSection';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { LeaveCalendarView } from '@/components/leave/LeaveCalendarView';
 import LeaveRecordsView from '@/components/leave/LeaveRecordsView';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -27,21 +28,21 @@ const Leave = () => {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      const token = localStorage.getItem('jwt_token');
+      const authorizedClient = getAuthorizedClient();
       
       await Promise.all([
-        supabase
+        authorizedClient
           .from('leave_requests')
-          .select('*').auth(token),
-        supabase
+          .select('*'),
+        authorizedClient
           .from('public_holidays')
-          .select('*').auth(token),
-        supabase
+          .select('*'),
+        authorizedClient
           .from('leave_quotas')
-          .select('*').auth(token),
-        supabase
+          .select('*'),
+        authorizedClient
           .from('shifts')
-          .select('*').auth(token)
+          .select('*')
       ]);
 
       toast({

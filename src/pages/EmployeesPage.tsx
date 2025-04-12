@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AnimatedSection } from '@/components/ui-custom/AnimatedSection';
-import { supabase } from '@/integrations/supabase/client';
+import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -84,14 +84,13 @@ const EmployeesPage = () => {
         return;
       }
 
-      const token = localStorage.getItem('jwt_token');
+      const authorizedClient = getAuthorizedClient();
       
-      const { data, error } = await supabase
+      const { data, error } = await authorizedClient
         .from('employees')
         .select('*')
         .eq('user_id', user.id)
-        .order('full_name', { ascending: true })
-        .auth(token);
+        .order('full_name', { ascending: true });
 
       if (error) throw error;
 
@@ -181,7 +180,9 @@ const EmployeesPage = () => {
     if (!employeeToDelete || deleteConfirmText !== 'DELETE') return;
     
     try {
-      const { error } = await supabase
+      const authorizedClient = getAuthorizedClient();
+      
+      const { error } = await authorizedClient
         .from('employees')
         .delete()
         .eq('id', employeeToDelete.id);
@@ -244,7 +245,9 @@ const EmployeesPage = () => {
     if (selectedEmployees.length === 0 || deleteConfirmText !== 'DELETE') return;
     
     try {
-      const { error } = await supabase
+      const authorizedClient = getAuthorizedClient();
+      
+      const { error } = await authorizedClient
         .from('employees')
         .delete()
         .in('id', selectedEmployees);

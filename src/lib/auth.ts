@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, getAuthorizedClient } from '@/integrations/supabase/client';
 
 /**
  * Signs in a user with email and password
@@ -15,6 +15,11 @@ export const signIn = async (email: string, password: string) => {
     if (error) {
       console.error('Sign in error:', error.message);
       return { error };
+    }
+
+    // Store the token in localStorage
+    if (data.session) {
+      localStorage.setItem('jwt_token', data.session.access_token);
     }
 
     console.log('Sign in successful:', data.user?.id);
@@ -62,6 +67,11 @@ export const signUp = async (email: string, password: string, fullName: string) 
       };
     }
 
+    // Store the token in localStorage if session is available
+    if (data.session) {
+      localStorage.setItem('jwt_token', data.session.access_token);
+    }
+
     console.log('Sign up successful:', data.user?.id);
     return { data };
   } catch (error: any) {
@@ -84,6 +94,12 @@ export const getSession = async () => {
       console.error('Error getting session:', error.message);
       return { error };
     }
+    
+    // Update stored token if session exists
+    if (data.session) {
+      localStorage.setItem('jwt_token', data.session.access_token);
+    }
+    
     return { data: data.session };
   } catch (error: any) {
     console.error('Unexpected error getting session:', error);
@@ -138,6 +154,10 @@ export const signOut = async () => {
       console.error('Error signing out:', error.message);
       return { error };
     }
+    
+    // Remove the token from localStorage
+    localStorage.removeItem('jwt_token');
+    
     return { success: true };
   } catch (error: any) {
     console.error('Unexpected error signing out:', error);

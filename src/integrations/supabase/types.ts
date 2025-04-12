@@ -1253,6 +1253,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_employee_access: {
+        Args: { employee_id: string; user_id: string }
+        Returns: boolean
+      }
       fetch_public_holidays: {
         Args: { year: number; country: string }
         Returns: undefined

@@ -1,3 +1,4 @@
+
 // src/components/employees/EmployeeTabbedForm.tsx
 import React, { useState, useEffect } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
@@ -132,10 +133,10 @@ export const EmployeeTabbedForm: React.FC<EmployeeTabbedFormProps> = ({
                                            employeeForDb.disciplinary_flags === true;
       }
 
-      const supabase = getAuthorizedClient();
+      const authorizedClient = getAuthorizedClient();
 
       if (mode === 'edit' && employeeForDb.id) {
-        const { error } = await supabase
+        const { error } = await authorizedClient
           .from('employees')
           .update(employeeForDb)
           .eq('id', employeeForDb.id)
@@ -144,7 +145,7 @@ export const EmployeeTabbedForm: React.FC<EmployeeTabbedFormProps> = ({
         if (error) throw error;
       } else if (mode === 'create') {
         const { id, ...createData } = employeeForDb;
-        const { data: newEmployee, error } = await supabase
+        const { data: newEmployee, error } = await authorizedClient
           .from('employees')
           .insert({ ...createData, user_id: userId })
           .select()

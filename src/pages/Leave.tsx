@@ -32,7 +32,7 @@ const Leave = () => {
       
       await Promise.all([
         authorizedClient
-          .from('leave_requests')
+          .from('leave_requests_with_employees')
           .select('*'),
         authorizedClient
           .from('public_holidays')

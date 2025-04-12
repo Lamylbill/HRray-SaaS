@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { getAuthorizedClient  } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import {
   Search, UserPlus, Filter, Download, MoreHorizontal,
@@ -36,20 +36,19 @@ const Employees = () => {
   useEffect(() => {
     const fetchEmployees = async () => {
       if (!user) return;
-      const token = localStorage.getItem('jwt_token');
-
+      const supabase = getAuthorizedClient();
+    
       const { data, error } = await supabase
         .from('employees')
         .select('*')
         .eq('user_id', user.id)
-        .order('full_name', { ascending: true })
-        .auth(token);
-
+        .order('full_name', { ascending: true });
+    
       if (error) {
         console.error('Error fetching employees:', error);
         return;
       }
-
+    
       setEmployees(data || []);
     };
 

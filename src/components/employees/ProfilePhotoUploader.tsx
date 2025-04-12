@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Upload,
@@ -7,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { supabase, AVATAR_BUCKET, ensureStorageBucket } from '@/integrations/supabase/client';
+import { supabase, AVATAR_BUCKET, ensureStorageBucket, getAuthorizedClient } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui-custom/Button';
 
@@ -87,20 +88,20 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
       const fileName = `${tempId}_${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      const token = localStorage.getItem('jwt_token');
-
-      const { error: uploadError } = await supabase.storage
+      // Get an authorized client
+      const authorizedClient = getAuthorizedClient();
+      
+      const { error: uploadError } = await authorizedClient.storage
         .from(AVATAR_BUCKET)
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true,
-        })
-        .auth(token);
+        });
       
       if (uploadError) throw uploadError;
       
       // Get public URL after upload
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = authorizedClient.storage
         .from(AVATAR_BUCKET)
         .getPublicUrl(filePath);
       
@@ -109,20 +110,15 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
       
       // If employeeId exists, update profile_picture in DB
       if (employeeId) {
-        const { error: updateError } = await supabase
+        const { error: updateError } = await authorizedClient
           .from('employees')
           .update({ profile_picture: publicUrl })
           .eq('id', employeeId)
-          .eq('user_id', user.id)
-          .auth(token);
+          .eq('user_id', user.id);
       
         if (updateError) throw updateError;
       }
-            
-        const publicUrl = urlData.publicUrl;
-        setAvatarUrl(publicUrl);
-      }
-
+      
       toast({
         title: 'Photo Uploaded',
         description: 'Profile photo has been updated successfully.',

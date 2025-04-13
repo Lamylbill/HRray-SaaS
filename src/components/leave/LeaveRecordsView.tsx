@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui-custom/Button';
 import { Eye, Filter } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { getAuthorizedClient } from '@/integrations/supabase/client';
+import { getAuthorizedClient, getLeaveRequestsTable } from '@/integrations/supabase/client';
 
 const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ 
   selectedLeaveTypes,
@@ -24,8 +24,9 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
       try {
         const authorizedClient = getAuthorizedClient();
         
+        // Use the regular leave_requests table and join with employees and leave_types
         const { data, error } = await authorizedClient
-          .from('leave_requests_with_employees')
+          .from('leave_requests')
           .select(`
             id,
             start_date,
@@ -34,8 +35,8 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
             half_day,
             half_day_type,
             created_at,
-            employee:employees(id, full_name),
-            leave_type:leave_types(id, name, color)
+            employee:employee_id(id, full_name),
+            leave_type:leave_type_id(id, name, color)
           `)
           .order('created_at', { ascending: false });
         

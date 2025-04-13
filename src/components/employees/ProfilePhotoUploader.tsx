@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Upload,
@@ -111,7 +110,7 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
       // If employeeId exists, update profile_picture in DB
       if (employeeId) {
         const { error: updateError } = await authorizedClient
-          .from('employees_with_documents')
+          .from('employees')
           .update({ profile_picture: publicUrl })
           .eq('id', employeeId)
           .eq('user_id', user.id);

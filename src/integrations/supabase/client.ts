@@ -82,6 +82,16 @@ export const getAuthorizedClient = () => {
   });
 };
 
+// Define a typed helper function for leave requests
+export const getLeaveRequestsTable = (client = supabase) => {
+  return client.from('leave_requests');
+};
+
+// Define a typed helper function for leave requests with employees
+export const getLeaveRequestsWithEmployeesView = (client = supabase) => {
+  return client.rpc('get_leave_requests_with_employees');
+};
+
 // Fetch protected data example - using proper authorization
 export const fetchProtectedData = async () => {
   const authorizedClient = getAuthorizedClient();

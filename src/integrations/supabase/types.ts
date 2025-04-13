@@ -63,6 +63,13 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "attendance_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_with_documents"
+            referencedColumns: ["id"]
+          },
         ]
       }
       employee_allowances: {
@@ -116,6 +123,13 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "employee_allowances_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_with_documents"
+            referencedColumns: ["id"]
+          },
         ]
       }
       employee_appraisal_ratings: {
@@ -155,6 +169,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_appraisal_ratings_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_with_documents"
             referencedColumns: ["id"]
           },
         ]
@@ -207,6 +228,13 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "employee_documents_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_with_documents"
+            referencedColumns: ["id"]
+          },
         ]
       }
       employee_education: {
@@ -246,6 +274,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_education_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_with_documents"
             referencedColumns: ["id"]
           },
         ]
@@ -292,6 +327,13 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "employee_family_members_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_with_documents"
+            referencedColumns: ["id"]
+          },
         ]
       }
       employee_work_experience: {
@@ -331,6 +373,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_work_experience_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_with_documents"
             referencedColumns: ["id"]
           },
         ]
@@ -917,6 +966,13 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "employees_reporting_manager_fkey"
+            columns: ["reporting_manager"]
+            isOneToOne: false
+            referencedRelation: "employees_with_documents"
+            referencedColumns: ["id"]
+          },
         ]
       }
       leave_quotas: {
@@ -959,6 +1015,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_quotas_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_with_documents"
             referencedColumns: ["id"]
           },
           {
@@ -1028,6 +1091,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_with_documents"
             referencedColumns: ["id"]
           },
           {
@@ -1246,11 +1316,51 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "shifts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_with_documents"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      employees_with_documents: {
+        Row: {
+          category: string | null
+          date_of_hire: string | null
+          department: string | null
+          document_created_at: string | null
+          document_employee_id: string | null
+          document_id: string | null
+          email: string | null
+          employment_status: string | null
+          file_name: string | null
+          file_path: string | null
+          full_name: string | null
+          id: string | null
+          job_title: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_documents_employee_id_fkey"
+            columns: ["document_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_documents_employee_id_fkey"
+            columns: ["document_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_with_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       check_employee_access: {

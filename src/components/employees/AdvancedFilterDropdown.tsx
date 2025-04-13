@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,50 +17,41 @@ import { Button } from "@/components/ui-custom/Button";
 import { Check, Filter } from "lucide-react";
 import { Badge } from '@/components/ui/badge';
 import { Employee } from '@/types/employee';
-
-const FILTER_CATEGORIES = {
-  "Personal": ["gender", "nationality", "marital_status", "race"],
-  "Employment": ["department", "job_title", "employment_type", "employment_status"],
-  "Contract": ["contract_type", "work_pass_type"],
-  "Compensation": ["salary", "ot_eligible", "benefits_tier"],
-  "Compliance": ["cpf_status", "tax_residency", "leave_category"]
-};
+import { FieldMeta } from '@/utils/employeeFieldUtils';
+import { 
+  getFieldCategories, 
+  getFieldsByCategory, 
+  getFieldOptions,
+  formatFieldName,
+  formatCategoryName,
+  applyFilters 
+} from '@/utils/filterUtils';
 
 interface AdvancedFilterDropdownProps {
   employees: Employee[];
   onFiltersChange: (filteredEmployees: Employee[]) => void;
 }
 
-type FilterValue = {
+type FilterSelection = {
+  category: string;
   field: string;
-  value: string | number | boolean | null;
-  label: string;
+  fieldName: string;
+  value: string;
+  valueName: string;
 };
 
 export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
   employees,
   onFiltersChange,
 }) => {
+  // State for tracking filter selection at each level
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedField, setSelectedField] = useState<string | null>(null);
-  const [activeFilters, setActiveFilters] = useState<FilterValue[]>([]);
+  const [selectedField, setSelectedField] = useState<FieldMeta | null>(null);
+  const [activeFilters, setActiveFilters] = useState<FilterSelection[]>([]);
   
-  // Get unique values for the selected field
-  const fieldValues = useMemo(() => {
-    if (!selectedField) return [];
-    
-    const values = employees
-      .map(emp => emp[selectedField as keyof Employee])
-      .filter((value, index, self) => 
-        value !== undefined && 
-        value !== null && 
-        self.indexOf(value) === index
-      )
-      .sort();
-      
-    return values;
-  }, [selectedField, employees]);
-
+  // Cache the categories and fields for better performance
+  const categories = getFieldCategories();
+  
   // Apply filters when activeFilters change
   useEffect(() => {
     if (activeFilters.length === 0) {
@@ -68,28 +59,41 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
       return;
     }
     
-    const filtered = employees.filter(employee => {
-      return activeFilters.every(filter => {
-        const employeeValue = employee[filter.field as keyof Employee];
-        return employeeValue === filter.value;
-      });
-    });
+    const filterParams = activeFilters.map(filter => ({
+      category: filter.category,
+      field: filter.field,
+      value: filter.value
+    }));
     
+    const filtered = applyFilters(employees, filterParams);
     onFiltersChange(filtered);
   }, [activeFilters, employees, onFiltersChange]);
 
   // Add a filter
-  const addFilter = (field: string, value: string | number | boolean | null) => {
+  const addFilter = (value: string, displayValue: string) => {
+    if (!selectedCategory || !selectedField) return;
+    
     // Don't add duplicate filters
-    if (activeFilters.some(f => f.field === field && f.value === value)) {
+    if (activeFilters.some(f => 
+      f.category === selectedCategory && 
+      f.field === selectedField.name && 
+      f.value === value)
+    ) {
       return;
     }
     
-    const label = value === null ? 'Not specified' : String(value);
+    const newFilter: FilterSelection = {
+      category: selectedCategory,
+      field: selectedField.name,
+      fieldName: selectedField.label,
+      value: value,
+      valueName: displayValue
+    };
     
-    setActiveFilters(prev => [...prev, { field, value, label }]);
-    setSelectedCategory(null);
+    setActiveFilters(prev => [...prev, newFilter]);
+    // Reset selection
     setSelectedField(null);
+    setSelectedCategory(null);
   };
 
   // Remove a filter
@@ -102,6 +106,19 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
     setActiveFilters([]);
     setSelectedCategory(null);
     setSelectedField(null);
+  };
+
+  // Get display value for an option (handling both string and object options)
+  const getDisplayValue = (value: string, field: FieldMeta): string => {
+    if (!field.options) return value;
+    
+    if (typeof field.options[0] === 'string') {
+      return value;
+    } else {
+      const option = (field.options as { value: string, label: string }[])
+        .find(opt => opt.value === value);
+      return option ? option.label : value;
+    }
   };
 
   return (
@@ -119,92 +136,82 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
           <DropdownMenuLabel>Filter by</DropdownMenuLabel>
           <DropdownMenuSeparator />
           
-          {/* Show categories if no field is selected */}
-          {!selectedField && (
+          {!selectedCategory && (
+            // First level - Categories
             <DropdownMenuGroup>
-              {Object.keys(FILTER_CATEGORIES).map(category => (
-                <DropdownMenuSub key={category}>
-                  <DropdownMenuSubTrigger>
-                    <span>{category}</span>
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuPortal>
-                    <DropdownMenuSubContent>
-                      {FILTER_CATEGORIES[category as keyof typeof FILTER_CATEGORIES].map(field => (
-                        <DropdownMenuItem 
-                          key={field}
-                          onClick={() => {
-                            setSelectedCategory(category);
-                            setSelectedField(field);
-                          }}
-                        >
-                          <span className="capitalize">
-                            {field.replace(/_/g, ' ')}
-                          </span>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuSubContent>
-                  </DropdownMenuPortal>
-                </DropdownMenuSub>
+              {categories.map(category => (
+                <DropdownMenuItem 
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                >
+                  <span>{formatCategoryName(category)}</span>
+                </DropdownMenuItem>
               ))}
             </DropdownMenuGroup>
           )}
           
-          {/* Show field values if a field is selected */}
-          {selectedField && (
+          {selectedCategory && !selectedField && (
+            // Second level - Fields
             <>
               <DropdownMenuLabel className="flex justify-between items-center">
-                <span className="capitalize">
-                  {selectedField.replace(/_/g, ' ')}
-                </span>
+                <span>{formatCategoryName(selectedCategory)}</span>
                 <Button 
                   variant="ghost" 
-                  size="sm"  // Fixed: "xs" is not a valid size
+                  size="sm"
                   className="h-5 text-xs" 
-                  onClick={() => {
-                    setSelectedField(null);
-                    setSelectedCategory(null);
-                  }}
+                  onClick={() => setSelectedCategory(null)}
                 >
                   Back
                 </Button>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               
-              {fieldValues.length > 0 ? (
-                fieldValues.map((value, index) => {
-                  // Fixed: Ensure value is of the correct type
-                  const typedValue = Array.isArray(value) ? value[0] : value;
-                  return (
-                    <DropdownMenuItem 
-                      key={index}
-                      onClick={() => addFilter(selectedField, typedValue)}
-                      className="flex justify-between"
-                    >
-                      <span>{String(typedValue)}</span>
-                      {activeFilters.some(f => 
-                        f.field === selectedField && 
-                        f.value === typedValue
-                      ) && <Check className="h-4 w-4" />}
-                    </DropdownMenuItem>
-                  );
-                })
-              ) : (
-                <DropdownMenuItem disabled>
-                  No values found
+              {getFieldsByCategory(selectedCategory).map(field => (
+                <DropdownMenuItem 
+                  key={field.name}
+                  onClick={() => setSelectedField(field)}
+                >
+                  <span>{field.label}</span>
                 </DropdownMenuItem>
-              )}
+              ))}
+            </>
+          )}
+          
+          {selectedCategory && selectedField && (
+            // Third level - Values
+            <>
+              <DropdownMenuLabel className="flex justify-between items-center">
+                <span>{selectedField.label}</span>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="h-5 text-xs" 
+                  onClick={() => setSelectedField(null)}
+                >
+                  Back
+                </Button>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
               
-              {/* Add option for 'Not specified' */}
-              <DropdownMenuItem 
-                onClick={() => addFilter(selectedField, null)}
-                className="flex justify-between"
-              >
-                <span>Not specified</span>
-                {activeFilters.some(f => 
-                  f.field === selectedField && 
-                  f.value === null
-                ) && <Check className="h-4 w-4" />}
-              </DropdownMenuItem>
+              {getFieldOptions(selectedField).map((value, index) => {
+                const displayValue = getDisplayValue(value, selectedField);
+                const isSelected = activeFilters.some(f => 
+                  f.category === selectedCategory && 
+                  f.field === selectedField.name && 
+                  f.value === value
+                );
+                
+                return (
+                  <DropdownMenuItem 
+                    key={index}
+                    onClick={() => addFilter(value, displayValue)}
+                    className="flex justify-between"
+                  >
+                    <span>{displayValue}</span>
+                    {isSelected && <Check className="h-4 w-4" />}
+                  </DropdownMenuItem>
+                );
+              })}
             </>
           )}
           
@@ -224,8 +231,8 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
         <div className="flex flex-wrap gap-2 mt-2">
           {activeFilters.map((filter, index) => (
             <Badge key={index} variant="outline" className="px-2 py-1">
-              <span className="capitalize mr-1">{filter.field.replace(/_/g, ' ')}:</span>
-              <span>{filter.label}</span>
+              <span className="font-medium mr-1">{filter.fieldName}:</span>
+              <span>{filter.valueName}</span>
               <button 
                 className="ml-1 text-xs hover:text-red-500"
                 onClick={() => removeFilter(index)}

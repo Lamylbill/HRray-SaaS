@@ -112,8 +112,7 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
         const { error: updateError } = await authorizedClient
           .from('employees')
           .update({ profile_picture: publicUrl })
-          .eq('id', employeeId)
-          .eq('user_id', user.id);
+          .eq('id', employeeId);
       
         if (updateError) throw updateError;
       }

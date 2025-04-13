@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { LeaveRecordsViewProps, LeaveRequest } from './interfaces';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -6,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui-custom/Button';
 import { Eye, Filter } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { getAuthorizedClient, getLeaveRequestsTable } from '@/integrations/supabase/client';
+import { getAuthorizedClient, getLeaveRequestsWithEmployeeInfo } from '@/integrations/supabase/client';
 
 const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ 
   selectedLeaveTypes,
@@ -24,20 +23,8 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
       try {
         const authorizedClient = getAuthorizedClient();
         
-        // Use the regular leave_requests table and join with employees and leave_types
-        const { data, error } = await authorizedClient
-          .from('leave_requests')
-          .select(`
-            id,
-            start_date,
-            end_date,
-            status,
-            half_day,
-            half_day_type,
-            created_at,
-            employee:employee_id(id, full_name),
-            leave_type:leave_type_id(id, name, color)
-          `)
+        // Use our helper function from client.ts to get leave requests with related data
+        const { data, error } = await getLeaveRequestsWithEmployeeInfo(authorizedClient)
           .order('created_at', { ascending: false });
         
         if (error) throw error;

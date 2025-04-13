@@ -87,9 +87,21 @@ export const getLeaveRequestsTable = (client = supabase) => {
   return client.from('leave_requests');
 };
 
-// Define a typed helper function for leave requests with employees
-export const getLeaveRequestsWithEmployeesView = (client = supabase) => {
-  return client.rpc('get_leave_requests_with_employees');
+// Define a typed helper function for leave requests with employee and leave type info
+export const getLeaveRequestsWithEmployeeInfo = (client = supabase) => {
+  return client
+    .from('leave_requests')
+    .select(`
+      id,
+      start_date,
+      end_date,
+      status,
+      half_day,
+      half_day_type,
+      created_at,
+      employee:employee_id(id, full_name),
+      leave_type:leave_type_id(id, name, color)
+    `);
 };
 
 // Fetch protected data example - using proper authorization

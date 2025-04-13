@@ -49,7 +49,6 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedField, setSelectedField] = useState<FieldMeta | null>(null);
   const [activeFilters, setActiveFilters] = useState<FilterSelection[]>([]);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { toast } = useToast();
   
   // Cache the categories and fields for better performance
@@ -147,20 +146,14 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
       return option ? option.label : value;
     }
   };
-  
-  const handleFilterClick = () => {
-    console.log('Filter button clicked');
-    setIsDropdownOpen(true);
-  };
 
   return (
-    <div>
-      <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+    <div >
+      <DropdownMenu >
         <DropdownMenuTrigger asChild>
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={handleFilterClick}
           >
             <Filter className="mr-2 h-4 w-4" />
             {activeFilters.length > 0 
@@ -168,7 +161,9 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
               : "Filters"}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56 z-50 bg-white" align="end">
+        <DropdownMenuPortal>
+          <DropdownMenuContent className="w-56 z-50 bg-white" align="end">
+
           <DropdownMenuLabel>Filter by</DropdownMenuLabel>
           <DropdownMenuSeparator />
           
@@ -259,7 +254,9 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
               </DropdownMenuItem>
             </>
           )}
-        </DropdownMenuContent>
+
+          </DropdownMenuContent>
+        </DropdownMenuPortal>
       </DropdownMenu>
       
       {/* Display active filters */}

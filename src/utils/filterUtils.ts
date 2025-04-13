@@ -1,7 +1,8 @@
 
 import { 
   employeeBaseFields, 
-  FieldMeta 
+  FieldMeta,
+  getFieldMetaByName
 } from '@/utils/employeeFieldUtils';
 import { Employee } from '@/types/employee';
 
@@ -53,23 +54,35 @@ export const applyFilters = (
   filters: Array<{ category: string; field: string; value: string }>
 ): Employee[] => {
   if (filters.length === 0) return employees;
-  
+
   return employees.filter(employee => {
     return filters.every(filter => {
-      const fieldValue = employee[filter.field as keyof Employee];
+      let fieldValue = employee[filter.field as keyof Employee];
       
       // Handle null/undefined values
       if (fieldValue === null || fieldValue === undefined) {
         return false;
+      } else if(fieldMeta?.isNested){
+        const nestedType = fieldMeta.nestedType;
+        if(!nestedType) return false;
+        if (!employee[nestedType] || !Array.isArray(employee[nestedType])) return false;
+
+        //check if any of the nested object has the specified value
+        fieldValue = employee[nestedType]?.some(item => item[filter.field as keyof typeof item] === filter.value);
+        return fieldValue;
       }
-      
+
       // Match based on value type
       if (typeof fieldValue === 'string') {
         return fieldValue === filter.value;
       } else if (typeof fieldValue === 'boolean') {
         return String(fieldValue).toLowerCase() === filter.value.toLowerCase();
       } else if (typeof fieldValue === 'number') {
-        return fieldValue === Number(filter.value);
+          return fieldValue === Number(filter.value);
+      } else if (typeof fieldValue === 'boolean'){
+          return fieldValue === Boolean(filter.value);
+      } else if (typeof fieldValue === "object") {
+          return fieldValue;
       }
       
       return false;

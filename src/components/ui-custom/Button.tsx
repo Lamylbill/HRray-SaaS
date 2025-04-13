@@ -12,7 +12,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 // This is a custom extension of the Shadcn button that includes our HRFlow styling
-export const Button: React.FC<ButtonProps> = ({
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   children,
   className,
   variant = 'default',
@@ -20,7 +20,7 @@ export const Button: React.FC<ButtonProps> = ({
   isLoading = false,
   disabled,
   ...props
-}) => {
+}, ref) => {
   // Map our custom variants to the ones expected by Shadcn if needed
   const variantMapping: Record<string, string | undefined> = {
     // We can now pass premium, glass, and success directly since they are implemented in the base component
@@ -57,5 +57,5 @@ export const Button: React.FC<ButtonProps> = ({
     >
       {children}
     </ShadcnButton>
-  );
-};
+  )
+});

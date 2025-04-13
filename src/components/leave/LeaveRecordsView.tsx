@@ -32,10 +32,6 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
         // Transform the data into the expected format with proper typing
         const formattedData: LeaveRequest[] = data?.map(item => ({
           id: item.id,
-          employee: {
-            id: item.employee.id,
-            full_name: item.employee.full_name
-          },
           leave_type: {
             id: item.leave_type.id,
             name: item.leave_type.name,
@@ -161,7 +157,7 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
             <TableBody>
               {filteredLeaveRequests.map(request => (
                 <TableRow key={request.id}>
-                  <TableCell className="font-medium">{request.employee.full_name}</TableCell>
+                  
                   <TableCell>
                     <div 
                       className="inline-block w-3 h-3 rounded-full mr-2" 

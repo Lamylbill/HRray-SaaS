@@ -92,16 +92,15 @@ export const getLeaveRequestsWithEmployeeInfo = (client = supabase) => {
   return client
     .from('leave_requests')
     .select(`
-      id,
-      start_date,
-      end_date,
-      status,
-      half_day,
-      half_day_type,
-      created_at,
-      employee:employee_id(id, full_name),
-      leave_type:leave_type_id(id, name, color)
-    `);
+          id,
+          start_date,
+          end_date,
+          status,
+          half_day,
+          half_day_type,
+          created_at,
+          leave_type:leave_type_id(id, name, color)
+        `);
 };
 
 // Fetch protected data example - using proper authorization

@@ -26,6 +26,7 @@ import {
   formatCategoryName,
   applyFilters 
 } from '@/utils/filterUtils';
+import { useToast } from '@/hooks/use-toast';
 
 interface AdvancedFilterDropdownProps {
   employees: Employee[];
@@ -48,12 +49,16 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedField, setSelectedField] = useState<FieldMeta | null>(null);
   const [activeFilters, setActiveFilters] = useState<FilterSelection[]>([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { toast } = useToast();
   
   // Cache the categories and fields for better performance
   const categories = getFieldCategories();
   
   // Apply filters when activeFilters change
   useEffect(() => {
+    console.log('Active filters changed:', activeFilters);
+    
     if (activeFilters.length === 0) {
       onFiltersChange(employees);
       return;
@@ -66,6 +71,7 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
     }));
     
     const filtered = applyFilters(employees, filterParams);
+    console.log('Filtered employees:', filtered.length);
     onFiltersChange(filtered);
   }, [activeFilters, employees, onFiltersChange]);
 
@@ -90,7 +96,15 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
       valueName: displayValue
     };
     
+    console.log('Adding filter:', newFilter);
     setActiveFilters(prev => [...prev, newFilter]);
+    
+    // Show toast to confirm filter applied
+    toast({
+      title: "Filter Applied",
+      description: `${selectedField.label}: ${displayValue}`,
+    });
+    
     // Reset selection
     setSelectedField(null);
     setSelectedCategory(null);
@@ -98,14 +112,27 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
 
   // Remove a filter
   const removeFilter = (index: number) => {
+    const filterToRemove = activeFilters[index];
+    console.log('Removing filter:', filterToRemove);
     setActiveFilters(prev => prev.filter((_, i) => i !== index));
+    
+    toast({
+      title: "Filter Removed",
+      description: `${filterToRemove.fieldName}: ${filterToRemove.valueName}`,
+    });
   };
 
   // Clear all filters
   const clearFilters = () => {
+    console.log('Clearing all filters');
     setActiveFilters([]);
     setSelectedCategory(null);
     setSelectedField(null);
+    
+    toast({
+      title: "Filters Cleared",
+      description: "All filters have been removed",
+    });
   };
 
   // Get display value for an option (handling both string and object options)
@@ -120,19 +147,28 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
       return option ? option.label : value;
     }
   };
+  
+  const handleFilterClick = () => {
+    console.log('Filter button clicked');
+    setIsDropdownOpen(true);
+  };
 
   return (
     <div>
-      <DropdownMenu>
+      <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleFilterClick}
+          >
             <Filter className="mr-2 h-4 w-4" />
             {activeFilters.length > 0 
               ? `Filters (${activeFilters.length})` 
               : "Filters"}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="end">
+        <DropdownMenuContent className="w-56 z-50 bg-white" align="end">
           <DropdownMenuLabel>Filter by</DropdownMenuLabel>
           <DropdownMenuSeparator />
           

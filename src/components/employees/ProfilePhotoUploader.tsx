@@ -152,7 +152,7 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
 
   return (
     <div className="relative flex-shrink-0">
-      <Avatar className="h-20 w-20 min-w-[80px] min-h-[80px] border-2 border-gray-200 overflow-hidden">
+      <Avatar className="h-20 w-20 min-w-[80px] min-h-[80px] border-2 border-gray-200 overflow-hidden"><AvatarImage width={80} height={80} src={avatarUrl || currentPhotoUrl} /></Avatar>
         <AvatarImage src={avatarUrl || currentPhotoUrl} />
         <AvatarFallback className="bg-hrflow-blue text-white text-xl">
           {initials}
@@ -175,6 +175,7 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
             className="rounded-full w-8 h-8 p-0"
             onClick={handleUploadClick}
             disabled={isUploading}
+            aria-label="Upload profile photo"
           >
             {isUploading ? (
               <RotateCw className="h-4 w-4 animate-spin" />

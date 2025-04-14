@@ -123,6 +123,7 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
                           'bg-indigo-600 text-white hover:bg-indigo-700' :
                           'text-indigo-800 hover:bg-indigo-100'
                       )}
+                      aria-label={item.name}
                     >
                       {item.icon}
                       {!isCompact && <span className="ml-2">{item.name}</span>}

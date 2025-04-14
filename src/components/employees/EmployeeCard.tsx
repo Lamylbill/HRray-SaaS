@@ -91,6 +91,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
             e.stopPropagation();
             onEdit(employee);
           }}
+          aria-label="Edit employee"
         >
           <Edit className="h-4 w-4" />
         </Button>
@@ -102,6 +103,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
             e.stopPropagation();
             onDelete(employee);
           }}
+          aria-label="Delete employee"
         >
           <Trash className="h-4 w-4" />
         </Button>

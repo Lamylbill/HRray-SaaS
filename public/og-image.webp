@@ -1,0 +1,1 @@
+cwebp -q 80 public/og-image.png -o public/og-image.webp && rm public/og-image.png

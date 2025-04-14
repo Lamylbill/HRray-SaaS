@@ -1381,10 +1381,10 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      { [key: string]: never }
     }
     CompositeTypes: {
-      [_ in never]: never
+      { [key: string]: never }
     }
   }
 }

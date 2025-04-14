@@ -1,3 +1,4 @@
+
 // src/vite.config.ts
 
 import { defineConfig } from 'vite';
@@ -15,5 +16,9 @@ export default defineConfig({
     rollupOptions: {
       external: ['canvas'], // Skip canvas from build (Netlify safe)
     },
+  },
+  server: {
+    port: 8080,
+    host: true, // Listen on all addresses
   },
 });

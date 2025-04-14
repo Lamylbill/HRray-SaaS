@@ -58,12 +58,13 @@ export const applyFilters = (
   return employees.filter(employee => {
     return filters.every(filter => {
       let fieldValue = employee[filter.field as keyof Employee];
+      const currentFieldMeta = getFieldMetaByName(filter.field);
       
       // Handle null/undefined values
       if (fieldValue === null || fieldValue === undefined) {
         return false;
-      } else if(fieldMeta?.isNested){
-        const nestedType = fieldMeta.nestedType;
+      } else if(currentFieldMeta?.isNested){
+        const nestedType = currentFieldMeta.nestedType;
         if(!nestedType) return false;
         if (!employee[nestedType] || !Array.isArray(employee[nestedType])) return false;
 

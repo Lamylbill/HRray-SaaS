@@ -98,7 +98,7 @@ const LeaveCalendar: React.FC = () => {
               const displayMonth = month + i;
               const displayYear = year + Math.floor(displayMonth / 12);
               const monthIndex = displayMonth % 12;
-
+  
               return (
                 <MonthView
                   key={i}
@@ -113,6 +113,5 @@ const LeaveCalendar: React.FC = () => {
       </div>
     </div>
   );
-};
 
 export default LeaveCalendar;

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui-custom/Button';
 import { Eye, Filter } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { getAuthorizedClient, getLeaveRequestsWithEmployeeInfo, supabase } from '@/integrations/supabase/client';
+import { getAuthorizedClient, supabase } from '@/integrations/supabase/client';
 
 const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ 
   selectedLeaveTypes,
@@ -24,8 +24,20 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
       try {
         const authorizedClient = getAuthorizedClient();
         
-        // Use our helper function from client.ts to get leave requests with related data
-        const { data: leaveRequestsData, error: leaveRequestsError } = await getLeaveRequestsWithEmployeeInfo(authorizedClient)
+        // Fetch leave requests with related data
+        const { data: leaveRequestsData, error: leaveRequestsError } = await authorizedClient
+          .from('leave_requests')
+          .select(`
+            id, 
+            employee_id, 
+            start_date, 
+            end_date, 
+            status, 
+            half_day, 
+            half_day_type, 
+            created_at, 
+            leave_type:leave_type_id(id, name, color)
+          `)
           .order('created_at', { ascending: false });
         
         if (leaveRequestsError) throw leaveRequestsError;
@@ -46,17 +58,10 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
 
         // Format the leave request data
         const formattedData: LeaveRequest[] = leaveRequestsData.map(lr => {
-          let employee = employeeMap.get(lr.employee_id);
-          if (!employee) {
-            employee = { id: '', full_name: 'Unknown' };
-          }
+          const employee = employeeMap.get(lr.employee_id) || { id: lr.employee_id, full_name: 'Unknown' };
+          const leaveType = lr.leave_type || { id: '', name: 'Unknown', color: '#000000' };
 
-          let leaveType = lr.leave_type;
-          if (!leaveType) {
-            leaveType = { id: '', name: 'Unknown', color: '#000000' };
-          }
-
-          const formattedLeaveRequest: LeaveRequest = {
+          return {
             id: lr.id,
             employee: {
               id: employee.id,
@@ -74,7 +79,6 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
             half_day_type: lr.half_day_type as "AM" | "PM" | null,
             created_at: lr.created_at,
           };
-          return formattedLeaveRequest;
         });
         
         setLeaveRequests(formattedData);

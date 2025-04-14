@@ -1,11 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { getAuthorizedClient } from '@/integrations/supabase/client';
-import { LeaveRequest } from './interfaces';
-import MonthView from './MonthView';
-import WeekdayHeader from './WeekdayHeader';
+import { LeaveRequest } from '../leave-calendar/interfaces';
+import MonthView from '../leave-calendar/MonthView';
+import WeekdayHeader from '../leave-calendar/WeekdayHeader';
 
-const LeaveCalendar: React.FC = () => {
-  console.log('LeaveCalendar component rendered');
+const LeaveCalendarView: React.FC = () => {
+  console.log('LeaveCalendarView component rendered');
 
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +62,7 @@ const LeaveCalendar: React.FC = () => {
                 },
                 start_date: item.start_date,
                 end_date: item.end_date,
-                status: item.status,
+                status: item.status as 'Approved' | 'Pending' | 'Rejected',
               }))
             : [];
 
@@ -115,4 +116,4 @@ const LeaveCalendar: React.FC = () => {
   );
 };
 
-export default LeaveCalendar;
+export default LeaveCalendarView;

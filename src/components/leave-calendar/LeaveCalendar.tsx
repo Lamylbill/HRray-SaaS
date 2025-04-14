@@ -62,7 +62,7 @@ const LeaveCalendar: React.FC = () => {
                 },
                 start_date: item.start_date,
                 end_date: item.end_date,
-                status: item.status,
+                status: item.status as 'Approved' | 'Pending' | 'Rejected',
               }))
             : [];
           allRequests.push(...formattedData);

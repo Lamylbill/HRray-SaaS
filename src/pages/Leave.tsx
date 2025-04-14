@@ -7,7 +7,7 @@ import { AnimatedSection } from '@/components/ui-custom/AnimatedSection';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { getAuthorizedClient, getLeaveRequestsTable } from '@/integrations/supabase/client';
-import { LeaveCalendarView } from '@/components/leave/LeaveCalendarView';
+import LeaveCalendar from '@/components/leave-calendar/LeaveCalendar';
 import LeaveRecordsView from '@/components/leave/LeaveRecordsView';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
@@ -177,7 +177,7 @@ const Leave = () => {
 
           <div className="flex-1 flex flex-col">
             {activeTab === 'calendar' && (
-              <LeaveCalendarView 
+              <LeaveCalendar
                 selectedLeaveTypes={selectedLeaveTypes} 
                 onLeaveTypeFilter={handleLeaveTypeFilter} 
               />

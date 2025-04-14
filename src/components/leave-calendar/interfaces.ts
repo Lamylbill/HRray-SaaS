@@ -1,4 +1,3 @@
-
 export interface Employee {
   id: string;
   full_name: string;
@@ -30,4 +29,15 @@ export interface MonthViewProps {
   month: number;
   year: number;
   leaveRequests: LeaveRequest[];
+}
+
+export interface LeaveQuota {
+  id: string;
+  employee_id: string;
+  leave_type_id: string;
+  quota_days: number;
+  taken_days: number;
+  adjustment_days: number;
+  created_at: string;
+  updated_at: string;
 }

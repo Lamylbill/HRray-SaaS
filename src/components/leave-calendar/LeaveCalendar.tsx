@@ -87,8 +87,9 @@ const LeaveCalendar: React.FC = () => {
   }, []);
 
   return (
-    <div className="container mx-auto py-10 flex flex-col items-center w-full">
-      <div className="relative">
+    <div className="container mx-auto py-10 flex flex-col items-center w-full max-w-[900px]">
+      
+      
         <WeekdayHeader />
         {loading ? (
           <p className="text-center">Loading...</p>
@@ -109,7 +110,7 @@ const LeaveCalendar: React.FC = () => {
             })}
           </>
         )}
-      </div>
+      
     </div>
   );
 };

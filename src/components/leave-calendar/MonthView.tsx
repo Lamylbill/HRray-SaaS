@@ -25,11 +25,14 @@ const MonthView: React.FC<MonthViewProps> = ({ month, year, leaveRequests }) => 
   };
 
   return (
-    <section className="mb-8">
-      <h2 className="text-xl font-semibold text-gray-800 text-center mb-2">
-        {monthName} {year}
-      </h2>
-      <div className="grid grid-cols-7 gap-1 border border-gray-300 rounded-md">
+    <section className="mb-8 w-full max-w-[900px]">
+      <div className="flex items-center mb-2">
+        <h2 className="text-xl font-semibold text-gray-800">
+          {monthName} {year}
+        </h2>
+      </div>
+
+      <div className="w-full grid grid-cols-7 gap-1 border border-gray-300 rounded-md">
         {Array.from({ length: firstDayOfMonth }, (_, i) => (
           <div key={`empty-${i}`} className="border border-gray-300 p-2"></div>
         ))}
@@ -57,9 +60,9 @@ const MonthView: React.FC<MonthViewProps> = ({ month, year, leaveRequests }) => 
                         ? getGridColumnStart(leaveStartDate.getDate())
                         : 1;
                     const leaveEndColumn =
-                    leaveEndDate.getMonth() === month &&
-                    leaveEndDate.getFullYear() === year
-                      ? getGridColumnStart(leaveEndDate.getDate()) + 1
+                      leaveEndDate.getMonth() === month &&
+                      leaveEndDate.getFullYear() === year
+                        ? getGridColumnStart(leaveEndDate.getDate()) + 1
                         : 8;
 
                     const duration = Math.min(leaveEndColumn, currentGridColumnEnd) - Math.max(leaveStartColumn, currentGridColumnStart);

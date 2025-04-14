@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ListFilter, RefreshCw, Upload, Link } from 'lucide-react';
+import { ListFilter, RefreshCw, Upload, Link, Plus } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
 import { AnimatedSection } from '@/components/ui-custom/AnimatedSection';
 import { useAuth } from '@/context/AuthContext';
@@ -140,6 +140,15 @@ const Leave = () => {
               >
                 <Upload className="mr-2 h-4 w-4" /> Export
               </Button>
+              <Button
+                variant="default"
+                size="sm"
+                className="bg-blue-500 text-white hover:bg-blue-700"
+              > 
+                <Plus className="mr-2 h-4 w-4" />
+                Add Leave
+              </Button>
+
             </div>
           </div>
 

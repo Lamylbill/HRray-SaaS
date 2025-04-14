@@ -83,10 +83,12 @@ const LeaveCalendar: React.FC = () => {
     console.log('useEffect hook triggered');
 
     fetchLeaveRequests();
-  }, [month, year]);
+  }, []);
 
   return (
-    <div className="container mx-auto py-10 flex flex-col items-center">
+    <div className="container mx-auto py-10 flex flex-col items-center w-full">
+      
+        <div className='relative'>
       <WeekdayHeader />
       {loading ? (
         <p className="text-center">Loading...</p>
@@ -96,8 +98,16 @@ const LeaveCalendar: React.FC = () => {
             const displayMonth = month + i;
             const displayYear = year + Math.floor(displayMonth / 12);
             const monthIndex = displayMonth % 12; // Ensure monthIndex is within 0-11
-            return <MonthView key={i} month={monthIndex} year={displayYear} leaveRequests={leaveRequests} />;
+            return (
+              <MonthView
+                key={i}
+                month={monthIndex}
+                year={displayYear}
+                leaveRequests={leaveRequests}
+              />
+            );
           })}
+          </div>
         </>
       )}
     </div>

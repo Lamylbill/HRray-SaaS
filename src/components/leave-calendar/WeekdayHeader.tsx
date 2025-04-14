@@ -4,8 +4,8 @@ const WeekdayHeader: React.FC = () => {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
-    <div className="sticky top-0 bg-white z-10 border-b border-gray-200">
-      <div className="grid grid-cols-7">
+    <div className="sticky top-16 bg-white z-10 border-b border-gray-200 mt-4">
+      <div className="grid grid-cols-7 border-t border-l border-gray-200">
         {days.map((day, index) => (
           <div
             key={index}
@@ -13,6 +13,7 @@ const WeekdayHeader: React.FC = () => {
           >
             {day}
           </div>
+          
         ))}
       </div>
     </div>

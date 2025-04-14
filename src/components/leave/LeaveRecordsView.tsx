@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui-custom/Button';
 import { Eye, Filter } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { getAuthorizedClient, getLeaveRequestsWithEmployeeInfo } from '@/integrations/supabase/client';
+import { getAuthorizedClient, getLeaveRequestsWithEmployeeInfo, supabase } from '@/integrations/supabase/client';
 
 const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ 
   selectedLeaveTypes,
@@ -25,30 +25,57 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
         const authorizedClient = getAuthorizedClient();
         
         // Use our helper function from client.ts to get leave requests with related data
-        const { data, error } = await getLeaveRequestsWithEmployeeInfo(authorizedClient)
+        const { data: leaveRequestsData, error: leaveRequestsError } = await getLeaveRequestsWithEmployeeInfo(authorizedClient)
           .order('created_at', { ascending: false });
         
-        if (error) throw error;
-        
-        // Transform the data into the expected format with proper typing
-        const formattedData: LeaveRequest[] = data?.map(item => ({
-          id: item.id,
-          employee: {
-            id: item.employee_id || '', // Add this field which was missing
-            full_name: item.employee?.full_name || 'Unknown'  // Add with fallback
-          },
-          leave_type: {
-            id: item.leave_type.id,
-            name: item.leave_type.name,
-            color: item.leave_type.color
-          },
-          start_date: item.start_date,
-          end_date: item.end_date,
-          status: item.status as "Approved" | "Rejected" | "Pending",
-          half_day: item.half_day || false,
-          half_day_type: item.half_day_type as "AM" | "PM" | null,
-          created_at: item.created_at
-        })) || [];
+        if (leaveRequestsError) throw leaveRequestsError;
+
+        // Extract unique employee IDs from leave requests
+        const employeeIds = [...new Set(leaveRequestsData.map(lr => lr.employee_id))];
+
+        // Fetch employee data for the extracted IDs
+        const { data: employees, error: employeesError } = await supabase
+          .from('employees')
+          .select('id, full_name')
+          .in('id', employeeIds);
+
+        if (employeesError) throw employeesError;
+
+        // Create a map of employees for easy lookup
+        const employeeMap = new Map(employees.map(employee => [employee.id, employee]));
+
+        // Format the leave request data
+        const formattedData: LeaveRequest[] = leaveRequestsData.map(lr => {
+          let employee = employeeMap.get(lr.employee_id);
+          if (!employee) {
+            employee = { id: '', full_name: 'Unknown' };
+          }
+
+          let leaveType = lr.leave_type;
+          if (!leaveType) {
+            leaveType = { id: '', name: 'Unknown', color: '#000000' };
+          }
+
+          const formattedLeaveRequest: LeaveRequest = {
+            id: lr.id,
+            employee: {
+              id: employee.id,
+              full_name: employee.full_name,
+            },
+            leave_type: {
+              id: leaveType.id,
+              name: leaveType.name,
+              color: leaveType.color,
+            },
+            start_date: lr.start_date,
+            end_date: lr.end_date,
+            status: lr.status as "Approved" | "Rejected" | "Pending",
+            half_day: lr.half_day || false,
+            half_day_type: lr.half_day_type as "AM" | "PM" | null,
+            created_at: lr.created_at,
+          };
+          return formattedLeaveRequest;
+        });
         
         setLeaveRequests(formattedData);
       } catch (error) {

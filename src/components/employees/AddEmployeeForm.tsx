@@ -22,18 +22,16 @@ export const AddEmployeeForm = ({
     return tab || 'personal-info';
   };
 
-  if (isTabbed) {
-    return (
-      <div className="max-h-[80vh] overflow-hidden flex flex-col">
-        <EmployeeTabbedForm
-          mode={employeeData ? 'edit' : 'create'}
-          initialData={employeeData ? { employee: employeeData } : undefined}
-          onSuccess={onSuccess}
-          onCancel={onCancel}
-          isViewOnly={false}
-          defaultTab={getDefaultTab(activeTab)}
-        />
-      </div>
-    );
-  }
+  return (
+    <div className="max-h-[80vh] overflow-hidden flex flex-col">
+      <EmployeeTabbedForm
+        mode={employeeData ? 'edit' : 'create'}
+        initialData={employeeData ? { employee: employeeData } : undefined}
+        onSuccess={onSuccess}
+        onCancel={onCancel}
+        isViewOnly={false}
+        defaultTab={getDefaultTab(activeTab)}
+      />
+    </div>
+  );
 };

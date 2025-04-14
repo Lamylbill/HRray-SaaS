@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { LeaveRecordsViewProps, LeaveRequest } from './interfaces';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -32,6 +33,10 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
         // Transform the data into the expected format with proper typing
         const formattedData: LeaveRequest[] = data?.map(item => ({
           id: item.id,
+          employee: {
+            id: item.employee_id || '', // Add this field which was missing
+            full_name: item.employee?.full_name || 'Unknown'  // Add with fallback
+          },
           leave_type: {
             id: item.leave_type.id,
             name: item.leave_type.name,
@@ -39,7 +44,6 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
           },
           start_date: item.start_date,
           end_date: item.end_date,
-          // Ensure status is one of the expected enum values
           status: item.status as "Approved" | "Rejected" | "Pending",
           half_day: item.half_day || false,
           half_day_type: item.half_day_type as "AM" | "PM" | null,
@@ -157,7 +161,7 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
             <TableBody>
               {filteredLeaveRequests.map(request => (
                 <TableRow key={request.id}>
-                  
+                  <TableCell>{request.employee.full_name}</TableCell>
                   <TableCell>
                     <div 
                       className="inline-block w-3 h-3 rounded-full mr-2" 

@@ -4,7 +4,7 @@
     pkgs.nodejs_20
     pkgs.nodePackages.vite
     pkgs.nodePackages.npm
-  ];
+  ],
   idx.extensions = [
     "svelte.svelte-vscode"
     "vue.volar"

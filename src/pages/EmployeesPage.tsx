@@ -449,31 +449,35 @@ const EmployeesPage = () => {
           setIsAddEmployeeOpen(open);
         }}
       >
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
-          {selectedEmployee ? (
-            <EmployeeDetailsDialog
-              employee={selectedEmployee}
-              onEdit={() => {
-                fetchEmployees();
-                setIsDetailsOpen(false);
-              }}
-              onDelete={() => {
-                fetchEmployees();
-                setIsDetailsOpen(false);
-              }}
-            />
-          ) : (
-            <AddEmployeeForm
-              onSuccess={() => {
-                fetchEmployees();
-                setIsAddEmployeeOpen(false);
-              }}
-              onCancel={() => {
-                setIsAddEmployeeOpen(false);
-              }}
-            />
-          )}
-        </DialogContent>
+        <DialogContent 
+          className="max-w-screen-2xl w-full" 
+          title={selectedEmployee ? "Employee Details" : "Add New Employee"} 
+          description={selectedEmployee ? "View and manage employee information" : "Add an Employee to your organization."}
+        >
+        {selectedEmployee ? (
+          <EmployeeDetailsDialog
+            employee={selectedEmployee}
+            onEdit={() => {
+              fetchEmployees();
+              setIsDetailsOpen(false);
+            }}
+            onDelete={() => {
+              fetchEmployees();
+              setIsDetailsOpen(false);
+            }}
+          />
+        ) : (
+          <AddEmployeeForm
+            onSuccess={() => {
+              fetchEmployees();
+              setIsAddEmployeeOpen(false);
+            }}
+            onCancel={() => {
+              setIsAddEmployeeOpen(false);
+            }}
+          />
+        )}
+      </DialogContent>
       </Dialog>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

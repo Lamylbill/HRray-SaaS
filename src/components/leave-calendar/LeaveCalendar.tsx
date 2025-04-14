@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { LeaveRequest } from './interfaces';
@@ -87,30 +88,30 @@ const LeaveCalendar: React.FC = () => {
 
   return (
     <div className="container mx-auto py-10 flex flex-col items-center w-full">
-      
-        <div className='relative'>
-      <WeekdayHeader />
-      {loading ? (
-        <p className="text-center">Loading...</p>
-      ) : (
-        <>
-          {[-1, 0, 1].map((i) => {
-            const displayMonth = month + i;
-            const displayYear = year + Math.floor(displayMonth / 12);
-            const monthIndex = displayMonth % 12; // Ensure monthIndex is within 0-11
-            return (
-              <MonthView
-                key={i}
-                month={monthIndex}
-                year={displayYear}
-                leaveRequests={leaveRequests}
-              />
-            );
-          })}
-          </div>
-        </>
-      )}
+      <div className="relative">
+        <WeekdayHeader />
+        {loading ? (
+          <p className="text-center">Loading...</p>
+        ) : (
+          <>
+            {[-1, 0, 1].map((i) => {
+              const displayMonth = month + i;
+              const displayYear = year + Math.floor(displayMonth / 12);
+              const monthIndex = displayMonth % 12; // Ensure monthIndex is within 0-11
+              return (
+                <MonthView
+                  key={i}
+                  month={monthIndex}
+                  year={displayYear}
+                  leaveRequests={leaveRequests}
+                />
+              );
+            })}
+          </>
+        )}
+      </div>
     </div>
   );
 };
+
 export default LeaveCalendar;

@@ -1,26 +1,33 @@
-interface Employee {
+
+export interface Employee {
   id: string;
   full_name: string;
 }
 
-interface LeaveType {
+export interface LeaveType {
   id: string;
   name: string;
   color: string;
 }
 
-interface LeaveRequest {
+export interface LeaveRequest {
   id: string;
-  employee_id: string;
-  leave_type_id: string;
+  employee: {
+    id: string;
+    full_name: string;
+  };
+  leave_type: {
+    id: string;
+    name: string;
+    color: string;
+  };
   start_date: string;
   end_date: string;
   status: 'Approved' | 'Pending' | 'Rejected';
-  employee: Employee;
-  leave_types: LeaveType;
 }
 
-interface MonthViewProps {
+export interface MonthViewProps {
   month: number;
   year: number;
+  leaveRequests: LeaveRequest[];
 }

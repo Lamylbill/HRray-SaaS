@@ -1,51 +1,118 @@
-import React from 'react';
-import { LeaveCalendarViewProps } from './interfaces';
+import React, { useState, useEffect } from 'react';
+import { getAuthorizedClient } from '@/integrations/supabase/client';
+import { LeaveRequest } from './interfaces';
+import MonthView from './MonthView';
+import WeekdayHeader from './WeekdayHeader';
 
-export const LeaveCalendarView: React.FC<LeaveCalendarViewProps> = ({ 
-  selectedLeaveTypes, 
-  onLeaveTypeFilter 
-}) => {
-  // Implementation of the calendar view
+const LeaveCalendar: React.FC = () => {
+  console.log('LeaveCalendar component rendered');
+
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const getCurrentMonthYear = (): { month: number; year: number } => {
+    const today = new Date();
+    return { month: today.getMonth(), year: today.getFullYear() };
+  };
+
+  const { month, year } = getCurrentMonthYear();
+
+  useEffect(() => {
+    console.log('Fetching leave requests...');
+
+    const fetchLeaveRequests = async () => {
+      setLoading(true);
+      try {
+        const client = getAuthorizedClient();
+        const allRequests: LeaveRequest[] = [];
+
+        for (let i = -1; i <= 1; i++) {
+          const currentMonth = month + i;
+          const currentYear = year + Math.floor((month + i) / 12);
+          const monthIndex = currentMonth % 12;
+
+          const startDate = new Date(currentYear, monthIndex, 1);
+          const endDate = new Date(currentYear, monthIndex + 1, 0);
+
+          const startDateString = startDate.toISOString().split('T')[0];
+          const endDateString = endDate.toISOString().split('T')[0];
+
+          const { data, error } = await client
+            .from('leave_requests')
+            .select('id, employee_id, start_date, end_date, status, leave_type:leave_type_id(id, name, color), employee:employee_id(full_name)')
+            .gte('end_date', startDateString)
+            .lte('start_date', endDateString);
+
+          if (error) {
+            console.error('Error fetching leave requests:', error);
+          }
+
+          const formattedData: LeaveRequest[] = data
+            ? data.map((item) => ({
+                id: item.id,
+                employee: {
+                  id: item.employee_id,
+                  full_name: item.employee.full_name,
+                },
+                leave_type: {
+                  id: item.leave_type.id,
+                  name: item.leave_type.name,
+                  color: item.leave_type.color,
+                },
+                start_date: item.start_date,
+                end_date: item.end_date,
+                status: item.status,
+              }))
+            : [];
+
+          allRequests.push(...formattedData);
+        }
+
+        console.log('Leave requests fetched:', allRequests);
+        setLeaveRequests(allRequests);
+      } catch (error) {
+        console.error('Error fetching leave requests:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (getAuthorizedClient()) {
+      console.log('Authorized client found');
+    } else {
+      console.log('No authorized client found');
+    }
+
+    fetchLeaveRequests();
+  }, []);
+
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm flex-1 flex flex-col">
-      <h2 className="text-xl font-semibold mb-4">Leave Calendar</h2>
-      
-      {/* Calendar implementation would go here */}
-      <div className="flex-1 flex items-center justify-center">
-        <p className="text-gray-500">Calendar view implementation</p>
-      </div>
-      
-      {/* Filter controls */}
-      <div className="mt-4 border-t pt-4">
-        <h3 className="text-sm font-medium mb-2">Filter by leave type:</h3>
-        <div className="flex flex-wrap gap-2">
-          {/* Leave type filter buttons would go here */}
-          <button 
-            className="px-3 py-1 text-xs rounded bg-blue-100 text-blue-800"
-            onClick={() => onLeaveTypeFilter(['vacation'])}
-          >
-            Vacation
-          </button>
-          <button 
-            className="px-3 py-1 text-xs rounded bg-green-100 text-green-800"
-            onClick={() => onLeaveTypeFilter(['sick'])}
-          >
-            Sick Leave
-          </button>
-          <button 
-            className="px-3 py-1 text-xs rounded bg-purple-100 text-purple-800"
-            onClick={() => onLeaveTypeFilter(['personal'])}
-          >
-            Personal
-          </button>
-          <button 
-            className="px-3 py-1 text-xs rounded bg-gray-100 text-gray-800"
-            onClick={() => onLeaveTypeFilter([])}
-          >
-            Clear Filters
-          </button>
-        </div>
+    <div className="container mx-auto py-10 flex flex-col items-center w-full">
+      <div className="relative">
+        <WeekdayHeader />
+        {loading ? (
+          <p className="text-center">Loading...</p>
+        ) : (
+          <>
+            {[-1, 0, 1].map((i) => {
+              const displayMonth = month + i;
+              const displayYear = year + Math.floor(displayMonth / 12);
+              const monthIndex = displayMonth % 12;
+
+              return (
+                <MonthView
+                  key={i}
+                  month={monthIndex}
+                  year={displayYear}
+                  leaveRequests={leaveRequests}
+                />
+              );
+            })}
+          </>
+        )}
       </div>
     </div>
   );
 };
+
+export default LeaveCalendar;

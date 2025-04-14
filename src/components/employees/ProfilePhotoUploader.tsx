@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Upload,
@@ -152,8 +153,8 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
 
   return (
     <div className="relative flex-shrink-0">
-      <Avatar className="h-20 w-20 min-w-[80px] min-h-[80px] border-2 border-gray-200 overflow-hidden"><AvatarImage width={80} height={80} src={avatarUrl || currentPhotoUrl} /></Avatar>
-        <AvatarImage src={avatarUrl || currentPhotoUrl} />
+      <Avatar className="h-20 w-20 min-w-[80px] min-h-[80px] border-2 border-gray-200 overflow-hidden">
+        <AvatarImage src={avatarUrl || currentPhotoUrl} width={80} height={80} />
         <AvatarFallback className="bg-hrflow-blue text-white text-xl">
           {initials}
         </AvatarFallback>

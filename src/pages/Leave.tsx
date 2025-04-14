@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ListFilter, RefreshCw, Upload, Link, Plus } from 'lucide-react';
@@ -10,6 +9,7 @@ import { getAuthorizedClient } from '@/integrations/supabase/client';
 import LeaveCalendar from '@/components/leave-calendar/LeaveCalendar';
 import LeaveRecordsView from '@/components/leave/LeaveRecordsView';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AddLeaveForm } from '@/components/leave/AddLeaveForm';
 
 const Leave = () => {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -20,6 +20,7 @@ const Leave = () => {
   const [selectedLeaveTypes, setSelectedLeaveTypes] = useState<string[]>([]);
   const [botLinkDialogOpen, setBotLinkDialogOpen] = useState(false);
   const [botLink, setBotLink] = useState('');
+  const [addLeaveDialogOpen, setAddLeaveDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate('/login');
@@ -113,6 +114,16 @@ const Leave = () => {
     });
   };
 
+  const handleAddLeaveSuccess = () => {
+    setAddLeaveDialogOpen(false);
+    handleRefresh();
+    toast({
+      title: "Leave Request Submitted",
+      description: "Your leave request has been submitted successfully",
+      duration: 3000,
+    });
+  };
+
   return (
     <div className="min-h-screen pt-20 pb-12 bg-gray-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl h-full">
@@ -144,6 +155,7 @@ const Leave = () => {
                 variant="default"
                 size="sm"
                 className="bg-blue-500 text-white hover:bg-blue-700"
+                onClick={() => setAddLeaveDialogOpen(true)}
               > 
                 <Plus className="mr-2 h-4 w-4" />
                 Add Leave
@@ -213,6 +225,18 @@ const Leave = () => {
               Copy Link
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={addLeaveDialogOpen} onOpenChange={setAddLeaveDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Leave Request</DialogTitle>
+          </DialogHeader>
+          <AddLeaveForm 
+            onSuccess={handleAddLeaveSuccess} 
+            onCancel={() => setAddLeaveDialogOpen(false)} 
+          />
         </DialogContent>
       </Dialog>
     </div>

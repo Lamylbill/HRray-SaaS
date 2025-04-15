@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLeave } from '@/hooks/use-leave';
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
+import { LeaveQuota } from '@/components/leave-calendar/interfaces';
 
 interface AddLeaveFormProps {
   onSuccess: () => void;
@@ -33,6 +34,7 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
   const [notes, setNotes] = useState<string>('');
   const [quotaLeft, setQuotaLeft] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [availableQuota, setAvailableQuota] = useState<LeaveQuota | null>(null);
 
   const {
     leaveTypes,
@@ -40,15 +42,9 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
     isLoadingLeaveTypes,
     isLoadingEmployees,
     isSubmitting,
+    fetchLeaveQuota,
     submitLeaveRequest,
   } = useLeave();
-
-  const leaveQuotas: { [key: string]: number } = {
-    '1': 18, // Annual Leave (assuming ID '1')
-    '2': 18, // Sick Leave (assuming ID '2')
-    '3': 6,  // Childcare Leave (assuming ID '3')
-    // Add other leave types and their quotas here
-  };
 
   const calculateRequestedDays = (): number => {
     if (!startDay || !startMonth || !startYear || !endDay || !endMonth || !endYear) {
@@ -59,7 +55,7 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
     const endDate = new Date(endYear, endMonth, endDay);
   
     if (endDate < startDate) {
-      return 0; // Or handle this case as an invalid input
+      return 0;
     }
   
     let days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1;
@@ -71,17 +67,30 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
     return days;
   };
   
-  const updateQuotaLeft = () => {
-    if (leaveTypeId) {
-      const requestedDays = calculateRequestedDays();
-      const availableQuota = leaveQuotas[leaveTypeId] || 0; // Default to 0 if leave type not found
-      setQuotaLeft(availableQuota - requestedDays);
+  const updateQuotaLeft = async () => {
+    if (leaveTypeId && employeeId) {
+      try {
+        const quotaData = await fetchLeaveQuota(employeeId, leaveTypeId);
+        
+        if (quotaData) {
+          setAvailableQuota(quotaData);
+          const requestedDays = calculateRequestedDays();
+          const availableQuota = quotaData.quota_days - quotaData.taken_days;
+          setQuotaLeft(availableQuota - requestedDays);
+        }
+      } catch (error) {
+        console.error('Error fetching quota:', error);
+        setQuotaLeft(null);
+      }
     } else {
-      setQuotaLeft(null); // Reset quota if no leave type is selected
+      setQuotaLeft(null);
+      setAvailableQuota(null);
     }
   };
 
-  useEffect(updateQuotaLeft, [startDay, startMonth, startYear, endDay, endMonth, endYear, leaveTypeId, isHalfDay]);
+  useEffect(() => {
+    updateQuotaLeft();
+  }, [employeeId, leaveTypeId, startDay, startMonth, startYear, endDay, endMonth, endYear, isHalfDay]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,7 +109,7 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
       return;
     }
   
-    setErrorMessage(null); // Clear any previous error message
+    setErrorMessage(null);
   
     const startDate = new Date(startYear, startMonth, startDay);
     const endDate = new Date(endYear, endMonth, endDay);
@@ -171,9 +180,9 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
                     style={{ backgroundColor: type.color }} 
                   />
                   {type.name}
-                  {quotaLeft !== null && leaveTypeId === type.id && (
+                  {availableQuota && leaveTypeId === type.id && (
                     <span className="ml-2 text-sm text-gray-500">
-                      ({quotaLeft} days left)
+                      ({availableQuota.quota_days - availableQuota.taken_days} days left)
                     </span>
                   )}
                 </div>
@@ -336,17 +345,24 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
           Cancel
         </Button> 
         
-        {/* Disable button if end date is before start date */}
         <Button 
           type="submit" 
           disabled={
-            isSubmitting || (endYear < startYear || (endYear === startYear && endMonth < startMonth) || (endYear === startYear && endMonth === startMonth && endDay < startDay))
+            isSubmitting || 
+            (endYear < startYear || (endYear === startYear && endMonth < startMonth) || (endYear === startYear && endMonth === startMonth && endDay < startDay)) ||
+            (quotaLeft !== null && quotaLeft < 0)
           }
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Submit 
         </Button>
       </div>
+      
+      {quotaLeft !== null && quotaLeft < 0 && (
+        <p className="text-red-500 text-sm mt-2">
+          Insufficient leave quota. You have {availableQuota?.quota_days - availableQuota?.taken_days} days left.
+        </p>
+      )}
     </form>
   );
 };

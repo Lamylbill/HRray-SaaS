@@ -51,7 +51,7 @@ export const useLeave = () => {
         id: 'unlimited',
         employee_id: employeeId,
         leave_type_id: leaveTypeId,
-        quota_days: 999999,
+        quota_days: Number.MAX_SAFE_INTEGER,
         taken_days: 0,
         adjustment_days: 0,
         created_at: new Date().toISOString(),
@@ -59,7 +59,7 @@ export const useLeave = () => {
       } as LeaveQuota;
     }
     
-    // For paid leave types, get the quota and also fetch pending requests
+    // For paid leave types, get the quota and also fetch all leave requests (both approved and pending)
     const { data: quotaData, error: quotaError } = await supabase
       .from('leave_quotas')
       .select('*')
@@ -85,31 +85,39 @@ export const useLeave = () => {
       } as LeaveQuota;
     }
     
-    // Get pending leave requests for this employee and leave type
-    const { data: pendingRequests, error: pendingError } = await supabase
+    // Get all relevant leave requests (both approved and pending)
+    const { data: leaveRequests, error: requestsError } = await supabase
       .from('leave_requests')
-      .select('start_date, end_date, half_day')
+      .select('start_date, end_date, half_day, status')
       .eq('employee_id', employeeId)
       .eq('leave_type_id', leaveTypeId)
-      .eq('status', 'Pending');
+      .in('status', ['Approved', 'Pending']);
     
-    if (pendingError) throw pendingError;
+    if (requestsError) throw requestsError;
     
-    // Calculate days from pending requests
+    // Calculate days from both approved and pending requests
+    let approvedDays = 0;
     let pendingDays = 0;
-    if (pendingRequests && pendingRequests.length > 0) {
-      pendingRequests.forEach(req => {
+    
+    if (leaveRequests) {
+      leaveRequests.forEach(req => {
         const startDate = new Date(req.start_date);
         const endDate = new Date(req.end_date);
         const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-        pendingDays += req.half_day ? 0.5 : days;
+        const leaveDays = req.half_day ? 0.5 : days;
+        
+        if (req.status === 'Approved') {
+          approvedDays += leaveDays;
+        } else if (req.status === 'Pending') {
+          pendingDays += leaveDays;
+        }
       });
     }
     
-    // Return quota with pending days included in taken_days
+    // Return quota with both approved and pending days included in taken_days
     return {
       ...quotaData,
-      taken_days: quotaData.taken_days + pendingDays
+      taken_days: approvedDays + pendingDays
     } as LeaveQuota;
   };
 

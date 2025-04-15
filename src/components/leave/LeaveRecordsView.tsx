@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { LeaveRecordsViewProps, LeaveRequest } from './interfaces';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -6,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui-custom/Button';
 import { Eye, Filter } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { getAuthorizedClient, supabase } from '@/integrations/supabase/client';
+import { getAuthorizedClient } from '@/integrations/supabase/client';
+import { LeaveActionButtons } from './LeaveActionButtons';
 
 const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ 
   selectedLeaveTypes,
@@ -24,7 +24,6 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
       try {
         const authorizedClient = getAuthorizedClient();
         
-        // Fetch leave requests with related data
         const { data: leaveRequestsData, error: leaveRequestsError } = await authorizedClient
           .from('leave_requests')
           .select(`
@@ -42,10 +41,8 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
         
         if (leaveRequestsError) throw leaveRequestsError;
 
-        // Extract unique employee IDs from leave requests
         const employeeIds = [...new Set(leaveRequestsData.map(lr => lr.employee_id))];
 
-        // Fetch employee data for the extracted IDs
         const { data: employees, error: employeesError } = await supabase
           .from('employees')
           .select('id, full_name')
@@ -53,10 +50,8 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
 
         if (employeesError) throw employeesError;
 
-        // Create a map of employees for easy lookup
         const employeeMap = new Map(employees.map(employee => [employee.id, employee]));
 
-        // Format the leave request data
         const formattedData: LeaveRequest[] = leaveRequestsData.map(lr => {
           const employee = employeeMap.get(lr.employee_id) || { id: lr.employee_id, full_name: 'Unknown' };
           const leaveType = lr.leave_type || { id: '', name: 'Unknown', color: '#000000' };
@@ -92,7 +87,10 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
     fetchLeaveRequests();
   }, [user]);
   
-  // Filter leave requests based on selectedLeaveTypes
+  const handleActionComplete = () => {
+    fetchLeaveRequests();
+  };
+
   const filteredLeaveRequests = selectedLeaveTypes.length > 0
     ? leaveRequests.filter(req => selectedLeaveTypes.includes(req.leave_type.name))
     : leaveRequests;
@@ -210,9 +208,16 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
                   </TableCell>
                   <TableCell>{getStatusBadge(request.status)}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                    {request.status === 'Pending' ? (
+                      <LeaveActionButtons 
+                        leaveId={request.id} 
+                        onActionComplete={handleActionComplete}
+                      />
+                    ) : (
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

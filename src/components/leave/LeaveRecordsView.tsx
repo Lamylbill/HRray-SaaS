@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { LeaveRecordsViewProps, LeaveRequest } from './interfaces';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -5,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui-custom/Button';
 import { Eye, Filter } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { getAuthorizedClient } from '@/integrations/supabase/client';
+import { getAuthorizedClient, supabase } from '@/integrations/supabase/client';
 import { LeaveActionButtons } from './LeaveActionButtons';
 
 const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ 
@@ -16,74 +17,76 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   
-  useEffect(() => {
-    const fetchLeaveRequests = async () => {
-      if (!user) return;
-      
-      setIsLoading(true);
-      try {
-        const authorizedClient = getAuthorizedClient();
-        
-        const { data: leaveRequestsData, error: leaveRequestsError } = await authorizedClient
-          .from('leave_requests')
-          .select(`
-            id, 
-            employee_id, 
-            start_date, 
-            end_date, 
-            status, 
-            half_day, 
-            half_day_type, 
-            created_at, 
-            leave_type:leave_type_id(id, name, color)
-          `)
-          .order('created_at', { ascending: false });
-        
-        if (leaveRequestsError) throw leaveRequestsError;
-
-        const employeeIds = [...new Set(leaveRequestsData.map(lr => lr.employee_id))];
-
-        const { data: employees, error: employeesError } = await supabase
-          .from('employees')
-          .select('id, full_name')
-          .in('id', employeeIds);
-
-        if (employeesError) throw employeesError;
-
-        const employeeMap = new Map(employees.map(employee => [employee.id, employee]));
-
-        const formattedData: LeaveRequest[] = leaveRequestsData.map(lr => {
-          const employee = employeeMap.get(lr.employee_id) || { id: lr.employee_id, full_name: 'Unknown' };
-          const leaveType = lr.leave_type || { id: '', name: 'Unknown', color: '#000000' };
-
-          return {
-            id: lr.id,
-            employee: {
-              id: employee.id,
-              full_name: employee.full_name,
-            },
-            leave_type: {
-              id: leaveType.id,
-              name: leaveType.name,
-              color: leaveType.color,
-            },
-            start_date: lr.start_date,
-            end_date: lr.end_date,
-            status: lr.status as "Approved" | "Rejected" | "Pending",
-            half_day: lr.half_day || false,
-            half_day_type: lr.half_day_type as "AM" | "PM" | null,
-            created_at: lr.created_at,
-          };
-        });
-        
-        setLeaveRequests(formattedData);
-      } catch (error) {
-        console.error('Error fetching leave requests:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchLeaveRequests = async () => {
+    if (!user) return;
     
+    setIsLoading(true);
+    try {
+      const authorizedClient = getAuthorizedClient();
+      
+      const { data: leaveRequestsData, error: leaveRequestsError } = await authorizedClient
+        .from('leave_requests')
+        .select(`
+          id, 
+          employee_id, 
+          start_date, 
+          end_date, 
+          status, 
+          half_day, 
+          half_day_type, 
+          created_at, 
+          leave_type:leave_type_id(id, name, color)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (leaveRequestsError) throw leaveRequestsError;
+
+      const employeeIds = [...new Set(leaveRequestsData.map(lr => lr.employee_id))];
+
+      const { data: employees, error: employeesError } = await supabase
+        .from('employees')
+        .select('id, full_name')
+        .in('id', employeeIds);
+
+      if (employeesError) throw employeesError;
+
+      const employeeMap = new Map(
+        employees ? employees.map((employee: { id: string, full_name: string }) => [employee.id, employee]) : []
+      );
+
+      const formattedData: LeaveRequest[] = leaveRequestsData.map(lr => {
+        const employee = employeeMap.get(lr.employee_id) || { id: lr.employee_id, full_name: 'Unknown' };
+        const leaveType = lr.leave_type || { id: '', name: 'Unknown', color: '#000000' };
+
+        return {
+          id: lr.id,
+          employee: {
+            id: employee.id,
+            full_name: employee.full_name,
+          },
+          leave_type: {
+            id: leaveType.id,
+            name: leaveType.name,
+            color: leaveType.color,
+          },
+          start_date: lr.start_date,
+          end_date: lr.end_date,
+          status: lr.status as "Approved" | "Rejected" | "Pending",
+          half_day: lr.half_day || false,
+          half_day_type: lr.half_day_type as "AM" | "PM" | null,
+          created_at: lr.created_at,
+        };
+      });
+      
+      setLeaveRequests(formattedData);
+    } catch (error) {
+      console.error('Error fetching leave requests:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
     fetchLeaveRequests();
   }, [user]);
   

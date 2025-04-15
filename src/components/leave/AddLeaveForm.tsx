@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
@@ -35,6 +36,7 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
   const [quotaLeft, setQuotaLeft] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [availableQuota, setAvailableQuota] = useState<LeaveQuota | null>(null);
+  const [isUnpaidLeave, setIsUnpaidLeave] = useState<boolean>(false);
 
   const {
     leaveTypes,
@@ -55,10 +57,10 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
     const endDate = new Date(endYear, endMonth, endDay);
   
     if (endDate < startDate) {
-      return 0;
+      return.0;
     }
   
-    let days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1;
+    let days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   
     if (isHalfDay) {
       days -= 0.5;
@@ -70,6 +72,10 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
   const updateQuotaLeft = async () => {
     if (leaveTypeId && employeeId) {
       try {
+        // Check if this is an unpaid leave type
+        const leaveType = leaveTypes?.find(lt => lt.id === leaveTypeId);
+        setIsUnpaidLeave(leaveType?.is_paid === false);
+        
         const quotaData = await fetchLeaveQuota(employeeId, leaveTypeId);
         
         if (quotaData) {
@@ -85,6 +91,7 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
     } else {
       setQuotaLeft(null);
       setAvailableQuota(null);
+      setIsUnpaidLeave(false);
     }
   };
 
@@ -95,7 +102,7 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
   
-    if (quotaLeft !== null && quotaLeft < 0) {
+    if (!isUnpaidLeave && quotaLeft !== null && quotaLeft < 0) {
       setErrorMessage('Insufficient leave quota.');
       return;
     }
@@ -180,7 +187,12 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
                     style={{ backgroundColor: type.color }} 
                   />
                   {type.name}
-                  {availableQuota && leaveTypeId === type.id && (
+                  {availableQuota && leaveTypeId === type.id && !type.is_paid && (
+                    <span className="ml-2 text-sm text-gray-500">
+                      (Unlimited)
+                    </span>
+                  )}
+                  {availableQuota && leaveTypeId === type.id && type.is_paid && (
                     <span className="ml-2 text-sm text-gray-500">
                       ({availableQuota.quota_days - availableQuota.taken_days} days left)
                     </span>
@@ -350,7 +362,7 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
           disabled={
             isSubmitting || 
             (endYear < startYear || (endYear === startYear && endMonth < startMonth) || (endYear === startYear && endMonth === startMonth && endDay < startDay)) ||
-            (quotaLeft !== null && quotaLeft < 0)
+            (!isUnpaidLeave && quotaLeft !== null && quotaLeft < 0)
           }
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -358,7 +370,7 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
         </Button>
       </div>
       
-      {quotaLeft !== null && quotaLeft < 0 && (
+      {!isUnpaidLeave && quotaLeft !== null && quotaLeft < 0 && (
         <p className="text-red-500 text-sm mt-2">
           Insufficient leave quota. You have {availableQuota?.quota_days - availableQuota?.taken_days} days left.
         </p>

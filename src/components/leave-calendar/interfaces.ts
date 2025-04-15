@@ -1,3 +1,4 @@
+
 export interface Employee {
   id: string;
   full_name: string;
@@ -7,6 +8,7 @@ export interface LeaveType {
   id: string;
   name: string;
   color: string;
+  is_paid?: boolean;
 }
 
 export interface LeaveRequest {

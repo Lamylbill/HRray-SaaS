@@ -36,18 +36,81 @@ export const useLeave = () => {
   });
 
   const fetchLeaveQuota = async (employeeId: string, leaveTypeId: string) => {
-    const { data, error } = await supabase
+    // First check if this is a paid leave type
+    const { data: leaveType, error: leaveTypeError } = await supabase
+      .from('leave_types')
+      .select('is_paid')
+      .eq('id', leaveTypeId)
+      .single();
+
+    if (leaveTypeError) throw leaveTypeError;
+    
+    // For unpaid leave types, return unlimited quota
+    if (!leaveType.is_paid) {
+      return {
+        id: 'unlimited',
+        employee_id: employeeId,
+        leave_type_id: leaveTypeId,
+        quota_days: 999999,
+        taken_days: 0,
+        adjustment_days: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as LeaveQuota;
+    }
+    
+    // For paid leave types, get the quota and also fetch pending requests
+    const { data: quotaData, error: quotaError } = await supabase
       .from('leave_quotas')
       .select('*')
       .eq('employee_id', employeeId)
       .eq('leave_type_id', leaveTypeId)
       .single();
     
-    if (error && error.code !== 'PGRST116') {
-      throw error;
+    if (quotaError && quotaError.code !== 'PGRST116') {
+      throw quotaError;
     }
     
-    return data as LeaveQuota;
+    // If no quota found, return default values
+    if (!quotaData) {
+      return {
+        id: 'new',
+        employee_id: employeeId,
+        leave_type_id: leaveTypeId,
+        quota_days: 0,
+        taken_days: 0,
+        adjustment_days: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as LeaveQuota;
+    }
+    
+    // Get pending leave requests for this employee and leave type
+    const { data: pendingRequests, error: pendingError } = await supabase
+      .from('leave_requests')
+      .select('start_date, end_date, half_day')
+      .eq('employee_id', employeeId)
+      .eq('leave_type_id', leaveTypeId)
+      .eq('status', 'Pending');
+    
+    if (pendingError) throw pendingError;
+    
+    // Calculate days from pending requests
+    let pendingDays = 0;
+    if (pendingRequests && pendingRequests.length > 0) {
+      pendingRequests.forEach(req => {
+        const startDate = new Date(req.start_date);
+        const endDate = new Date(req.end_date);
+        const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        pendingDays += req.half_day ? 0.5 : days;
+      });
+    }
+    
+    // Return quota with pending days included in taken_days
+    return {
+      ...quotaData,
+      taken_days: quotaData.taken_days + pendingDays
+    } as LeaveQuota;
   };
 
   const submitLeaveRequest = async (values: {

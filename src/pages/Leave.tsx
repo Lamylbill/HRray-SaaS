@@ -229,7 +229,7 @@ const Leave = () => {
       </Dialog>
 
       <Dialog open={addLeaveDialogOpen} onOpenChange={setAddLeaveDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-3xl w-full" description="Add a new leave request">
           <DialogHeader>
             <DialogTitle>Add Leave Request</DialogTitle>
           </DialogHeader>

@@ -1,14 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui-custom/Button';
-import { Calendar } from '@/components/ui/calendar';
+import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Label } from "@/components/ui/label"
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
 import { useLeave } from '@/hooks/use-leave';
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 
@@ -18,15 +14,25 @@ interface AddLeaveFormProps {
   initialDate?: Date;
 }
 
+const months = ["January", "February", "March", "April", "May", "June", 
+                "July", "August", "September", "October", "November", "December"];
+
 export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel, initialDate }) => {
-  const [startDate, setStartDate] = useState<Date | undefined>(initialDate || new Date());
-  const [endDate, setEndDate] = useState<Date | undefined>(initialDate || new Date());
+  const today = initialDate || new Date();
+  const [startDay, setStartDay] = useState<number>(today.getDate());
+  const [startMonth, setStartMonth] = useState<number>(today.getMonth());
+  const [startYear, setStartYear] = useState<number>(today.getFullYear());
+  
+  const [endDay, setEndDay] = useState<number>(today.getDate());
+  const [endMonth, setEndMonth] = useState<number>(today.getMonth());
+  const [endYear, setEndYear] = useState<number>(today.getFullYear());
   const [leaveTypeId, setLeaveTypeId] = useState<string>('');
   const [employeeId, setEmployeeId] = useState<string>('');
   const [isHalfDay, setIsHalfDay] = useState<boolean>(false);
   const [halfDayType, setHalfDayType] = useState<'AM' | 'PM'>('AM');
   const [notes, setNotes] = useState<string>('');
   const [quotaLeft, setQuotaLeft] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     leaveTypes,
@@ -34,33 +40,78 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
     isLoadingLeaveTypes,
     isLoadingEmployees,
     isSubmitting,
-    fetchLeaveQuota,
     submitLeaveRequest,
   } = useLeave();
 
-  useEffect(() => {
-    const updateQuota = async () => {
-      if (employeeId && leaveTypeId) {
-        try {
-          const quota = await fetchLeaveQuota(employeeId, leaveTypeId);
-          setQuotaLeft(quota ? quota.quota_days - quota.taken_days : null);
-        } catch (error) {
-          console.error('Error fetching quota:', error);
-          setQuotaLeft(null);
-        }
-      }
-    };
+  const leaveQuotas: { [key: string]: number } = {
+    '1': 18, // Annual Leave (assuming ID '1')
+    '2': 18, // Sick Leave (assuming ID '2')
+    '3': 6,  // Childcare Leave (assuming ID '3')
+    // Add other leave types and their quotas here
+  };
 
-    updateQuota();
-  }, [employeeId, leaveTypeId]);
+  const calculateRequestedDays = (): number => {
+    if (!startDay || !startMonth || !startYear || !endDay || !endMonth || !endYear) {
+      return 0;
+    }
+  
+    const startDate = new Date(startYear, startMonth, startDay);
+    const endDate = new Date(endYear, endMonth, endDay);
+  
+    if (endDate < startDate) {
+      return 0; // Or handle this case as an invalid input
+    }
+  
+    let days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1;
+  
+    if (isHalfDay) {
+      days -= 0.5;
+    }
+  
+    return days;
+  };
+  
+  const updateQuotaLeft = () => {
+    if (leaveTypeId) {
+      const requestedDays = calculateRequestedDays();
+      const availableQuota = leaveQuotas[leaveTypeId] || 0; // Default to 0 if leave type not found
+      setQuotaLeft(availableQuota - requestedDays);
+    } else {
+      setQuotaLeft(null); // Reset quota if no leave type is selected
+    }
+  };
+
+  useEffect(updateQuotaLeft, [startDay, startMonth, startYear, endDay, endMonth, endYear, leaveTypeId, isHalfDay]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!startDate || !endDate || !leaveTypeId || !employeeId) {
+  
+    if (quotaLeft !== null && quotaLeft < 0) {
+      setErrorMessage('Insufficient leave quota.');
       return;
     }
-    
+  
+    if (
+      startDay === null || startMonth === null || startYear === null ||
+      endDay === null || endMonth === null || endYear === null ||
+      leaveTypeId === '' || employeeId === ''
+    ) {
+      setErrorMessage('Please fill in all required fields.');
+      return;
+    }
+  
+    setErrorMessage(null); // Clear any previous error message
+  
+    const startDate = new Date(startYear, startMonth, startDay);
+    const endDate = new Date(endYear, endMonth, endDay);
+  
+    if (endDate < startDate) {
+      setErrorMessage('End date cannot be before start date.');
+      return;
+    }
+  
+    setErrorMessage(null);
+  
     try {
       await submitLeaveRequest({
         employeeId,
@@ -71,12 +122,12 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
         isHalfDay,
         halfDayType: isHalfDay ? halfDayType : undefined,
       });
-      
       onSuccess();
     } catch (error) {
       console.error('Error submitting form:', error);
+      setErrorMessage('An error occurred while submitting the leave request.');
     }
-  };
+  };  
 
   if (isLoadingLeaveTypes || isLoadingEmployees) {
     return (
@@ -109,13 +160,14 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
         <Select value={leaveTypeId} onValueChange={setLeaveTypeId} required>
           <SelectTrigger id="leave-type">
             <SelectValue placeholder="Select leave type" />
+           
           </SelectTrigger>
           <SelectContent>
             {leaveTypes?.map((type) => (
               <SelectItem key={type.id} value={type.id}>
                 <div className="flex items-center">
                   <span 
-                    className="w-3 h-3 rounded-full mr-2" 
+                    className="w-3 h-3 rounded-full mr-2"
                     style={{ backgroundColor: type.color }} 
                   />
                   {type.name}
@@ -125,6 +177,7 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
                     </span>
                   )}
                 </div>
+               
               </SelectItem>
             ))}
           </SelectContent>
@@ -133,63 +186,118 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="start-date">Start Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                id="start-date"
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !startDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {startDate ? format(startDate, "PPP") : "Select date"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={startDate}
-                onSelect={setStartDate}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+          <Label>Start Date (DDMMYYYY)</Label>
+          <div className="flex space-x-2">
+            <Select 
+              value={String(startDay)} 
+              onValueChange={(value) => setStartDay(Number(value))}
+            >
+              <SelectTrigger className="w-24">
+                <SelectValue placeholder="Day" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                  <SelectItem key={day} value={String(day)}>
+                    {day}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
+            <Select 
+              value={String(startMonth)} 
+              onValueChange={(value) => setStartMonth(Number(value))}
+            >
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Month" />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((month, index) => (
+                  <SelectItem key={index} value={String(index)}>
+                    {month}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select 
+              value={String(startYear)} 
+              onValueChange={(value) => setStartYear(Number(value))}
+            >
+              <SelectTrigger className="w-28">
+                <SelectValue placeholder="Year" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 10 }, (_, i) => 2024 + i).map((year) => (
+                  <SelectItem key={year} value={String(year)}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
         <div className="space-y-2">
-          <Label htmlFor="end-date">End Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                id="end-date"
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !endDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {endDate ? format(endDate, "PPP") : "Select date"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={endDate}
-                onSelect={setEndDate}
-                initialFocus
-                disabled={(date) => 
-                  startDate ? date < startDate : false
-                }
-              />
-            </PopoverContent>
-          </Popover>
+          <Label>End Date (DDMMYYYY)</Label>
+          <div className="flex space-x-2">
+            <Select 
+              value={String(endDay)} 
+              onValueChange={(value) => setEndDay(Number(value))}
+            >
+              <SelectTrigger className="w-24">
+                <SelectValue placeholder="Day" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                  <SelectItem key={day} value={String(day)}>
+                    {day}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select 
+              value={String(endMonth)} 
+              onValueChange={(value) => setEndMonth(Number(value))}
+            >
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Month" />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((month, index) => (
+                  <SelectItem key={index} value={String(index)}>
+                    {month}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select 
+              value={String(endYear)} 
+              onValueChange={(value) => setEndYear(Number(value))}
+            >
+              <SelectTrigger className="w-28">
+                <SelectValue placeholder="Year" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 10 }, (_, i) => 2024 + i).map((year) => (
+                  <SelectItem key={year} value={String(year)}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {(endYear < startYear || (endYear === startYear && endMonth < startMonth) || (endYear === startYear && endMonth === startMonth && endDay < startDay)) && (<p className="text-red-500 text-sm mt-1">
+              End date cannot be before start date.
+            </p>
+          )}
+
+
         </div>
       </div>
-
+      
       <div className="flex items-center space-x-2">
         <input 
           type="checkbox" 
@@ -226,10 +334,17 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
       <div className="flex justify-end space-x-2 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        </Button> 
+        
+        {/* Disable button if end date is before start date */}
+        <Button 
+          type="submit" 
+          disabled={
+            isSubmitting || (endYear < startYear || (endYear === startYear && endMonth < startMonth) || (endYear === startYear && endMonth === startMonth && endDay < startDay))
+          }
+        >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Submit
+          Submit 
         </Button>
       </div>
     </form>

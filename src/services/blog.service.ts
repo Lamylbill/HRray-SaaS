@@ -21,25 +21,29 @@ export const blogService = {
     const to = from + pageSize - 1;
     
     try {
-      let query = client.from('blog_posts')
-        .select('*', { count: 'exact' }) as any;
+      // Use type assertion to bypass TypeScript's type checking for the Supabase client
+      // as the types might not be up-to-date with the actual database schema
+      const queryBuilder = client.from('blog_posts') as any;
+      let query = queryBuilder.select('*', { count: 'exact' });
       
       // Filter by published status
       query = query.eq('is_published', true);
       
       // Apply category filter if provided
       if (categorySlug) {
-        const { data: category } = await client
-          .from('blog_categories')
+        // Get category ID by slug
+        const categoryQuery = client.from('blog_categories') as any;
+        const { data: category } = await categoryQuery
           .select('id')
           .eq('slug', categorySlug)
-          .single() as any;
+          .single();
           
         if (category) {
-          const { data: postIds } = await client
-            .from('blog_post_categories')
+          // Get post IDs in this category
+          const postCategoryQuery = client.from('blog_post_categories') as any;
+          const { data: postIds } = await postCategoryQuery
             .select('post_id')
-            .eq('category_id', category.id) as any;
+            .eq('category_id', category.id);
             
           if (postIds && postIds.length > 0) {
             query = query.in('id', postIds.map((item: any) => item.post_id));
@@ -55,7 +59,7 @@ export const blogService = {
       if (error) throw error;
       
       return {
-        posts: (data || []) as unknown as BlogPost[],
+        posts: (data || []) as BlogPost[],
         total: count || 0
       };
     } catch (error) {
@@ -70,11 +74,11 @@ export const blogService = {
     
     try {
       // First get the post
-      const { data: post, error: postError } = await client
-        .from('blog_posts')
+      const postsQuery = client.from('blog_posts') as any;
+      const { data: post, error: postError } = await postsQuery
         .select('*')
         .eq('slug', slug)
-        .single() as any;
+        .single();
       
       if (postError) {
         if (postError.code === 'PGRST116') {
@@ -86,26 +90,26 @@ export const blogService = {
       if (!post) return null;
       
       // Get author details
-      const { data: author } = await client
-        .from('profiles')
+      const profilesQuery = client.from('profiles') as any;
+      const { data: author } = await profilesQuery
         .select('id, full_name, email')
         .eq('id', post.author_id)
-        .single() as any;
+        .single();
         
       // Get categories
-      const { data: categoryLinks } = await client
-        .from('blog_post_categories')
+      const postCategoriesQuery = client.from('blog_post_categories') as any;
+      const { data: categoryLinks } = await postCategoriesQuery
         .select('category_id')
-        .eq('post_id', post.id) as any;
+        .eq('post_id', post.id);
         
       const categoryIds = categoryLinks?.map((link: any) => link.category_id) || [];
       
       let categories: BlogCategory[] = [];
       if (categoryIds.length > 0) {
-        const { data: categoryData } = await client
-          .from('blog_categories')
+        const categoriesQuery = client.from('blog_categories') as any;
+        const { data: categoryData } = await categoriesQuery
           .select('*')
-          .in('id', categoryIds) as any;
+          .in('id', categoryIds);
           
         categories = (categoryData || []) as BlogCategory[];
       }
@@ -129,10 +133,10 @@ export const blogService = {
     const client = getAuthorizedClient();
     
     try {
-      const { data, error } = await client
-        .from('blog_categories')
+      const categoriesQuery = client.from('blog_categories') as any;
+      const { data, error } = await categoriesQuery
         .select('*')
-        .order('name') as any;
+        .order('name');
       
       if (error) throw error;
       
@@ -151,8 +155,8 @@ export const blogService = {
       const slug = generateSlug(postData.title);
       
       // Create the post
-      const { data, error } = await client
-        .from('blog_posts')
+      const postsQuery = client.from('blog_posts') as any;
+      const { data, error } = await postsQuery
         .insert({
           title: postData.title,
           slug,
@@ -166,7 +170,7 @@ export const blogService = {
           tags: postData.tags || []
         })
         .select('id')
-        .single() as any;
+        .single();
       
       if (error) throw error;
       
@@ -177,9 +181,9 @@ export const blogService = {
           category_id: categoryId
         }));
         
-        const { error: categoryError } = await client
-          .from('blog_post_categories')
-          .insert(categoryLinks) as any;
+        const postCategoriesQuery = client.from('blog_post_categories') as any;
+        const { error: categoryError } = await postCategoriesQuery
+          .insert(categoryLinks);
         
         if (categoryError) throw categoryError;
       }
@@ -197,8 +201,8 @@ export const blogService = {
     
     try {
       // Update post data
-      const { error } = await client
-        .from('blog_posts')
+      const postsQuery = client.from('blog_posts') as any;
+      const { error } = await postsQuery
         .update({
           title: postData.title,
           content: postData.content,
@@ -214,8 +218,8 @@ export const blogService = {
       if (error) throw error;
       
       // Delete existing category links
-      const { error: deleteError } = await client
-        .from('blog_post_categories')
+      const postCategoriesQuery = client.from('blog_post_categories') as any;
+      const { error: deleteError } = await postCategoriesQuery
         .delete()
         .eq('post_id', id);
       
@@ -228,8 +232,8 @@ export const blogService = {
           category_id: categoryId
         }));
         
-        const { error: insertError } = await client
-          .from('blog_post_categories')
+        const categoriesInsertQuery = client.from('blog_post_categories') as any;
+        const { error: insertError } = await categoriesInsertQuery
           .insert(categoryLinks);
         
         if (insertError) throw insertError;
@@ -246,8 +250,8 @@ export const blogService = {
     
     try {
       // Delete post
-      const { error } = await client
-        .from('blog_posts')
+      const postsQuery = client.from('blog_posts') as any;
+      const { error } = await postsQuery
         .delete()
         .eq('id', id);
       
@@ -263,8 +267,8 @@ export const blogService = {
     const client = getAuthorizedClient();
     
     try {
-      const { data, error } = await client
-        .from('blog_comments')
+      const commentsQuery = client.from('blog_comments') as any;
+      const { data, error } = await commentsQuery
         .insert({
           post_id: postId,
           user_id: comment.user_id || null,
@@ -290,8 +294,8 @@ export const blogService = {
     const client = getAuthorizedClient();
     
     try {
-      const { data, error } = await client
-        .from('blog_comments')
+      const commentsQuery = client.from('blog_comments') as any;
+      const { data, error } = await commentsQuery
         .select('*')
         .eq('post_id', postId)
         .eq('is_approved', true)

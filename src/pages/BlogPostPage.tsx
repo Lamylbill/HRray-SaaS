@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { blogService } from '@/services/blog.service';
@@ -170,7 +171,7 @@ const BlogPostPage = () => {
   return (
     <>
       <Helmet>
-        <title>{post.title} | HRFlow Blog}</title>
+        <title>{post.title} | HRFlow Blog</title>
         <meta name="description" content={post.meta_description || post.excerpt} />
         <meta property="og:title" content={post.title} />
         <meta property="og:description" content={post.meta_description || post.excerpt} />

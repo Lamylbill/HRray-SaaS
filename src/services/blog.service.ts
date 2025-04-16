@@ -1,7 +1,7 @@
 
 import { supabase, getAuthorizedClient } from '@/integrations/supabase/client';
-import { BlogPost, BlogPostFormData, BlogCategory, BlogComment } from '@/integrations/supabase/blog-types';
 import { v4 as uuidv4 } from 'uuid';
+import { BlogPost, BlogPostFormData, BlogCategory, BlogComment } from '@/integrations/supabase/blog-types';
 
 // Helper to generate slugs
 const generateSlug = (title: string): string => {

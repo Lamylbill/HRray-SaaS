@@ -1,3 +1,4 @@
+
 import React, { Suspense, useEffect } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -10,6 +11,9 @@ import EmployeesPage from "@/pages/EmployeesPage";
 import Leave from "@/pages/Leave";
 import Settings from "@/pages/Settings";
 import NotFound from "@/pages/NotFound";
+import BlogPage from "@/pages/BlogPage";
+import BlogPostPage from "@/pages/BlogPostPage";
+import ManageBlogPage from "@/pages/ManageBlogPage";
 
 import { DashNavbar } from "@/components/layout/DashNavbar";
 import { LandNavbar } from "@/components/layout/LandNavbar";
@@ -77,6 +81,28 @@ const AppRoutes = () => {
       } />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<SignUp />} />
+      
+      {/* Blog routes */}
+      <Route path="/blog" element={
+        <>
+          <LandNavbar showLogo={true} />
+          <BlogPage />
+        </>
+      } />
+      <Route path="/blog/post/:slug" element={
+        <>
+          <LandNavbar showLogo={true} />
+          <BlogPostPage />
+        </>
+      } />
+      <Route path="/blog/manage" element={
+        <ProtectedRoute>
+          <DashboardLayout>
+            <ManageBlogPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      } />
+      
       <Route path="/dashboard" element={
         <ProtectedRoute>
           <DashboardLayout>

@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Home, BarChart, FileText, Phone, Info, Calendar, Users, Briefcase, ShieldCheck } from 'lucide-react';
+import { Home, BarChart, FileText, Phone, Info, Calendar, Users, Briefcase, ShieldCheck, Layers, DollarSign, MessageCircle } from 'lucide-react';
 import {
   NavigationMenuItem,
   NavigationMenuLink,
@@ -9,13 +8,40 @@ import {
 } from "@/components/ui/navigation-menu";
 
 // Export the navigation items for reuse
-export const getNavItems = () => [
-  { name: 'Home', href: '/', icon: <Home className="h-4 w-4 mr-2" /> },
-  { name: 'Features', href: '#features', icon: <BarChart className="h-4 w-4 mr-2" /> },
-  { name: 'Pricing', href: '#pricing', icon: <FileText className="h-4 w-4 mr-2" /> },
-  { name: 'Contact', href: '#contact', icon: <Phone className="h-4 w-4 mr-2" /> },
-  { name: 'About', href: '#about', icon: <Info className="h-4 w-4 mr-2" /> },
-];
+export const getNavItems = () => {
+  return [
+    {
+      name: 'Home',
+      href: '/#home',
+      icon: <Home className="h-5 w-5" />,
+    },
+    {
+      name: 'Features',
+      href: '/#features',
+      icon: <Layers className="h-5 w-5" />,
+    },
+    {
+      name: 'Pricing',
+      href: '/#pricing',
+      icon: <DollarSign className="h-5 w-5" />,
+    },
+    {
+      name: 'Blog',
+      href: '/blog',
+      icon: <FileText className="h-5 w-5" />,
+    },
+    {
+      name: 'Contact',
+      href: '/#contact',
+      icon: <MessageCircle className="h-5 w-5" />,
+    },
+    {
+      name: 'About',
+      href: '/#about',
+      icon: <Info className="h-5 w-5" />,
+    },
+  ];
+};
 
 // Ensure feature items have consistent typing for icon as ReactNode
 export const getFeaturesItems = () => [

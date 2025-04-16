@@ -8,11 +8,21 @@ export interface BlogPost {
   cover_image: string;
   meta_description: string;
   author_id: string;
+  author?: {
+    id: string;
+    full_name?: string;
+    email?: string;
+  };
   created_at: string;
   updated_at: string;
   published_at: string;
   is_published: boolean;
   tags: string[];
+  categories?: Array<{
+    id: string;
+    name: string;
+    slug: string;
+  }>;
 }
 
 export interface BlogPostFormData {

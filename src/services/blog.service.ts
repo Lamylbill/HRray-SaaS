@@ -22,7 +22,6 @@ export const blogService = {
     
     try {
       // Use type assertion to bypass TypeScript's type checking for the Supabase client
-      // as the types might not be up-to-date with the actual database schema
       const queryBuilder = client.from('blog_posts') as any;
       let query = queryBuilder.select('*', { count: 'exact' });
       

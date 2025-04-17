@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -79,10 +80,22 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
 
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
-    const element = document.getElementById(id);
+    
+    // Handle both formats: '#section' and 'section'
+    const sectionId = id.startsWith('#') ? id.substring(1) : id;
+    
+    const element = document.getElementById(sectionId);
     if (element) {
       window.scrollTo({ top: element.offsetTop - 100, behavior: 'smooth' });
-      setActiveSection(id);
+      setActiveSection(sectionId);
+      setIsMobileMenuOpen(false);
+    } else if (sectionId === 'home') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setActiveSection('home');
+      setIsMobileMenuOpen(false);
+    } else if (!location.pathname.includes(sectionId)) {
+      // If we're not on the home page and the section doesn't exist, navigate to it
+      navigate(`/${id}`);
       setIsMobileMenuOpen(false);
     }
   };
@@ -91,6 +104,7 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
     e.preventDefault();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setActiveSection('home');
+    setIsMobileMenuOpen(false);
   };
 
   const isSectionActive = (section: string) => activeSection === section.toLowerCase();
@@ -116,7 +130,7 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
                   <NavigationMenuItem key={item.name}>
                     <a
                       href={item.href}
-                      onClick={(e) => item.name === 'Home' ? handleHomeClick(e) : scrollToSection(e, item.href.slice(1))}
+                      onClick={(e) => item.name === 'Home' ? handleHomeClick(e) : scrollToSection(e, item.href)}
                       className={cn(
                         'inline-flex items-center px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
                         isSectionActive(item.name) ?

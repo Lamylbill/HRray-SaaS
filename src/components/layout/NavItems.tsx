@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Home, BarChart, FileText, Phone, Info, Calendar, Users, Briefcase, ShieldCheck, Layers, DollarSign, MessageCircle } from 'lucide-react';
@@ -96,9 +97,9 @@ export const NavItem = ({
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
     
-    if (href.startsWith('#')) {
+    if (href.startsWith('/#')) {
       // Handle hash navigation (scroll to section)
-      const targetId = href.substring(1);
+      const targetId = href.substring(2); // Remove the /# prefix
       const targetElement = document.getElementById(targetId);
       
       if (targetElement) {
@@ -108,7 +109,20 @@ export const NavItem = ({
         });
       } else {
         // If element doesn't exist on current page, navigate to home with hash
-        navigate('/' + href);
+        navigate('/' + href.substring(1)); // Remove the first /
+      }
+    } else if (href.startsWith('#')) {
+      // Handle hash navigation without the leading slash
+      const targetId = href.substring(1);
+      const targetElement = document.getElementById(targetId);
+      
+      if (targetElement) {
+        window.scrollTo({
+          top: targetElement.offsetTop - 100,
+          behavior: 'smooth'
+        });
+      } else {
+        navigate(href);
       }
     } else {
       // For regular routes

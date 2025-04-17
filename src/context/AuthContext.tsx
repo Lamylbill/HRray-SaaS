@@ -9,6 +9,8 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  userId: string | null;
+  isBlogEditor: boolean;
   login: (email: string, password: string) => Promise<{ error?: { message: string } }>;
   signup: (email: string, password: string, fullName: string) => Promise<{ error?: { message: string } }>;
   logout: () => Promise<void>;
@@ -21,6 +23,8 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   isLoading: true,
   isAuthenticated: false,
+  userId: null,
+  isBlogEditor: false,
   login: async () => ({}),
   signup: async () => ({}),
   logout: async () => {},
@@ -32,6 +36,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isBlogEditor, setIsBlogEditor] = useState<boolean>(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -147,6 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Login successful:', data.user?.id);
       setUser(data.user);
       setSession(data.session);
+      setUserId(data.user.id);
 
        // Store the JWT token in localStorage
       localStorage.setItem('jwt_token', data.session?.access_token || '');  // Store JWT token
@@ -303,6 +310,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Compute authentication state
   const isAuthenticated = !!user && !!session;
   console.log('Auth state:', { isLoading, isAuthenticated, userId: user?.id });
+  const checkIsBlogEditor = () => userId === "b17956a5-afbc-405b-af67-b02a93afc787";
+
 
   return (
     <AuthContext.Provider
@@ -311,6 +320,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         session,
         isLoading,
         isAuthenticated,
+        userId,
+        isBlogEditor: checkIsBlogEditor(),
         login,
         signup,
         logout,

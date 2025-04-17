@@ -15,7 +15,7 @@ const POSTS_PER_PAGE = 6;
 
 const BlogPage = () => {
   const { toast } = useToast();
-  const { isAuthenticated } = useAuth();
+  const { isBlogEditor } = useAuth();
   
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [categories, setCategories] = useState<BlogCategory[]>([]);
@@ -137,7 +137,7 @@ const BlogPage = () => {
                   </ul>
                 </div>
                 
-                {isAuthenticated && (
+                {isBlogEditor && (
                   <div className="pt-4">
                     <Link to="/blog/manage">
                       <Button className="w-full">
@@ -165,7 +165,7 @@ const BlogPage = () => {
                       ? "No posts found in this category" 
                       : "No blog posts have been published yet"}
                   </p>
-                  {isAuthenticated && (
+                  {isBlogEditor && (
                     <Link to="/blog/manage">
                       <Button>Write Your First Post</Button>
                     </Link>

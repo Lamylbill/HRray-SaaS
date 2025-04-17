@@ -14,6 +14,7 @@ import NotFound from "@/pages/NotFound";
 import BlogPage from "@/pages/BlogPage";
 import BlogPostPage from "@/pages/BlogPostPage";
 import ManageBlogPage from "@/pages/ManageBlogPage";
+import BlogEditorRoute from "./BlogEditorRoute";
 
 import { DashNavbar } from "@/components/layout/DashNavbar";
 import { LandNavbar } from "@/components/layout/LandNavbar";
@@ -95,13 +96,13 @@ const AppRoutes = () => {
           <BlogPostPage />
         </>
       } />
-      <Route path="/blog/manage" element={
-        <ProtectedRoute>
-          <DashboardLayout>
-            <ManageBlogPage />
-          </DashboardLayout>
-        </ProtectedRoute>
-      } />
+        <Route path="/blog/manage" element={
+          <BlogEditorRoute>
+            <DashboardLayout>
+              <ManageBlogPage />
+            </DashboardLayout>
+          </BlogEditorRoute>
+        } />
       
       <Route path="/dashboard" element={
         <ProtectedRoute>

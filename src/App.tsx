@@ -1,5 +1,5 @@
 
-import React, { ErrorBoundary } from 'react';
+import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from './context/AuthContext';
@@ -24,18 +24,26 @@ const ErrorFallback = () => {
   );
 };
 
-// Error boundary class
-class AppErrorBoundary extends React.Component {
-  constructor(props) {
+// Error boundary class with proper TypeScript interface
+interface AppErrorBoundaryState {
+  hasError: boolean;
+}
+
+interface AppErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+class AppErrorBoundary extends React.Component<AppErrorBoundaryProps, AppErrorBoundaryState> {
+  constructor(props: AppErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError() {
+  static getDerivedStateFromError(): AppErrorBoundaryState {
     return { hasError: true };
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     console.error("App crashed:", error, errorInfo);
   }
 

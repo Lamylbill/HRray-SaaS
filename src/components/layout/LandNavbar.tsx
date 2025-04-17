@@ -81,27 +81,54 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
     
-    // Handle both formats: '#section' and 'section'
-    const sectionId = id.startsWith('#') ? id.substring(1) : id;
+    // Handle both formats: '/#section', '#section', or '/section'
+    let sectionId;
+    
+    if (id.startsWith('/#')) {
+      sectionId = id.substring(2); // Remove the /# prefix
+    } else if (id.startsWith('#')) {
+      sectionId = id.substring(1); // Remove the # prefix
+    } else if (id === '/') {
+      // If it's the home link, scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setActiveSection('home');
+      setIsMobileMenuOpen(false);
+      return;
+    } else if (id.startsWith('/')) {
+      // For non-hash links like "/blog", just navigate
+      navigate(id);
+      setIsMobileMenuOpen(false);
+      return;
+    } else {
+      sectionId = id;
+    }
     
     const element = document.getElementById(sectionId);
     if (element) {
       window.scrollTo({ top: element.offsetTop - 100, behavior: 'smooth' });
       setActiveSection(sectionId);
       setIsMobileMenuOpen(false);
-    } else if (sectionId === 'home') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      setActiveSection('home');
-      setIsMobileMenuOpen(false);
-    } else if (!location.pathname.includes(sectionId)) {
-      // If we're not on the home page and the section doesn't exist, navigate to it
-      navigate(`/${id}`);
+    } else {
+      // If section doesn't exist on current page and it's a hash link,
+      // navigate to home page and then scroll to section
+      if (location.pathname !== '/') {
+        navigate('/');
+        // After navigation, wait for the component to mount and then scroll
+        setTimeout(() => {
+          const targetElement = document.getElementById(sectionId);
+          if (targetElement) {
+            window.scrollTo({ top: targetElement.offsetTop - 100, behavior: 'smooth' });
+            setActiveSection(sectionId);
+          }
+        }, 100);
+      }
       setIsMobileMenuOpen(false);
     }
   };
 
   const handleHomeClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
+    navigate('/');
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setActiveSection('home');
     setIsMobileMenuOpen(false);
@@ -117,7 +144,7 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
       <nav className="container mx-auto px-6 py-3" ref={containerRef}>
         <div className="flex items-center justify-between">
           {showLogo && (
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2" onClick={handleHomeClick}>
               <span className="bg-indigo-600 text-white font-display font-bold px-2 py-1 rounded-md">HR</span>
               <span className="font-display font-bold text-xl text-indigo-800">Flow</span>
             </Link>
@@ -130,7 +157,10 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
                   <NavigationMenuItem key={item.name}>
                     <a
                       href={item.href}
-                      onClick={(e) => item.name === 'Home' ? handleHomeClick(e) : scrollToSection(e, item.href)}
+                      onClick={(e) => item.name === 'Home' 
+                        ? handleHomeClick(e) 
+                        : scrollToSection(e, item.href)
+                      }
                       className={cn(
                         'inline-flex items-center px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
                         isSectionActive(item.name) ?
@@ -201,6 +231,64 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
             </Button>
           </div>
         </div>
+        
+        {/* Mobile menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden mt-4 pb-4">
+            <div className="flex flex-col space-y-3">
+              {publicNavItems.map((item) => (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  onClick={(e) => item.name === 'Home' 
+                    ? handleHomeClick(e) 
+                    : scrollToSection(e, item.href)
+                  }
+                  className={cn(
+                    'flex items-center px-4 py-2 rounded-md text-sm font-medium',
+                    isSectionActive(item.name) ?
+                      'bg-indigo-600 text-white' : 
+                      'text-indigo-800 hover:bg-indigo-100'
+                  )}
+                >
+                  {item.icon}
+                  <span className="ml-2">{item.name}</span>
+                </a>
+              ))}
+              
+              <div className="pt-4 border-t border-gray-200 mt-2">
+                {isAuthenticated ? (
+                  <>
+                    <Link to="/settings" className="block px-4 py-2 text-sm text-indigo-800 hover:bg-indigo-100 rounded-md">
+                      <Settings className="inline-block mr-2 h-4 w-4" />
+                      Settings
+                    </Link>
+                    <button 
+                      onClick={logout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md mt-1"
+                    >
+                      <LogOut className="inline-block mr-2 h-4 w-4" />
+                      Log out
+                    </button>
+                  </>
+                ) : (
+                  <div className="flex flex-col space-y-2">
+                    <Link to="/login">
+                      <Button variant="outline" size="sm" className="w-full justify-center text-indigo-700 border-indigo-200 hover:bg-indigo-50">
+                        Log In
+                      </Button>
+                    </Link>
+                    <Link to="/signup">
+                      <Button size="sm" className="w-full justify-center bg-indigo-600 hover:bg-indigo-700 text-white">
+                        Sign Up <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </nav>
     </header>
   );

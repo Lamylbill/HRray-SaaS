@@ -13,7 +13,7 @@ export const getNavItems = () => {
   return [
     {
       name: 'Home',
-      href: '/#home',
+      href: '/',
       icon: <Home className="h-5 w-5" />,
     },
     {
@@ -98,7 +98,7 @@ export const NavItem = ({
     e.preventDefault();
     
     if (href.startsWith('/#')) {
-      // Handle hash navigation (scroll to section)
+      // Handle hash navigation on home page
       const targetId = href.substring(2); // Remove the /# prefix
       const targetElement = document.getElementById(targetId);
       
@@ -109,10 +109,26 @@ export const NavItem = ({
         });
       } else {
         // If element doesn't exist on current page, navigate to home with hash
-        navigate('/' + href.substring(1)); // Remove the first /
+        navigate('/');
+        setTimeout(() => {
+          const element = document.getElementById(targetId);
+          if (element) {
+            window.scrollTo({
+              top: element.offsetTop - 100,
+              behavior: 'smooth'
+            });
+          }
+        }, 100);
       }
+    } else if (href === '/') {
+      // Handle home navigation
+      navigate('/');
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
     } else if (href.startsWith('#')) {
-      // Handle hash navigation without the leading slash
+      // Handle hash navigation on current page
       const targetId = href.substring(1);
       const targetElement = document.getElementById(targetId);
       
@@ -121,11 +137,9 @@ export const NavItem = ({
           top: targetElement.offsetTop - 100,
           behavior: 'smooth'
         });
-      } else {
-        navigate(href);
       }
     } else {
-      // For regular routes
+      // For regular routes like /blog, /dashboard, etc.
       navigate(href);
     }
     

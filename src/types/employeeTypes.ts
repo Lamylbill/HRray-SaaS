@@ -25,6 +25,17 @@ export interface EmployeeInsertData {
   contract_signed?: boolean | null;
   thirteenth_month_entitlement?: boolean | null;
   annual_bonus_eligible?: number | string | null;  // Allow both string and number
+  performance_score?: number | null;
+  medical_entitlement?: number | null;
+  leave_entitlement?: number | null;
+  leave_balance?: number | null;
+  allocation_amount?: number | null;
+  overtime_rate_of_pay?: number | null;
+  mvc_percentage?: number | null;
+  salary?: number | null;
+  salary_fixed?: number | null;
+  salary_gross?: number | null;
+  probation_period?: number | null;
 }
 
 // Type for Excel imported data

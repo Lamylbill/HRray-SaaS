@@ -1,5 +1,4 @@
 
-// src/components/employees/EmployeeTabbedForm.tsx
 import React, { useState, useEffect } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { getAuthorizedClient, supabase } from '@/integrations/supabase/client';
@@ -126,18 +125,93 @@ export const EmployeeTabbedForm: React.FC<EmployeeTabbedFormProps> = ({
     try {
       setIsSubmitting(true);
 
+      // Clean up the employee data before saving to remove any fields not in the schema
       const employeeForDb: any = { ...employeeData };
 
+      // Remove the category field which is causing the error
+      delete employeeForDb.category;
+
+      // Process boolean fields
       if (typeof employeeForDb.disciplinary_flags === 'string') {
         employeeForDb.disciplinary_flags = employeeForDb.disciplinary_flags === 'Yes' || 
-                                           employeeForDb.disciplinary_flags === 'true' || 
-                                           employeeForDb.disciplinary_flags === true;
+                                        employeeForDb.disciplinary_flags === 'true' || 
+                                        employeeForDb.disciplinary_flags === true;
+      }
+      
+      if (typeof employeeForDb.cpf_contribution === 'string') {
+        employeeForDb.cpf_contribution = employeeForDb.cpf_contribution === 'Yes' || 
+                                      employeeForDb.cpf_contribution === 'true' || 
+                                      employeeForDb.cpf_contribution === true;
+      }
+      
+      if (typeof employeeForDb.must_clock === 'string') {
+        employeeForDb.must_clock = employeeForDb.must_clock === 'Yes' || 
+                                employeeForDb.must_clock === 'true' || 
+                                employeeForDb.must_clock === true;
+      }
+      
+      if (typeof employeeForDb.all_work_day === 'string') {
+        employeeForDb.all_work_day = employeeForDb.all_work_day === 'Yes' || 
+                                  employeeForDb.all_work_day === 'true' || 
+                                  employeeForDb.all_work_day === true;
+      }
+      
+      if (typeof employeeForDb.freeze_payment === 'string') {
+        employeeForDb.freeze_payment = employeeForDb.freeze_payment === 'Yes' || 
+                                    employeeForDb.freeze_payment === 'true' || 
+                                    employeeForDb.freeze_payment === true;
+      }
+      
+      if (typeof employeeForDb.paid_medical_examination_fee === 'string') {
+        employeeForDb.paid_medical_examination_fee = employeeForDb.paid_medical_examination_fee === 'Yes' || 
+                                                  employeeForDb.paid_medical_examination_fee === 'true' || 
+                                                  employeeForDb.paid_medical_examination_fee === true;
+      }
+      
+      if (typeof employeeForDb.new_graduate === 'string') {
+        employeeForDb.new_graduate = employeeForDb.new_graduate === 'Yes' || 
+                                  employeeForDb.new_graduate === 'true' || 
+                                  employeeForDb.new_graduate === true;
+      }
+      
+      if (typeof employeeForDb.rehire === 'string') {
+        employeeForDb.rehire = employeeForDb.rehire === 'Yes' || 
+                            employeeForDb.rehire === 'true' || 
+                            employeeForDb.rehire === true;
+      }
+      
+      if (typeof employeeForDb.contract_signed === 'string') {
+        employeeForDb.contract_signed = employeeForDb.contract_signed === 'Yes' || 
+                                      employeeForDb.contract_signed === 'true' || 
+                                      employeeForDb.contract_signed === true;
+      }
+      
+      if (typeof employeeForDb.thirteenth_month_entitlement === 'string') {
+        employeeForDb.thirteenth_month_entitlement = employeeForDb.thirteenth_month_entitlement === 'Yes' || 
+                                                  employeeForDb.thirteenth_month_entitlement === 'true' || 
+                                                  employeeForDb.thirteenth_month_entitlement === true;
+      }
+      
+      // Convert numeric fields that might be strings
+      if (typeof employeeForDb.annual_bonus_eligible === 'string' && !isNaN(parseFloat(employeeForDb.annual_bonus_eligible))) {
+        employeeForDb.annual_bonus_eligible = parseFloat(employeeForDb.annual_bonus_eligible);
+      }
+      
+      if (typeof employeeForDb.basic_salary === 'string' && !isNaN(parseFloat(employeeForDb.basic_salary))) {
+        employeeForDb.basic_salary = parseFloat(employeeForDb.basic_salary);
+      }
+      
+      if (typeof employeeForDb.gross_salary === 'string' && !isNaN(parseFloat(employeeForDb.gross_salary))) {
+        employeeForDb.gross_salary = parseFloat(employeeForDb.gross_salary);
+      }
+      
+      if (typeof employeeForDb.allowances === 'string' && !isNaN(parseFloat(employeeForDb.allowances))) {
+        employeeForDb.allowances = parseFloat(employeeForDb.allowances);
       }
 
       const authorizedClient = getAuthorizedClient();
 
       if (mode === 'edit' && employeeForDb.id) {
-        const authorizedClient = getAuthorizedClient();
         const { error } = await authorizedClient
           .from('employees')
           .update(employeeForDb)
@@ -147,8 +221,7 @@ export const EmployeeTabbedForm: React.FC<EmployeeTabbedFormProps> = ({
         if (error) throw error;
       } else if (mode === 'create') {
         const { id, ...createData } = employeeForDb;
-        const authorizedClient = getAuthorizedClient();
-
+        
         const { data: newEmployee, error } = await authorizedClient
           .from('employees')
           .insert({ ...createData, user_id: userId })

@@ -8,15 +8,14 @@ import { HelmetProvider } from 'react-helmet-async';
 
 function App() {
   return (
-    <AuthProvider>
-      <HelmetProvider>
-        <BrowserRouter>
-          <Toaster />
-          <AppRoutes />
-        </BrowserRouter>
-      </HelmetProvider>
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <HelmetProvider>
+            <Toaster />
+            <AppRoutes />
+        </HelmetProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
-
 export default App;

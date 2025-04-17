@@ -87,7 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             // Only navigate on actual sign-in events, not session refreshes or focus changes
             if (event === 'SIGNED_IN') {
-              // Only redirect if user is on the root path or login/signup pages
+              // Only redirect if user is on the root path or login/signup pages and location.pathname exists
               const isAuthPage = ['/login', '/signup', '/'].includes(location.pathname);
               if (isAuthPage) {
                 navigate('/dashboard');
@@ -151,7 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
        // Store the JWT token in localStorage
       localStorage.setItem('jwt_token', data.session?.access_token || '');  // Store JWT token
       
-      navigate('/dashboard');
+      if (location.pathname) navigate('/dashboard');
       return {};
     } catch (error: any) {
       console.error('Unexpected login error:', error);
@@ -200,7 +200,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Your account has been created successfully. Please log in.",
       });
       
-      navigate('/login');
+      if (location.pathname) navigate('/login');
       return {};
     } catch (error: any) {
       console.error('Unexpected signup error:', error);

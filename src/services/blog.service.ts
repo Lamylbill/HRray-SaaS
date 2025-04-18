@@ -344,7 +344,13 @@ export const blogService = {
           contentType: file.type
         });
 
-      if (error) throw { errorCode: error.error.code || 'unknown', message: error.error.message || 'Unknown error', error };
+      if (error) {
+        throw {
+          errorCode: error.error ? error.error.code || 'unknown' : 'unknown',
+          message: error.error ? error.error.message || 'Unknown error' : 'Unknown error',
+          error,
+        };
+      }
 
       const { data } = client.storage
         .from('blog-assets')

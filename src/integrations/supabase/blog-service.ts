@@ -313,18 +313,17 @@ export const blogService = {
       const client = getAuthorizedClient();
       try {
         const { error: bucketError } = await client.storage.createBucket('blog-assets', { public: true });
-              if (bucketError) {
-                throw {
-                  errorCode: bucketError || 'unknown',
-                  message: bucketError.message || 'Failed to create bucket',
-                  error: bucketError,
-                };
-              }
-            } catch (error: any) {
-              console.error('Error creating bucket:', error);
-              throw error;
-            }
-
+        if (bucketError) {
+          throw {
+            errorCode: bucketError.error.code || 'unknown',
+            message: bucketError.error.message || 'Failed to create bucket',
+            error: bucketError,
+          };
+        }
+      } catch (error) {
+        throw error;
+      }
+  
       try {
         const fileExt = file.name.split('.').pop();
         const fileName = `${uuidv4()}.${fileExt}`;
@@ -333,26 +332,18 @@ export const blogService = {
           cacheControl: '3600',
           contentType: file.type,
         });
-
-            if (error)
-              throw {
-                errorCode: error || 'unknown',
-                message: error.message || 'Unknown error',
-                error,
-              };
-
-        const { data } = client.storage
-          .from('blog-assets')
-          .getPublicUrl(filePath);
-
-        return data.publicUrl;
-    } catch (error: any) {
-        console.error('Error uploading image:', error);
-            throw {
+  
+        if (error) throw {
           errorCode: error.error.code || 'unknown',
           message: error.error.message || 'Unknown error',
           error,
         };
+  
+          const { data } = client.storage.from('blog-assets').getPublicUrl(filePath);
+          return data.publicUrl;
+      } catch (error: any) {
+        console.error('Error uploading image:', error);
+        throw error;
       }
     },
-};
+  };

@@ -90,6 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log('New session established:', newSession.user.id);
             setSession(newSession);
             setUser(newSession.user);
+            setUserId(newSession.user.id);
             
             // Only navigate on actual sign-in events, not session refreshes or focus changes
             if (event === 'SIGNED_IN') {
@@ -111,6 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           } else {
             console.log('Session ended');
+            setUserId(null);
             setSession(null);
             setUser(null);
             
@@ -157,6 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
        // Store the JWT token in localStorage
       localStorage.setItem('jwt_token', data.session?.access_token || '');  // Store JWT token
+      console.log('userId is:', data.user.id);
       
       if (location.pathname) navigate('/dashboard');
       return {};
@@ -309,8 +312,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Compute authentication state
   const isAuthenticated = !!user && !!session;
-  console.log('Auth state:', { isLoading, isAuthenticated, userId: user?.id });
   const checkIsBlogEditor = () => userId === "b17956a5-afbc-405b-af67-b02a93afc787";
+  console.log('checkIsBlogEditor result:', checkIsBlogEditor());
+  console.log('Auth state:', { isLoading, isAuthenticated, userId, isBlogEditor });
 
 
   return (

@@ -17,6 +17,7 @@ interface DatePickerProps {
   className?: string;
   placeholder?: string;
   disabled?: boolean;
+  fromDate?: Date;
 }
 
 export function DatePicker({
@@ -25,6 +26,7 @@ export function DatePicker({
   className,
   placeholder = "Pick a date",
   disabled = false,
+  fromDate = new Date(), // Default to current date
 }: DatePickerProps) {
   return (
     <Popover>
@@ -49,6 +51,9 @@ export function DatePicker({
           onSelect={onDateChange}
           initialFocus
           className={cn("p-3 pointer-events-auto")}
+          fromDate={fromDate} // Only allow dates from today forward
+          defaultMonth={new Date()} // Default to current month view
+          disabled={(date) => date < fromDate}
         />
       </PopoverContent>
     </Popover>

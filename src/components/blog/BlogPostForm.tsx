@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -337,6 +336,7 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
                   date={formData.publish_at || undefined}
                   onDateChange={handlePublishAtChange}
                   placeholder="Select date for publication"
+                  fromDate={new Date()}
                 />
               </div>
             )}

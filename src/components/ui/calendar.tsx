@@ -17,11 +17,14 @@ function Calendar({
   showOutsideDays = true,
   hideNavigation = false,
   showWeekdayHeader = true,
+  defaultMonth = new Date(), // Default to current month
   ...props
 }: CalendarProps) {
   // Custom caption component with month/year dropdowns
   function CustomCaption({ displayMonth }: CaptionProps) {
-    const years = Array.from({ length: 125 }, (_, i) => new Date().getFullYear() - 124 + i);
+    const startYear = 1900;
+    const endYear = 2100;
+    const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
     const months = [
       "January", "February", "March", "April", "May", "June", 
       "July", "August", "September", "October", "November", "December"
@@ -123,9 +126,9 @@ function Calendar({
         Caption: CustomCaption,
       }}
       captionLayout="buttons"
-      fromYear={1900}
-      toYear={new Date().getFullYear()}
-      defaultMonth={new Date(1990, 0)}
+      defaultMonth={defaultMonth}
+      fromYear={new Date().getFullYear()}
+      toYear={2100}
       {...props}
     />
   );

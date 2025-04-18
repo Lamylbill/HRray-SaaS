@@ -1,349 +1,326 @@
-import { supabase, getAuthorizedClient } from '@/integrations/supabase/client';
+import { supabase } from "@/lib/supabaseClient";
 import { v4 as uuidv4 } from 'uuid';
-import { BlogPost, BlogPostFormData, BlogCategory, BlogComment } from '@/integrations/supabase/blog-types';
+import { BlogPost, BlogPostFormData, BlogCategory, BlogComment } from "./blog-types";
 
-// Helper to generate slugs
-const generateSlug = (title: string): string => {
-  return title
-    .toLowerCase()
-    .replace(/[^\\w\\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim();
-};
+const PAGE_SIZE = 10;
 
 export const blogService = {
-  // Get all published blog posts with pagination
-  async getPosts(page = 1, pageSize = 10, categorySlug?: string): Promise<{ posts: BlogPost[]; total: number }> {
-    const client = getAuthorizedClient();
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
+  async getPosts(page: number = 1, pageSize: number = PAGE_SIZE): Promise<{ posts: BlogPost[]; totalCount: number }> {
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize - 1;
 
-    try {
-      // Use type assertion to bypass TypeScript's type checking for the Supabase client
-      const queryBuilder = client.from('blog_posts') as any;
-      let query = queryBuilder.select('*', { count: 'exact' });
+    let { data: posts, error, count } = await supabase
+      .from('blog_posts')
+      .select(`
+        id, title, slug, content, excerpt, cover_image, meta_description, author_id, created_at, updated_at, published_at, is_published, tags,
+        author: user_profiles (id, full_name, email),
+        categories: blog_categories (id, name, slug)
+      `, { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(startIndex, endIndex);
 
-      // Filter by published status
-      query = query.eq('is_published', true);
-
-      // Apply category filter if provided
-      if (categorySlug) {
-        // Get category ID by slug
-        const categoryQuery = client.from('blog_categories') as any;
-        const { data: category } = await categoryQuery
-          .select('id')
-          .eq('slug', categorySlug)
-          .single();
-
-        if (category) {
-          // Get post IDs in this category
-          const postCategoryQuery = client.from('blog_post_categories') as any;
-          const { data: postIds } = await postCategoryQuery
-            .select('post_id')
-            .eq('category_id', category.id);
-
-          if (postIds && postIds.length > 0) {
-            query = query.in('id', postIds.map((item: any) => item.post_id));
-          }
-        }
-      }
-
-      // Add pagination and order
-      const { data, count, error } = await query
-        .order('published_at', { ascending: false })
-        .range(from, to);
-
-      if (error) throw error;
-
-      return {
-        posts: (data || []) as BlogPost[],
-        total: count || 0,
-      };
-    } catch (error) {
-      console.error('Error fetching blog posts:', error);
-      return { posts: [], total: 0 };
+    if (error) {
+      console.error("Error fetching posts:", error);
+      throw new Error(error.message);
     }
+
+    const totalCount = count || 0;
+
+    return { posts: posts as BlogPost[], totalCount };
   },
 
-  // Get a single blog post by slug
   async getPostBySlug(slug: string): Promise<BlogPost | null> {
-    const client = getAuthorizedClient();
+    let { data: post, error } = await supabase
+      .from('blog_posts')
+      .select(`
+        id, title, slug, content, excerpt, cover_image, meta_description, author_id, created_at, updated_at, published_at, is_published, tags,
+        author: user_profiles (id, full_name, email)
+      `)
+      .eq('slug', slug)
+      .single();
 
-    try {
-      // First get the post
-      const postsQuery = client.from('blog_posts') as any;
-      const { data: post, error: postError } = await postsQuery
-        .select('*')
-        .eq('slug', slug)
-        .single();
-
-      if (postError) {
-        if (postError.code === 'PGRST116') {
-          return null; // Post not found
-        }
-        throw postError;
-      }
-
-      if (!post) return null;
-
-      // Get author details
-      const profilesQuery = client.from('profiles') as any;
-      const { data: author } = await profilesQuery
-        .select('id, full_name, email')
-        .eq('id', post.author_id)
-        .single();
-
-      // Get categories
-      const postCategoriesQuery = client.from('blog_post_categories') as any;
-      const { data: categoryLinks } = await postCategoriesQuery
-        .select('category_id')
-        .eq('post_id', post.id);
-
-      const categoryIds = categoryLinks?.map((link: any) => link.category_id) || [];
-
-      let categories: BlogCategory[] = [];
-      if (categoryIds.length > 0) {
-        const categoriesQuery = client.from('blog_categories') as any;
-        const { data: categoryData } = await categoriesQuery
-          .select('*')
-          .in('id', categoryIds);
-
-        categories = (categoryData || []) as BlogCategory[];
-      }
-
-      // Combine everything
-      const blogPost: BlogPost = {
-        ...(post as unknown as BlogPost),
-        author: author || undefined,
-        categories: categories,
-      };
-
-      return blogPost;
-    } catch (error) {
-      console.error('Error fetching blog post:', error);
-      return null;
+    if (error) {
+      console.error("Error fetching post by slug:", error);
+      throw new Error(error.message);
     }
+
+    return post as BlogPost | null;
   },
 
-  // Get all blog categories
-  async getCategories(): Promise<BlogCategory[]> {
-    const client = getAuthorizedClient();
-
-    try {
-      const categoriesQuery = client.from('blog_categories') as any;
-      const { data, error } = await categoriesQuery
-        .select('*')
-        .order('name');
-
-      if (error) throw error;
-
-      return (data || []) as BlogCategory[];
-    } catch (error) {
-      console.error('Error fetching blog categories:', error);
-      return [];
-    }
-  },
-
-  // Create a new blog post
   async createPost(postData: BlogPostFormData, userId: string): Promise<string> {
-    const client = getAuthorizedClient();
+    const slug = this.slugify(postData.title);
+    const published_at = postData.is_published ? new Date().toISOString() : postData.publish_at?.toISOString();
 
-    try {
-      const slug = generateSlug(postData.title);
-
-      // Create the post
-      const postsQuery = client.from('blog_posts') as any;
-      const { data, error } = await postsQuery
-        .insert({
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .insert([
+        {
           title: postData.title,
-          slug,
+          slug: slug,
           content: postData.content,
           excerpt: postData.excerpt,
-          meta_description: postData.meta_description,
-          cover_image: postData.cover_image || null,
-          author_id: userId,
-          published_at: postData.is_published ? new Date().toISOString() : null,
-          is_published: postData.is_published,
-          tags: postData.tags || [],
-        })
-        .select('id')
-        .single();
-
-      if (error) throw error;
-
-      // Link categories if provided
-      if (postData.category_ids && postData.category_ids.length > 0 && data?.id) {
-        const categoryLinks = postData.category_ids.map(categoryId => ({
-          post_id: data.id,
-          category_id: categoryId,
-        }));
-
-        const postCategoriesQuery = client.from('blog_post_categories') as any;
-        const { error: categoryError } = await postCategoriesQuery
-          .insert(categoryLinks);
-
-        if (categoryError) throw categoryError;
-      }
-
-      return data?.id || '';
-    } catch (error) {
-      console.error('Error creating blog post:', error);
-      throw error;
-    }
-  },
-
-  // Update an existing blog post
-  async updatePost(id: string, postData: BlogPostFormData): Promise<void> {
-    const client = getAuthorizedClient();
-
-    try {
-      // Update post data
-      const postsQuery = client.from('blog_posts') as any;
-      const { error } = await postsQuery
-        .update({
-          title: postData.title,
-          content: postData.content,
-          excerpt: postData.excerpt,
-          meta_description: postData.meta_description,
           cover_image: postData.cover_image,
-          published_at: postData.is_published ? new Date().toISOString() : null,
+          meta_description: postData.meta_description,
+          author_id: userId,
           is_published: postData.is_published,
-          tags: postData.tags || [],
-        })
-        .eq('id', id);
+          published_at: published_at,
+          tags: postData.tags,
+        }
+      ])
+      .select()
 
-      if (error) throw error;
+    if (error) {
+      console.error("Error creating post:", error);
+      throw new Error(error.message);
+    }
 
-      // Delete existing category links
-      const postCategoriesQuery = client.from('blog_post_categories') as any;
-      const { error: deleteError } = await postCategoriesQuery
-        .delete()
-        .eq('post_id', id);
+    if (!data || data.length === 0) {
+      throw new Error("Failed to create post, no data returned.");
+    }
 
-      if (deleteError) throw deleteError;
+    const postId = data[0].id;
 
-      // Insert new category links
-      if (postData.category_ids && postData.category_ids.length > 0) {
-        const categoryLinks = postData.category_ids.map(categoryId => ({
-          post_id: id,
-          category_id: categoryId,
-        }));
+    // Handle categories separately
+    if (postData.category_ids && postData.category_ids.length > 0) {
+      await this.setPostCategories(postId, postData.category_ids);
+    }
 
-        const categoriesInsertQuery = client.from('blog_post_categories') as any;
-        const { error: insertError } = await categoriesInsertQuery
-          .insert(categoryLinks);
+    return postId;
+  },
 
-        if (insertError) throw insertError;
-      }
-    } catch (error) {
-      console.error('Error updating blog post:', error);
-      throw error;
+  async updatePost(postId: string, postData: BlogPostFormData): Promise<void> {
+    const slug = this.slugify(postData.title);
+    const published_at = postData.is_published ? new Date().toISOString() : postData.publish_at?.toISOString();
+
+    const { error } = await supabase
+      .from('blog_posts')
+      .update({
+        title: postData.title,
+        slug: slug,
+        content: postData.content,
+        excerpt: postData.excerpt,
+        cover_image: postData.cover_image,
+        meta_description: postData.meta_description,
+        is_published: postData.is_published,
+        published_at: published_at,
+        tags: postData.tags,
+      })
+      .eq('id', postId);
+
+    if (error) {
+      console.error("Error updating post:", error);
+      throw new Error(error.message);
+    }
+
+    // Handle categories separately
+    if (postData.category_ids && postData.category_ids.length > 0) {
+      await this.setPostCategories(postId, postData.category_ids);
+    } else {
+      await this.clearPostCategories(postId);
     }
   },
 
-  // Delete a blog post
-  async deletePost(id: string): Promise<void> {
-    const client = getAuthorizedClient();
+  async deletePost(postId: string): Promise<void> {
+    // First, delete the post_categories entries
+    const { error: deleteCategoriesError } = await supabase
+      .from('blog_post_categories')
+      .delete()
+      .eq('post_id', postId);
 
-    try {
-      // Delete post
-      const postsQuery = client.from('blog_posts') as any;
-      const { error } = await postsQuery
-        .delete()
-        .eq('id', id);
+    if (deleteCategoriesError) {
+      console.error("Error deleting post categories:", deleteCategoriesError);
+      throw new Error(deleteCategoriesError.message);
+    }
 
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error deleting blog post:', error);
-      throw error;
+    // Then, delete the blog post
+    const { error: deletePostError } = await supabase
+      .from('blog_posts')
+      .delete()
+      .eq('id', postId);
+
+    if (deletePostError) {
+      console.error("Error deleting post:", deletePostError);
+      throw new Error(deletePostError.message);
     }
   },
 
-  // Add a comment to a blog post
-  async addComment(postId: string, comment: Omit<BlogComment, 'id' | 'created_at' | 'is_approved'>): Promise<string> {
-    const client = getAuthorizedClient();
+  async getCategories(): Promise<BlogCategory[]> {
+    let { data: categories, error } = await supabase
+      .from('blog_categories')
+      .select('*')
+      .order('name', { ascending: true });
 
-    try {
-      const commentsQuery = client.from('blog_comments') as any;
-      const { data, error } = await commentsQuery
-        .insert({
-          post_id: postId,
-          user_id: comment.user_id || null,
-          name: comment.name,
-          email: comment.email,
-          content: comment.content,
-          is_approved: false, // Require approval by default
-        })
-        .select('id')
-        .single();
+    if (error) {
+      console.error("Error fetching categories:", error);
+      throw new Error(error.message);
+    }
 
-      if (error) throw error;
+    return categories as BlogCategory[];
+  },
 
-      return data?.id || '';
-    } catch (error) {
-      console.error('Error adding comment:', error);
-      throw error;
+  async createCategory(name: string, slug: string): Promise<BlogCategory> {
+    const { data, error } = await supabase
+      .from('blog_categories')
+      .insert([{ name, slug }])
+      .select()
+
+    if (error) {
+      console.error("Error creating category:", error);
+      throw new Error(error.message);
+    }
+
+    return data![0] as BlogCategory;
+  },
+
+  async updateCategory(categoryId: string, name: string, slug: string): Promise<void> {
+    const { error } = await supabase
+      .from('blog_categories')
+      .update({ name, slug })
+      .eq('id', categoryId);
+
+    if (error) {
+      console.error("Error updating category:", error);
+      throw new Error(error.message);
     }
   },
 
-  // Get comments for a blog post
-  async getComments(postId: string): Promise<BlogComment[]> {
-    const client = getAuthorizedClient();
+  async deleteCategory(categoryId: string): Promise<void> {
+    const { error } = await supabase
+      .from('blog_categories')
+      .delete()
+      .eq('id', categoryId);
 
-    try {
-      const commentsQuery = client.from('blog_comments') as any;
-      const { data, error } = await commentsQuery
-        .select('*')
-        .eq('post_id', postId)
-        .eq('is_approved', true)
-        .order('created_at', { ascending: false });
+    if (error) {
+      console.error("Error deleting category:", error);
+      throw new Error(error.message);
+    }
+  },
 
-      if (error) throw error;
+  async getComments(postSlug: string): Promise<BlogComment[]> {
+    const { data: post, error: postError } = await supabase
+      .from('blog_posts')
+      .select('id')
+      .eq('slug', postSlug)
+      .single();
 
-      return (data || []) as BlogComment[];
-    } catch (error) {
-      console.error('Error fetching comments:', error);
+    if (postError) {
+      console.error("Error fetching post for comments:", postError);
+      throw new Error(postError.message);
+    }
+
+    if (!post) {
+      console.log(`No post found with slug ${postSlug}`);
       return [];
     }
+
+    let { data: comments, error: commentsError } = await supabase
+      .from('blog_comments')
+      .select('*')
+      .eq('post_id', post.id)
+      .eq('is_approved', true)
+      .order('created_at', { ascending: false });
+
+    if (commentsError) {
+      console.error("Error fetching comments:", commentsError);
+      throw new Error(commentsError.message);
+    }
+
+    return comments as BlogComment[];
   },
 
-  // Upload an image for a blog post
-  async uploadImage(file: File, userId: string): Promise<string> {
-      const client = getAuthorizedClient();
-      try {
-        const { error: bucketError } = await client.storage.createBucket('blog-assets', { public: true });
-        if (bucketError) {
-          throw {
-            errorCode: bucketError.error.code || 'unknown',
-            message: bucketError.error.message || 'Failed to create bucket',
-            error: bucketError,
-          };
+  async addComment(postId: string, commentData: Omit<BlogComment, 'id' | 'created_at' | 'is_approved'>): Promise<void> {
+    const { error } = await supabase
+      .from('blog_comments')
+      .insert([
+        {
+          post_id: postId,
+          user_id: commentData.user_id,
+          name: commentData.name,
+          email: commentData.email,
+          content: commentData.content,
+          is_approved: false // Comments are initially unapproved
         }
-      } catch (error) {
-        throw error;
-      }
-  
-      try {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${uuidv4()}.${fileExt}`;
-        const filePath = `blog-assets/${userId}/${fileName}`;
-        const { error } = await client.storage.from('blog-assets').upload(filePath, file, {
-          cacheControl: '3600',
-          contentType: file.type,
-        });
-  
-        if (error) throw {
-          errorCode: error.error.code || 'unknown',
-          message: error.error.message || 'Unknown error',
-          error,
-        };
-  
-          const { data } = client.storage.from('blog-assets').getPublicUrl(filePath);
-          return data.publicUrl;
-      } catch (error: any) {
-        console.error('Error uploading image:', error);
-        throw error;
-      }
-    },
-  };
+      ]);
+
+    if (error) {
+      console.error("Error adding comment:", error);
+      throw new Error(error.message);
+    }
+  },
+
+  async uploadImage(file: File, userId: string): Promise<string> {
+    const imageName = `${uuidv4()}-${file.name}`;
+    const imagePath = `blog-images/${userId}/${imageName}`;
+
+    const { data, error } = await supabase.storage
+      .from('blog-images')
+      .upload(imagePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Error uploading file:', error.message || error);
+      throw new Error(error.message || 'Error uploading file');
+    }
+
+    const imageUrl = await this.getImageURL(imagePath);
+    return imageUrl;
+  },
+
+  async getImageURL(imagePath: string): Promise<string> {
+    const { data, error } = await supabase.storage
+      .from('blog-images')
+      .getPublicUrl(imagePath)
+
+    if (error) {
+      console.error('Error getting file URL:', error.message || error);
+      throw new Error(error.message || 'Error getting file URL');
+    }
+
+    return data.publicUrl;
+  },
+
+  private slugify(text: string): string {
+    return text
+      .toString()                           // Cast to string
+      .toLowerCase()                          // Convert the string to lowercase letters
+      .normalize("NFD")                      // Remove accents
+      .trim()                               // Remove whitespace from both ends
+      .replace(/\s+/g, '-')                 // Replace spaces with -
+      .replace(/[^\w\-]+/g, '')             // Remove all non-word chars
+      .replace(/\-\-+/g, '-');               // Replace multiple - with single -
+  },
+
+  private async setPostCategories(postId: string, categoryIds: string[]): Promise<void> {
+    // Clear existing categories for the post
+    await this.clearPostCategories(postId);
+
+    // Insert new categories
+    const postCategories = categoryIds.map(categoryId => ({
+      post_id: postId,
+      category_id: categoryId
+    }));
+
+    const { error } = await supabase
+      .from('blog_post_categories')
+      .insert(postCategories);
+
+    if (error) {
+      console.error("Error setting post categories:", error);
+      throw new Error(error.message);
+    }
+  },
+
+  private async clearPostCategories(postId: string): Promise<void> {
+    const { error } = await supabase
+      .from('blog_post_categories')
+      .delete()
+      .eq('post_id', postId);
+
+    if (error) {
+      console.error("Error clearing post categories:", error);
+      throw new Error(error.message);
+    }
+  }
+};

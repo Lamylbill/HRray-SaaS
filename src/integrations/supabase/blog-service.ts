@@ -1,5 +1,5 @@
 
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from 'uuid';
 import { BlogPost, BlogPostFormData, BlogCategory, BlogComment } from "./blog-types";
 
@@ -262,7 +262,7 @@ export const blogService = {
       });
 
     if (error) {
-      console.error('Error uploading file:', error.message || error);
+      console.error('Error uploading file:', error.message || String(error));
       throw new Error(error.message || 'Error uploading file');
     }
 
@@ -276,14 +276,15 @@ export const blogService = {
       .getPublicUrl(imagePath)
 
     if (error) {
-      console.error('Error getting file URL:', error.message || error);
+      console.error('Error getting file URL:', error.message || String(error));
       throw new Error(error.message || 'Error getting file URL');
     }
 
     return data.publicUrl;
   },
 
-  private slugify(text: string): string {
+  // Remove private modifiers as they're not allowed in a JavaScript object
+  slugify(text: string): string {
     return text
       .toString()                           // Cast to string
       .toLowerCase()                          // Convert the string to lowercase letters
@@ -294,7 +295,8 @@ export const blogService = {
       .replace(/\-\-+/g, '-');               // Replace multiple - with single -
   },
 
-  private async setPostCategories(postId: string, categoryIds: string[]): Promise<void> {
+  // Remove private modifiers as they're not allowed in a JavaScript object
+  async setPostCategories(postId: string, categoryIds: string[]): Promise<void> {
     // Clear existing categories for the post
     await this.clearPostCategories(postId);
 
@@ -314,7 +316,8 @@ export const blogService = {
     }
   },
 
-  private async clearPostCategories(postId: string): Promise<void> {
+  // Remove private modifiers as they're not allowed in a JavaScript object
+  async clearPostCategories(postId: string): Promise<void> {
     const { error } = await supabase
       .from('blog_post_categories')
       .delete()

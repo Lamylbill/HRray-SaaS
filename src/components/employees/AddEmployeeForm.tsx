@@ -25,11 +25,11 @@ export const AddEmployeeForm = ({
   return (
     <div className="max-h-[80vh] overflow-hidden flex flex-col">
       <EmployeeTabbedForm
-        mode={employeeData ? 'edit' : 'create'}
         initialData={employeeData ? { employee: employeeData } : undefined}
-        onSuccess={onSuccess}
+        onSuccess={() => onSuccess()}
         onCancel={onCancel}
         isViewOnly={false}
+        mode={employeeData ? 'edit' : 'create'}
         defaultTab={getDefaultTab(activeTab)}
       />
     </div>

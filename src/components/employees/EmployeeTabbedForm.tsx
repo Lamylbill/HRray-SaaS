@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'react-hot-toast';
@@ -15,37 +15,59 @@ import { employeeFormSchema } from '@/utils/employeeFieldUtils';
 import { EmployeeFormData } from '@/types/employee';
 import { TabNav } from './tabs/TabNav';
 
-interface EmployeeTabbedFormProps {
+export interface EmployeeTabbedFormProps {
   employee?: any;
-  onSubmit: (data: EmployeeFormData) => void;
+  initialData?: EmployeeFormData;
+  onSubmit?: (data: EmployeeFormData) => void;
+  onSuccess?: (data: EmployeeFormData) => void;
+  onCancel?: () => void;
   isSubmitting?: boolean;
   isReadOnly?: boolean;
+  isViewOnly?: boolean;
+  mode?: 'create' | 'edit' | 'view';
+  defaultTab?: string;
+  formRef?: React.RefObject<HTMLFormElement>;
+  hideControls?: boolean;
 }
 
-export const EmployeeTabbedForm: React.FC<EmployeeTabbedFormProps> = ({
+export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedFormProps>(({
   employee,
+  initialData,
   onSubmit,
+  onSuccess,
+  onCancel,
   isSubmitting = false,
   isReadOnly = false,
-}) => {
-  const [activeTab, setActiveTab] = useState('personal-info');
+  isViewOnly = false,
+  mode = 'create',
+  defaultTab = 'personal-info',
+  formRef,
+  hideControls = false
+}, ref) => {
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [showAdvancedFields, setShowAdvancedFields] = useState(false);
   
   const methods = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeFormSchema),
-    defaultValues: employee || {
-      employee: {
+    defaultValues: initialData || employee ? {
+      employee: employee || initialData?.employee || {
         id: '',
-        first_name: '',
-        last_name: '',
+        full_name: '',
         email: '',
         // Add other default values here
+      }
+    } : {
+      employee: {
+        id: '',
+        full_name: '',
+        email: '',
       }
     }
   });
 
   const handleSubmit = (data: EmployeeFormData) => {
-    onSubmit(data);
+    if (onSubmit) onSubmit(data);
+    if (onSuccess) onSuccess(data);
   };
 
   const handleTabChange = (value: string) => {
@@ -54,12 +76,16 @@ export const EmployeeTabbedForm: React.FC<EmployeeTabbedFormProps> = ({
 
   // Fix the type comparison issue - convert string to boolean when necessary
   const isDocumentsTab = (tabKey: string) => {
-    return tabKey === 'documents' || tabKey === true;
+    return tabKey === 'documents';
   };
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={methods.handleSubmit(handleSubmit)} className="h-full flex flex-col">
+      <form 
+        onSubmit={methods.handleSubmit(handleSubmit)} 
+        className="h-full flex flex-col"
+        ref={formRef || ref}
+      >
         <TabNav 
           activeTab={activeTab} 
           onChange={handleTabChange} 
@@ -69,7 +95,7 @@ export const EmployeeTabbedForm: React.FC<EmployeeTabbedFormProps> = ({
         <div className="flex-1 overflow-y-auto pb-6">
           {activeTab === 'personal-info' && (
             <PersonalInfoTab 
-              isViewOnly={isReadOnly} 
+              isViewOnly={isViewOnly || isReadOnly} 
               showAdvancedFields={showAdvancedFields}
               onToggleAdvanced={setShowAdvancedFields}
             />
@@ -77,7 +103,7 @@ export const EmployeeTabbedForm: React.FC<EmployeeTabbedFormProps> = ({
           
           {activeTab === 'employment-info' && (
             <EmploymentInfoTab 
-              isViewOnly={isReadOnly} 
+              isViewOnly={isViewOnly || isReadOnly} 
               showAdvancedFields={showAdvancedFields}
               onToggleAdvanced={setShowAdvancedFields}
             />
@@ -85,7 +111,7 @@ export const EmployeeTabbedForm: React.FC<EmployeeTabbedFormProps> = ({
           
           {activeTab === 'contract-lifecycle' && (
             <ContractLifecycleTab 
-              isViewOnly={isReadOnly} 
+              isViewOnly={isViewOnly || isReadOnly} 
               showAdvancedFields={showAdvancedFields}
               onToggleAdvanced={setShowAdvancedFields}
             />
@@ -93,7 +119,7 @@ export const EmployeeTabbedForm: React.FC<EmployeeTabbedFormProps> = ({
           
           {activeTab === 'compensation-benefits' && (
             <CompensationBenefitsTab 
-              isViewOnly={isReadOnly} 
+              isViewOnly={isViewOnly || isReadOnly} 
               showAdvancedFields={showAdvancedFields}
               onToggleAdvanced={setShowAdvancedFields}
             />
@@ -101,28 +127,35 @@ export const EmployeeTabbedForm: React.FC<EmployeeTabbedFormProps> = ({
           
           {activeTab === 'compliance' && (
             <ComplianceTab 
-              isViewOnly={isReadOnly} 
+              isViewOnly={isViewOnly || isReadOnly} 
               showAdvancedFields={showAdvancedFields}
               onToggleAdvanced={setShowAdvancedFields}
             />
           )}
           
-          {isDocumentsTab(activeTab) && employee?.id && (
+          {isDocumentsTab(activeTab) && initialData?.employee?.id && (
             <DocumentsTab 
-              employeeId={employee.id} 
-              isReadOnly={isReadOnly} 
+              employeeId={initialData.employee.id} 
+              isReadOnly={isViewOnly || isReadOnly} 
             />
           )}
         </div>
         
-        {!isReadOnly && (
+        {!(isViewOnly || isReadOnly) && !hideControls && (
           <div className="border-t py-4 px-4 sm:px-6 md:px-8 flex justify-end">
+            {onCancel && (
+              <Button type="button" variant="outline" className="mr-2" onClick={onCancel}>
+                Cancel
+              </Button>
+            )}
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Save Employee'}
+              {isSubmitting ? 'Saving...' : mode === 'create' ? 'Create Employee' : 'Save Employee'}
             </Button>
           </div>
         )}
       </form>
     </FormProvider>
   );
-};
+});
+
+EmployeeTabbedForm.displayName = 'EmployeeTabbedForm';

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { getAuthorizedClient, supabase } from '@/integrations/supabase/client';

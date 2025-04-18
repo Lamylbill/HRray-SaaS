@@ -1,3 +1,4 @@
+
 import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import { BlogPost, BlogPostFormData, BlogCategory, BlogComment } from '@/integrations/supabase/blog-types';
@@ -326,8 +327,8 @@ export const blogService = {
 
       if (error) {
         throw {
-          errorCode: error.error ? error.error.code || 'unknown' : 'unknown',
-          message: error.error ? error.error.message || 'Unknown error' : 'Unknown error',
+          errorCode: error.name || 'unknown',
+          message: error.message || 'Unknown error',
           error,
         };
       }
@@ -340,8 +341,8 @@ export const blogService = {
     } catch (error: any) {
       console.error('Error uploading image:', error);
       throw {
-        errorCode: error.error ? error.error.code || 'unknown' : 'unknown',
-        message: error.error ? error.error.message || 'Unknown error' : 'Unknown error',
+        errorCode: error.name || 'unknown',
+        message: error.message || 'Unknown error',
         error,
       };
     }

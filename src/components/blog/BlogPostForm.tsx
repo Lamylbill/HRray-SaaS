@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +14,7 @@ import { useAuth } from '@/context/AuthContext';
 import { blogService } from '@/services/blog.service';
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 import { Editor } from '@/components/blog/Editor';
-import { DatePicker } from 'react-datepicker';
+import { DatePicker } from '@/components/ui/date-picker';
 
 interface BlogPostFormProps {
   initialData?: Partial<BlogPostFormData>;
@@ -332,16 +333,10 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
             {!formData.is_published && (
               <div className="space-y-2">
                 <Label htmlFor="publish_at">Schedule publication</Label>
-                <DatePicker
-                  id="publish_at"
-                  selected={formData.publish_at}
-                  onChange={handlePublishAtChange}
-                  showTimeSelect
-                  timeFormat="HH:mm"
-                  timeIntervals={15}
-                  dateFormat="MMMM d, yyyy h:mm aa"
-                  minDate={new Date()}
-                  placeholderText="Select date and time"
+                <DatePicker 
+                  date={formData.publish_at || undefined}
+                  onDateChange={handlePublishAtChange}
+                  placeholder="Select date for publication"
                 />
               </div>
             )}

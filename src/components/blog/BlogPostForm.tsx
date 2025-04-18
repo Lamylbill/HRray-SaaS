@@ -99,11 +99,13 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
       });
     } catch (error) {
       console.error('Error uploading image:', error);
-      toast({
-        title: "Upload failed",
-        description: "Failed to upload image. Please try again.",
-        variant: "destructive",
-      });
+      toast.error(
+        (error as any).errorCode
+          ? `Error uploading image: ${(error as any).message || 'Unknown error'}`
+          : `Error uploading image: Unknown error`
+      );
+      setImageUploading(false);
+      return;
     } finally {
       setIsUploading(false);
     }

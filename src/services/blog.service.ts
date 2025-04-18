@@ -320,19 +320,19 @@ export const blogService = {
       });
 
       if (bucketError) {
-        throw {
-          errorCode: bucketError.error.code || 'unknown',
-          message: bucketError.error.message || 'Failed to create bucket',
-          error: bucketError,
-        }
+        throw bucketError;
       }
     } catch (bucketError: any) {
+      console.error('Bucket creation error', bucketError);
+
+
+
       throw {
-        errorCode: bucketError.error.code || 'unknown',
-        message: bucketError.error.message || 'Failed to create bucket',
+        errorCode: bucketError.error ? bucketError.error.code || 'unknown' : 'unknown',
+        message: bucketError.error ? bucketError.error.message || 'Failed to create bucket' : 'Failed to create bucket',
         error: bucketError,
       }
-    }
+    } 
      fileExt = file.name.split('.').pop();
      fileName = `${uuidv4()}.${fileExt}`;
     const filePath = `blog-assets/${userId}/${fileName}`;

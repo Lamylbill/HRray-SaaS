@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabaseClient";
 import { v4 as uuidv4 } from 'uuid';
 import { BlogPost, BlogPostFormData, BlogCategory, BlogComment } from "./blog-types";
@@ -196,6 +197,7 @@ export const blogService = {
     }
   },
 
+  // Updated to remove the is_approved filter
   async getComments(postSlug: string): Promise<BlogComment[]> {
     const { data: post, error: postError } = await supabase
       .from('blog_posts')
@@ -217,7 +219,6 @@ export const blogService = {
       .from('blog_comments')
       .select('*')
       .eq('post_id', post.id)
-      .eq('is_approved', true)
       .order('created_at', { ascending: false });
 
     if (commentsError) {
@@ -228,6 +229,7 @@ export const blogService = {
     return comments as BlogComment[];
   },
 
+  // Updated to set comments as auto-approved
   async addComment(postId: string, commentData: Omit<BlogComment, 'id' | 'created_at' | 'is_approved'>): Promise<void> {
     const { error } = await supabase
       .from('blog_comments')
@@ -238,7 +240,7 @@ export const blogService = {
           name: commentData.name,
           email: commentData.email,
           content: commentData.content,
-          is_approved: false // Comments are initially unapproved
+          is_approved: true // Auto-approve all comments
         }
       ]);
 

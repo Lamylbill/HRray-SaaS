@@ -261,7 +261,7 @@ export const blogService = {
     }
   },
 
-  // Add a comment to a blog post
+  // Add a comment to a blog post - Updated to auto-approve comments
   async addComment(postId: string, comment: Omit<BlogComment, 'id' | 'created_at' | 'is_approved'>): Promise<string> {
     const client = getAuthorizedClient();
 
@@ -274,7 +274,7 @@ export const blogService = {
           name: comment.name,
           email: comment.email,
           content: comment.content,
-          is_approved: false // Require approval by default
+          is_approved: true // Auto-approve all comments
         })
         .select('id')
         .single();
@@ -288,7 +288,7 @@ export const blogService = {
     }
   },
 
-  // Get comments for a blog post
+  // Get comments for a blog post - Updated to remove the is_approved filter
   async getComments(postId: string): Promise<BlogComment[]> {
     const client = getAuthorizedClient();
 
@@ -297,7 +297,6 @@ export const blogService = {
       const { data, error } = await commentsQuery
         .select('*')
         .eq('post_id', postId)
-        .eq('is_approved', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -329,7 +328,6 @@ export const blogService = {
         throw {
           errorCode: error.name || 'unknown',
           message: error.message || 'Unknown error',
-          error,
         };
       }
 
@@ -343,7 +341,6 @@ export const blogService = {
       throw {
         errorCode: error.name || 'unknown',
         message: error.message || 'Unknown error',
-        error,
       };
     }
   }

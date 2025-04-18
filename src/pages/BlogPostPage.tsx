@@ -17,7 +17,7 @@ const BlogPostPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { toast } = useToast();
   const { user } = useAuth();
-  
+
   const [post, setPost] = useState<BlogPost | null>(null);
   const [comments, setComments] = useState<BlogComment[]>([]);
   const [isLoadingPost, setIsLoadingPost] = useState(true);
@@ -26,10 +26,10 @@ const BlogPostPage = () => {
   const [commenterName, setCommenterName] = useState('');
   const [commenterEmail, setCommenterEmail] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-  
+
   useEffect(() => {
     if (!slug) return;
-    
+
     const loadPost = async () => {
       setIsLoadingPost(true);
       try {
@@ -55,7 +55,7 @@ const BlogPostPage = () => {
         setIsLoadingPost(false);
       }
     };
-    
+
     const loadComments = async () => {
       if (!slug) return;
       setIsLoadingComments(true);
@@ -68,16 +68,16 @@ const BlogPostPage = () => {
         setIsLoadingComments(false);
       }
     };
-    
+
     loadPost();
     loadComments();
   }, [slug, toast]);
-  
+
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!post?.id) return;
-    
+
     if (!commentContent.trim()) {
       toast({
         title: 'Comment Required',
@@ -86,7 +86,7 @@ const BlogPostPage = () => {
       });
       return;
     }
-    
+
     if (!user && (!commenterName.trim() || !commenterEmail.trim())) {
       toast({
         title: 'Information Required',
@@ -95,9 +95,9 @@ const BlogPostPage = () => {
       });
       return;
     }
-    
+
     setIsSubmittingComment(true);
-    
+
     try {
       await blogService.addComment(post.id, {
         post_id: post.id,
@@ -106,12 +106,12 @@ const BlogPostPage = () => {
         email: user ? user.email || '' : commenterEmail,
         content: commentContent
       });
-      
+
       toast({
         title: 'Comment Submitted',
         description: 'Your comment has been submitted and is awaiting approval.',
       });
-      
+
       // Clear form
       setCommentContent('');
       if (!user) {
@@ -129,7 +129,7 @@ const BlogPostPage = () => {
       setIsSubmittingComment(false);
     }
   };
-  
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -138,9 +138,9 @@ const BlogPostPage = () => {
       day: 'numeric'
     });
   };
-  
+
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
-  
+
   if (isLoadingPost) {
     return (
       <div className="min-h-screen pt-24 pb-12 bg-gray-50 flex justify-center items-start">
@@ -148,7 +148,7 @@ const BlogPostPage = () => {
       </div>
     );
   }
-  
+
   if (!post) {
     return (
       <div className="min-h-screen pt-24 pb-12 bg-gray-50">
@@ -166,7 +166,7 @@ const BlogPostPage = () => {
       </div>
     );
   }
-  
+
   return (
     <>
       <Helmet>
@@ -179,7 +179,7 @@ const BlogPostPage = () => {
         <meta property="og:type" content="article" />
         <meta name="twitter:card" content="summary_large_image" />
       </Helmet>
-      
+
       <div className="min-h-screen pt-24 pb-12 bg-gray-50">
         <div className="container px-4 mx-auto">
           <div className="max-w-4xl mx-auto">
@@ -188,7 +188,7 @@ const BlogPostPage = () => {
                 ← Back to Blog
               </Link>
             </div>
-            
+
             <article className="bg-white rounded-lg shadow-sm overflow-hidden">
               {post.cover_image && (
                 <div className="w-full h-64 sm:h-96 overflow-hidden">
@@ -199,29 +199,25 @@ const BlogPostPage = () => {
                   />
                 </div>
               )}
-              
+
               <div className="p-6 sm:p-8">
                 <h1 className="text-3xl sm:text-4xl font-bold mb-4">{post.title}</h1>
-                
+
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-6">
                   <div className="flex items-center">
                     <Calendar size={16} className="mr-1" />
                     <span>{formatDate(post.published_at)}</span>
                   </div>
-                  
+
                   {post.author && (
                     <div className="flex items-center">
                       <span className="font-medium">By {post.author.full_name || 'Admin'}</span>
                     </div>
                   )}
                 </div>
-                
-                <div className="prose prose-blue max-w-none mb-8">
-                  {post.content.split('\n').map((paragraph, idx) => (
-                    <p key={idx}>{paragraph}</p>
-                  ))}
-                </div>
-                
+
+                <div className="prose prose-blue max-w-none mb-8" dangerouslySetInnerHTML={{ __html: post.content }} />
+
                 {post.tags && post.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-6">
                     {post.tags.map((tag, index) => (
@@ -235,9 +231,9 @@ const BlogPostPage = () => {
                     ))}
                   </div>
                 )}
-                
+
                 <Separator className="my-6" />
-                
+
                 <div className="flex items-center gap-4">
                   <span className="font-medium">Share:</span>
                   <div className="flex gap-2">
@@ -272,7 +268,7 @@ const BlogPostPage = () => {
                 </div>
               </div>
             </article>
-            
+
             <div className="mt-8">
               <Card>
                 <CardHeader>
@@ -316,7 +312,7 @@ const BlogPostPage = () => {
                       rows={4}
                       required
                     />
-                    
+
                     {!user && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -338,7 +334,7 @@ const BlogPostPage = () => {
                         </div>
                       </div>
                     )}
-                    
+
                     <Button type="submit" disabled={isSubmittingComment}>
                       {isSubmittingComment ? (
                         <>

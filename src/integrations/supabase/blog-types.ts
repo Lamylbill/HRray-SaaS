@@ -1,4 +1,3 @@
-
 export interface BlogPost {
   id: string;
   title: string;
@@ -34,6 +33,7 @@ export interface BlogPostFormData {
   tags?: string[];
   category_ids?: string[];
   is_published: boolean;
+  publish_at?: Date | null;
 }
 
 export interface BlogCategory {

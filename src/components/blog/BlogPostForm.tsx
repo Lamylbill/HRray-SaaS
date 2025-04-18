@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,9 +12,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { blogService } from '@/services/blog.service';
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
-
-// Rich text editor (you can replace with a more feature-rich library if needed)
 import { Editor } from '@/components/blog/Editor';
+import { DatePicker } from 'react-datepicker';
 
 interface BlogPostFormProps {
   initialData?: Partial<BlogPostFormData>;
@@ -46,6 +44,7 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
     tags: initialData?.tags || [],
     category_ids: initialData?.category_ids || [],
     is_published: initialData?.is_published ?? false,
+    publish_at: initialData?.publish_at || null,
   });
   
   const [tagInput, setTagInput] = useState('');
@@ -84,6 +83,13 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
     }));
   };
   
+  const handlePublishAtChange = (date: Date | undefined) => {
+    setFormData(prev => ({
+      ...prev,
+      publish_at: date || null,
+    }));
+  };
+  
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -94,18 +100,16 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
       const imageUrl = await blogService.uploadImage(file, user.id);
       setFormData(prev => ({ ...prev, cover_image: imageUrl }));
       toast({
-        title: "Image uploaded",
-        description: "Cover image has been uploaded successfully.",
+        title: "Success",
+        description: "Image uploaded successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading image:', error);
-      toast.error(
-        (error as any).errorCode
-          ? `Error uploading image: ${(error as any).message || 'Unknown error'}`
-          : `Error uploading image: Unknown error`
-      );
-      setImageUploading(false);
-      return;
+      toast({
+        title: "Error",
+        description: error.message || "Failed to upload image",
+        variant: "destructive"
+      });
     } finally {
       setIsUploading(false);
     }
@@ -136,14 +140,12 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
     
     try {
       if (postId) {
-        // Update existing post
         await blogService.updatePost(postId, formData);
         toast({
           title: "Post updated",
           description: "Your blog post has been updated successfully.",
         });
       } else {
-        // Create new post
         const newPostId = await blogService.createPost(formData, user.id);
         toast({
           title: "Post created",
@@ -267,15 +269,20 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
             </div>
           </div>
           
-          <div className="space-y-2">
-            <Label>Categories</Label>
-            <MultiSelect
-              options={categoryOptions}
-              selected={formData.category_ids || []}
-              onChange={handleCategoryChange}
-              placeholder="Select categories"
-            />
-          </div>
+          {categories.length > 0 && (
+            <div className="space-y-2">
+              <Label>Categories</Label>
+              <MultiSelect
+                options={categories.map(category => ({
+                  label: category.name,
+                  value: category.id
+                }))}
+                selected={formData.category_ids || []}
+                onChange={handleCategoryChange}
+                placeholder="Select categories"
+              />
+            </div>
+          )}
           
           <div className="space-y-2">
             <Label>Tags</Label>
@@ -312,13 +319,32 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
             </div>
           </div>
           
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="is_published"
-              checked={formData.is_published}
-              onCheckedChange={handleSwitchChange}
-            />
-            <Label htmlFor="is_published">Publish immediately</Label>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="is_published"
+                checked={formData.is_published}
+                onCheckedChange={handleSwitchChange}
+              />
+              <Label htmlFor="is_published">Publish immediately</Label>
+            </div>
+            
+            {!formData.is_published && (
+              <div className="space-y-2">
+                <Label htmlFor="publish_at">Schedule publication</Label>
+                <DatePicker
+                  id="publish_at"
+                  selected={formData.publish_at}
+                  onChange={handlePublishAtChange}
+                  showTimeSelect
+                  timeFormat="HH:mm"
+                  timeIntervals={15}
+                  dateFormat="MMMM d, yyyy h:mm aa"
+                  minDate={new Date()}
+                  placeholderText="Select date and time"
+                />
+              </div>
+            )}
           </div>
           
           <CardFooter className="px-0 pb-0 pt-4">

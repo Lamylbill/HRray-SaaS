@@ -311,32 +311,12 @@ export const blogService = {
   // Upload an image for a blog post
   async uploadImage(file: File, userId: string): Promise<string> {
     const client = getAuthorizedClient();
-    let fileExt;
-    let fileName;
+    
     try {
-      const { error: bucketError } = await client.storage.createBucket('blog-assets', {
-        public: true
-
-      });
-
-      if (bucketError) {
-        throw bucketError;
-      }
-    } catch (bucketError: any) {
-      console.error('Bucket creation error', bucketError);
-
-
-
-      throw {
-        errorCode: bucketError.error ? bucketError.error.code || 'unknown' : 'unknown',
-        message: bucketError.error ? bucketError.error.message || 'Failed to create bucket' : 'Failed to create bucket',
-        error: bucketError,
-      }
-    } 
-     fileExt = file.name.split('.').pop();
-     fileName = `${uuidv4()}.${fileExt}`;
-    const filePath = `blog-assets/${userId}/${fileName}`;
-    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${uuidv4()}.${fileExt}`;
+      const filePath = `blog-assets/${userId}/${fileName}`;
+      
       const { error } = await client.storage
         .from('blog-assets')
         .upload(filePath, file, {
@@ -360,8 +340,8 @@ export const blogService = {
     } catch (error: any) {
       console.error('Error uploading image:', error);
       throw {
-        errorCode: error.error.code || 'unknown',
-        message: error.error.message || 'Unknown error',
+        errorCode: error.error ? error.error.code || 'unknown' : 'unknown',
+        message: error.error ? error.error.message || 'Unknown error' : 'Unknown error',
         error,
       };
     }

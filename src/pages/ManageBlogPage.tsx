@@ -47,7 +47,8 @@ const ManageBlogPage = () => {
         const categoriesData = await blogService.getCategories();
         setCategories(categoriesData);
         
-        const { posts } = await blogService.getPosts(1, 100, true); // Added true to include unpublished posts
+        // Convert boolean to string "true" for the API call
+        const { posts } = await blogService.getPosts(1, 100, "true"); // Fixed: Passing "true" as string
         setPosts(posts);
       } catch (error) {
         console.error('Error loading blog data:', error);
@@ -103,7 +104,8 @@ const ManageBlogPage = () => {
   const handleFormSuccess = () => {
     // Reload posts
     setIsLoading(true);
-    blogService.getPosts(1, 100, true).then(({ posts }) => { // Added true to include unpublished posts
+    // Convert boolean to string "true" for the API call
+    blogService.getPosts(1, 100, "true").then(({ posts }) => { // Fixed: Passing "true" as string
       setPosts(posts);
       setIsLoading(false);
       setEditMode(false);
@@ -134,7 +136,8 @@ const ManageBlogPage = () => {
         statusIcon: <CheckCircle className="mr-1 h-4 w-4" />,
         statusClass: 'text-green-600'
       };
-    } else if (post.publish_at && new Date(post.publish_at) > now) {
+    // Fixed: Changed publish_at to published_at and added check for future publication date
+    } else if (post.published_at && new Date(post.published_at) > now) {
       return {
         status: 'Scheduled',
         statusIcon: <Clock className="mr-1 h-4 w-4" />,
@@ -233,8 +236,9 @@ const ManageBlogPage = () => {
                                 <Calendar className="mr-1 h-4 w-4" />
                                 {post.is_published 
                                   ? formatDate(post.published_at || post.created_at)
-                                  : post.publish_at 
-                                    ? `Scheduled for ${formatDate(post.publish_at)}`
+                                  // Fixed: Changed publish_at to published_at
+                                  : post.published_at && new Date(post.published_at) > new Date()
+                                    ? `Scheduled for ${formatDate(post.published_at)}`
                                     : formatDate(post.created_at)}
                               </div>
                             </TableCell>

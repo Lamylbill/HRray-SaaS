@@ -15,7 +15,7 @@ const generateSlug = (title: string): string => {
 
 export const blogService = {
   // Get all published blog posts with pagination
-  async getPosts(page = 1, pageSize = 10, categorySlug?: string): Promise<{ posts: BlogPost[]; total: number }> {
+  async getPosts(page = 1, pageSize = 10, includeDrafts: string = "false", categorySlug?: string): Promise<{ posts: BlogPost[]; total: number }> {
     const client = getAuthorizedClient();
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
@@ -25,8 +25,10 @@ export const blogService = {
       const queryBuilder = client.from('blog_posts') as any;
       let query = queryBuilder.select('*', { count: 'exact' });
 
-      // Filter by published status
-      query = query.eq('is_published', true);
+      // Filter by published status, unless includeDrafts is true
+      if (includeDrafts !== "true") {
+        query = query.eq('is_published', true);
+      }
 
       // Apply category filter if provided
       if (categorySlug) {

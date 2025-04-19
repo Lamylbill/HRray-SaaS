@@ -277,6 +277,7 @@ export const blogService = {
   },
 
   async addComment(postId: string, commentData: Omit<BlogComment, 'id' | 'created_at' | 'is_approved' | 'name'>): Promise<void> {
+    console.log('Adding comment');
     const cuteNames = [
       "The Onboarder", "The Culture Keeper", "The Team Builder", "The Benefits Guru",
       "The Performance Pro", "The Engagement Expert", "The Talent Scout", "The Policy Pilot"
@@ -293,7 +294,7 @@ export const blogService = {
           email: commentData.email,
           content: commentData.content,
           is_approved: true,
-        }
+        },
       ]);
 
     if (error) {

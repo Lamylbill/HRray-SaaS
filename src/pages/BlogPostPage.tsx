@@ -302,8 +302,8 @@ const BlogPostPage = () => {
                       {comments.map(comment => (
                         <div key={comment.id} className="border-b pb-4 last:border-b-0 last:pb-0">
                           <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <h3 className="font-medium">{comment.name}</h3>
+                            <div className="">
+                              <h3 className="font-medium text-base">{comment.name}</h3>
                               <p className="text-sm text-gray-500">{formatDate(comment.created_at)}</p>
                             </div>
                           </div>

@@ -51,8 +51,8 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
   
   useEffect(() => {
     if (initialData) {
-      if (initialData.published_at && !initialData.is_published) {
-        const publishDate = new Date(initialData.published_at);
+      if (initialData.publish_at && !initialData.is_published) {
+        const publishDate = new Date(initialData.publish_at);
         const now = new Date();
         
         if (publishDate > now) {

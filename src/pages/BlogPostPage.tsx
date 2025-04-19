@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { blogService } from '@/services/blog.service';
 import { useToast } from '@/hooks/use-toast';
-import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
+import { LoadingSpinner } from '@/components/ui-custom/loading-spinner';
 import { BlogPost, BlogComment } from '@/integrations/supabase/blog-types';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
@@ -23,8 +23,6 @@ const BlogPostPage = () => {
   const [isLoadingPost, setIsLoadingPost] = useState(true);
   const [isLoadingComments, setIsLoadingComments] = useState(true);
   const [commentContent, setCommentContent] = useState('');
-  const [commenterName, setCommenterName] = useState('');
-  const [commenterEmail, setCommenterEmail] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
   useEffect(() => {
@@ -69,23 +67,6 @@ const BlogPostPage = () => {
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!post?.id) return;
-
-    if (!commentContent.trim()) {
-      toast({
-        title: 'Comment Required',
-        description: 'Please enter a comment.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    if (!user && (!commenterName.trim() || !commenterEmail.trim())) {
-      toast({
-        title: 'Information Required',
-        description: 'Please provide your name and email.',
-        variant: 'destructive'
-      });
       return;
     }
 
@@ -95,8 +76,6 @@ const BlogPostPage = () => {
       await blogService.addComment(post.id, {
         post_id: post.id,
         user_id: user?.id,
-        name: user ? user.user_metadata?.full_name || 'Anonymous User' : commenterName,
-        email: user ? user.email || '' : commenterEmail,
         content: commentContent
       });
 
@@ -106,10 +85,6 @@ const BlogPostPage = () => {
         title: 'Comment Submitted',
         description: 'Your comment has been submitted.',
       });
-
-      if (!user) {
-        setCommenterName('');
-        setCommenterEmail('');
       }
     } catch (error) {
       console.error('Error submitting comment:', error);
@@ -120,24 +95,6 @@ const BlogPostPage = () => {
       });
     } finally {
       setIsSubmittingComment(false);
-    }
-  };
-
-  const loadComments = async ()  => {
-
-    setIsLoadingComments(true);
-    try {
-      const commentsData = await blogService.getComments(post.id);
-      setComments(commentsData);
-    } catch (error) {
-      console.error('Error loading comments:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load comments. Please try again later.',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoadingComments(false);
     }
   };
 
@@ -314,7 +271,7 @@ const BlogPostPage = () => {
                   )}
                 </CardContent>
                 <CardFooter className="flex-col items-start">
-                  <h3 className="font-medium mb-4">Leave a Comment</h3>
+                  <h3 className="text-xl font-medium mb-4">Leave a Comment</h3>
                   <form onSubmit={handleCommentSubmit} className="w-full space-y-4">
                     <Textarea
                       value={commentContent}
@@ -323,29 +280,6 @@ const BlogPostPage = () => {
                       rows={4}
                       required
                     />
-
-                    {!user && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Input
-                            value={commenterName}
-                            onChange={(e) => setCommenterName(e.target.value)}
-                            placeholder="Your Name *"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Input
-                            type="email"
-                            value={commenterEmail}
-                            onChange={(e) => setCommenterEmail(e.target.value)}
-                            placeholder="Your Email *"
-                            required
-                          />
-                        </div>
-                      </div>
-                    )}
-
                     <Button type="submit" disabled={isSubmittingComment}>
                       {isSubmittingComment ? (
                         <>

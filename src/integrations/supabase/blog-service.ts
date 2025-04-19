@@ -273,15 +273,14 @@ export const blogService = {
       "The Performance Pro", "The Engagement Expert", "The Talent Scout", "The Policy Pilot"
     ];
     const randomName = cuteNames[Math.floor(Math.random() * cuteNames.length)];
-
+    const name = commentData.user_id === 'b17956a5-afbc-405b-af67-b02a93afc787' ? 'Platform Developer' : randomName;
     const { error } = await supabase
       .from('blog_comments')
-      .insert([
-        {
+      .insert([{
           post_id: postId,
-          user_id: commentData.user_id,
+          // user_id: commentData.user_id,
           name: randomName,
-          email: commentData.email,
+
           content: commentData.content,
           is_approved: true,
         },

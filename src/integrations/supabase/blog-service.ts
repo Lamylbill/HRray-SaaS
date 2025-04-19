@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from 'uuid';
 import { BlogPost, BlogPostFormData, BlogCategory, BlogComment } from "./blog-types";
@@ -29,10 +28,12 @@ export const blogService = {
     
     // Type assertion to ensure compatibility
     const typedPosts = (posts || []).map(post => {
-      // Check if author is an object and not an error
-      const authorData = post.author && typeof post.author === 'object' && !('error' in post.author)
-        ? post.author 
-        : { id: post.author_id || '', full_name: undefined, email: undefined };
+      // Safely handle author data with optional chaining and nullish coalescing
+      const authorData = {
+        id: post.author?.[0]?.id || post.author_id || '',
+        full_name: post.author?.[0]?.full_name ?? undefined,
+        email: post.author?.[0]?.email ?? undefined
+      };
       
       // Check if categories is an array
       const categoriesData = Array.isArray(post.categories) ? post.categories : [];
@@ -64,10 +65,12 @@ export const blogService = {
 
     if (!post) return null;
 
-    // Check if author is an object and not an error
-    const authorData = post.author && typeof post.author === 'object' && !('error' in post.author)
-      ? post.author
-      : { id: post.author_id || '', full_name: undefined, email: undefined };
+    // Safely handle author data with optional chaining and nullish coalescing
+    const authorData = {
+      id: post.author?.[0]?.id || post.author_id || '',
+      full_name: post.author?.[0]?.full_name ?? undefined,
+      email: post.author?.[0]?.email ?? undefined
+    };
 
     // Type assertion to ensure compatibility
     const typedPost: BlogPost = {

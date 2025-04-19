@@ -64,7 +64,7 @@ const BlogPostPage = () => {
   }, [post]);
 
 
-  const handleCommentSubmit = async (e: React.FormEvent) => {
+  const handleCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
       return;

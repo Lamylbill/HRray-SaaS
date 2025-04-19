@@ -68,35 +68,31 @@ const BlogPostPage = () => {
     e.preventDefault();
 
       return;
-    }
+    
 
     setIsSubmittingComment(true);
 
     try {
       await blogService.addComment(post.id, {
-        post_id: post.id,
-        user_id: user?.id,
-        content: commentContent
-      });
-
-      // Clear form
-      setCommentContent('');
-      toast({
-        title: 'Comment Submitted',
-        description: 'Your comment has been submitted.',
-      });
+          user_id: user?.id || '',
+          content: commentContent,
+        });
+          setCommentContent('');
+          toast({
+              title: 'Comment Submitted',
+              description: 'Your comment has been submitted.',
+          });
+      } catch (error: any) {
+          console.error('Error submitting comment:', error);
+          toast({
+              title: 'Error',
+              description: 'Failed to submit your comment. Please try again.',
+              variant: 'destructive',
+          });
+      } finally {
+          setIsSubmittingComment(false);
       }
-    } catch (error) {
-      console.error('Error submitting comment:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to submit your comment. Please try again.',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsSubmittingComment(false);
-    }
-  };
+  }
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

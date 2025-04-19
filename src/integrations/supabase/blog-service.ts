@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from 'uuid';
 import { BlogPost, BlogPostFormData, BlogCategory, BlogComment } from "./blog-types";
@@ -26,8 +25,22 @@ export const blogService = {
     }
 
     const totalCount = count || 0;
+    
+    // Type assertion to ensure compatibility
+    const typedPosts = (posts || []).map(post => {
+      // Handle potential null/undefined values and ensure type compatibility
+      return {
+        ...post,
+        author: post.author ? {
+          id: typeof post.author.id === 'string' ? post.author.id : '',
+          full_name: typeof post.author.full_name === 'string' ? post.author.full_name : undefined,
+          email: typeof post.author.email === 'string' ? post.author.email : undefined
+        } : undefined,
+        categories: Array.isArray(post.categories) ? post.categories : []
+      } as BlogPost;
+    });
 
-    return { posts: posts as BlogPost[], totalCount };
+    return { posts: typedPosts, totalCount };
   },
 
   async getPostBySlug(slug: string): Promise<BlogPost | null> {
@@ -45,7 +58,20 @@ export const blogService = {
       throw new Error(error.message);
     }
 
-    return post as BlogPost | null;
+    if (!post) return null;
+
+    // Type assertion to ensure compatibility
+    const typedPost: BlogPost = {
+      ...post,
+      author: post.author ? {
+        id: typeof post.author.id === 'string' ? post.author.id : '',
+        full_name: typeof post.author.full_name === 'string' ? post.author.full_name : undefined,
+        email: typeof post.author.email === 'string' ? post.author.email : undefined
+      } : undefined,
+      categories: []
+    };
+
+    return typedPost;
   },
 
   async createPost(postData: BlogPostFormData, userId: string): Promise<string> {
@@ -197,7 +223,6 @@ export const blogService = {
     }
   },
 
-  // Updated to remove the is_approved filter
   async getComments(postSlug: string): Promise<BlogComment[]> {
     const { data: post, error: postError } = await supabase
       .from('blog_posts')
@@ -226,10 +251,9 @@ export const blogService = {
       throw new Error(commentsError.message);
     }
 
-    return comments as BlogComment[];
+    return comments as BlogComment[] || [];
   },
 
-  // Updated to set comments as auto-approved
   async addComment(postId: string, commentData: Omit<BlogComment, 'id' | 'created_at' | 'is_approved'>): Promise<void> {
     const { error } = await supabase
       .from('blog_comments')
@@ -271,19 +295,17 @@ export const blogService = {
   },
 
   async getImageURL(imagePath: string): Promise<string> {
-    const { data, error } = await supabase.storage
+    const { data } = await supabase.storage
       .from('blog-images')
-      .getPublicUrl(imagePath)
+      .getPublicUrl(imagePath);
 
-    if (error) {
-      console.error('Error getting file URL:', error.message || String(error));
-      throw new Error(error.message || 'Error getting file URL');
+    if (!data || !data.publicUrl) {
+      throw new Error('Error getting file URL');
     }
 
     return data.publicUrl;
   },
 
-  // Remove private modifiers as they're not allowed in a JavaScript object
   slugify(text: string): string {
     return text
       .toString()                           // Cast to string
@@ -295,7 +317,6 @@ export const blogService = {
       .replace(/\-\-+/g, '-');               // Replace multiple - with single -
   },
 
-  // Remove private modifiers as they're not allowed in a JavaScript object
   async setPostCategories(postId: string, categoryIds: string[]): Promise<void> {
     // Clear existing categories for the post
     await this.clearPostCategories(postId);
@@ -316,7 +337,6 @@ export const blogService = {
     }
   },
 
-  // Remove private modifiers as they're not allowed in a JavaScript object
   async clearPostCategories(postId: string): Promise<void> {
     const { error } = await supabase
       .from('blog_post_categories')

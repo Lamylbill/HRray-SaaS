@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -48,6 +48,22 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
   });
   
   const [tagInput, setTagInput] = useState('');
+  
+  useEffect(() => {
+    if (initialData) {
+      if (initialData.published_at && !initialData.is_published) {
+        const publishDate = new Date(initialData.published_at);
+        const now = new Date();
+        
+        if (publishDate > now) {
+          setFormData(prev => ({
+            ...prev,
+            publish_at: publishDate
+          }));
+        }
+      }
+    }
+  }, [initialData]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -115,7 +131,7 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
     }
   };
   
-  const handleSubmit = async (e: React.FormEvent) => {
+  const savePost = async (e: React.FormEvent, publishAction: 'draft' | 'publish' | 'schedule') => {
     e.preventDefault();
     
     if (!formData.title) {
@@ -136,26 +152,36 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
       return;
     }
     
+    const updatedFormData = {
+      ...formData,
+      is_published: publishAction === 'publish', 
+      publish_at: publishAction === 'schedule' ? formData.publish_at : null
+    };
+    
     setIsSubmitting(true);
     
     try {
       if (postId) {
-        await blogService.updatePost(postId, formData);
+        await blogService.updatePost(postId, updatedFormData);
         toast({
-          title: "Post updated",
+          title: publishAction === 'draft' ? "Draft saved" : 
+                 publishAction === 'publish' ? "Post published" : 
+                 "Post scheduled",
           description: "Your blog post has been updated successfully.",
         });
       } else {
-        const newPostId = await blogService.createPost(formData, user.id);
+        const newPostId = await blogService.createPost(updatedFormData, user.id);
         toast({
-          title: "Post created",
+          title: publishAction === 'draft' ? "Draft saved" : 
+                 publishAction === 'publish' ? "Post published" : 
+                 "Post scheduled",
           description: "Your blog post has been created successfully.",
         });
         
         if (onSuccess) {
           onSuccess();
         } else {
-          navigate(`/blog/post/${newPostId}`);
+          navigate(`/blog/manage`);
         }
       }
       
@@ -185,7 +211,7 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
         <CardTitle>{postId ? 'Edit Post' : 'Create New Post'}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
             <Input
@@ -342,21 +368,57 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
             )}
           </div>
           
-          <CardFooter className="px-0 pb-0 pt-4">
+          <CardFooter className="px-0 pb-0 pt-4 flex gap-3 flex-wrap">
             <Button
-              type="submit"
-              className="w-full md:w-auto"
+              type="button"
+              variant="outline"
+              onClick={(e) => savePost(e, 'draft')}
               disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <>
                   <LoadingSpinner size="sm" className="mr-2" />
-                  {postId ? 'Updating...' : 'Publishing...'}
+                  Saving...
                 </>
               ) : (
-                postId ? 'Update Post' : 'Publish Post'
+                'Save as Draft'
               )}
             </Button>
+            
+            {formData.is_published && (
+              <Button
+                type="button"
+                onClick={(e) => savePost(e, 'publish')}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <LoadingSpinner size="sm" className="mr-2" />
+                    Publishing...
+                  </>
+                ) : (
+                  postId ? 'Update Published Post' : 'Publish Now'
+                )}
+              </Button>
+            )}
+            
+            {!formData.is_published && formData.publish_at && (
+              <Button
+                type="button"
+                onClick={(e) => savePost(e, 'schedule')}
+                disabled={isSubmitting}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {isSubmitting ? (
+                  <>
+                    <LoadingSpinner size="sm" className="mr-2" />
+                    Scheduling...
+                  </>
+                ) : (
+                  postId ? 'Update Scheduled Post' : 'Schedule Post'
+                )}
+              </Button>
+            )}
           </CardFooter>
         </form>
       </CardContent>

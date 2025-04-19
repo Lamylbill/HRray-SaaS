@@ -1,4 +1,3 @@
-
 import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import { BlogPost, BlogPostFormData, BlogCategory, BlogComment } from '@/integrations/supabase/blog-types';
@@ -273,7 +272,7 @@ export const blogService = {
     }
   },
 
-  // Add a comment to a blog post - Updated to auto-approve comments
+  // Add a comment to a blog post
   async addComment(postId: string, comment: Omit<BlogComment, 'id' | 'created_at' | 'is_approved'>): Promise<string> {
     const client = getAuthorizedClient();
 
@@ -300,15 +299,15 @@ export const blogService = {
     }
   },
 
-  // Get comments for a blog post - Updated to remove the is_approved filter
-  async getComments(postId: string): Promise<BlogComment[]> {
+  // Get comments for a blog post
+  async getComments(postSlug: string): Promise<BlogComment[]> {
     const client = getAuthorizedClient();
 
     try {
       const commentsQuery = client.from('blog_comments') as any;
       const { data, error } = await commentsQuery
         .select('*')
-        .eq('post_id', postId)
+        .eq('post_id', postSlug)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

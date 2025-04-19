@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -47,7 +48,7 @@ const ManageBlogPage = () => {
         setCategories(categoriesData);
         
         // Convert boolean to string "true" for the API call
-        const { posts } = await blogService.getPosts(1, 100, "true"); // Fixed: Passing "true" as string
+        const { posts } = await blogService.getPosts(1, 100, "true");
         setPosts(posts);
       } catch (error) {
         console.error('Error loading blog data:', error);
@@ -95,7 +96,18 @@ const ManageBlogPage = () => {
   };
   
   const handleEditClick = (post: BlogPost) => {
-    setCurrentPost(post);
+    // Format post data for editing, including handling scheduled posts
+    const publishDate = post.published_at ? new Date(post.published_at) : null;
+    const now = new Date();
+    
+    // For scheduled posts, set publish_at
+    const formattedPost = {
+      ...post,
+      // If post has a future published_at date and is not published, it's scheduled
+      publish_at: (!post.is_published && publishDate && publishDate > now) ? publishDate : null
+    };
+    
+    setCurrentPost(formattedPost);
     setEditMode(true);
     setActiveTab('new');
   };
@@ -104,7 +116,7 @@ const ManageBlogPage = () => {
     // Reload posts
     setIsLoading(true);
     // Convert boolean to string "true" for the API call
-    blogService.getPosts(1, 100, "true").then(({ posts }) => { // Fixed: Passing "true" as string
+    blogService.getPosts(1, 100, "true").then(({ posts }) => {
       setPosts(posts);
       setIsLoading(false);
       setEditMode(false);
@@ -125,7 +137,7 @@ const ManageBlogPage = () => {
     });
   };
 
-  // Function to determine post status - FIXED to properly detect scheduled posts
+  // Function to determine post status - correctly handle scheduled posts
   const getPostStatus = (post: BlogPost) => {
     const now = new Date();
     

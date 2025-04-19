@@ -101,7 +101,7 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<SignUp />} />
       
-      {/* Blog routes - Now using the LandingPageLayout */}
+      {/* Blog routes - Using the LandingPageLayout */}
       <Route path="/blog" element={
         <LandingPageLayout>
           <BlogPage />

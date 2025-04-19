@@ -245,22 +245,11 @@ export const blogService = {
     }
   },
 
-  async getComments(postSlug: string): Promise<BlogComment[]> {
-    const { data: post, error: postError } = await supabase
-      .from('blog_posts')
-      .select('id')
-      .eq('slug', postSlug)
-      .single();
+  async getComments(postId: string): Promise<BlogComment[]> {
+    console.log('Getting comments for post ID:', postId);
+    // If no post ID is provided, return an empty array. This prevents a Supabase error.
+    if (!postId) return [];
 
-    if (postError) {
-      console.error("Error fetching post for comments:", postError);
-      throw new Error(postError.message);
-    }
-
-    if (!post) {
-      console.log(`No post found with slug ${postSlug}`);
-      return [];
-    }
 
     let { data: comments, error: commentsError } = await supabase
       .from('blog_comments')
@@ -268,12 +257,13 @@ export const blogService = {
       .eq('post_id', post.id)
       .order('created_at', { ascending: false });
 
+
     if (commentsError) {
       console.error("Error fetching comments:", commentsError);
       throw new Error(commentsError.message);
     }
 
-    return comments as BlogComment[] || [];
+    return (comments as BlogComment[]) || [];
   },
 
   async addComment(postId: string, commentData: Omit<BlogComment, 'id' | 'created_at' | 'is_approved' | 'name'>): Promise<void> {

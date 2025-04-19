@@ -56,22 +56,15 @@ const BlogPostPage = () => {
       }
     };
 
-    const loadComments = async () => {
-      if (!slug) return;
-      setIsLoadingComments(true);
-      try {
-        const commentsData = await blogService.getComments(slug);
-        setComments(commentsData);
-      } catch (error) {
-        console.error('Error loading comments:', error);
-      } finally {
-        setIsLoadingComments(false);
-      }
-    };
-
     loadPost();
-    loadComments();
   }, [slug, toast]);
+
+  useEffect(() => {
+    if (post) {
+      loadComments()
+    }
+  }, [post]);
+
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,14 +103,10 @@ const BlogPostPage = () => {
       // Clear form
       setCommentContent('');
       toast({
-        title: 'Comment Submitted',        
+        title: 'Comment Submitted',
         description: 'Your comment has been submitted.',
       });
 
-      loadComments();
-
-      // Clear form
-      setCommentContent('');
       if (!user) {
         setCommenterName('');
         setCommenterEmail('');
@@ -131,6 +120,24 @@ const BlogPostPage = () => {
       });
     } finally {
       setIsSubmittingComment(false);
+    }
+  };
+
+  const loadComments = async ()  => {
+
+    setIsLoadingComments(true);
+    try {
+      const commentsData = await blogService.getComments(post.id);
+      setComments(commentsData);
+    } catch (error) {
+      console.error('Error loading comments:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load comments. Please try again later.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoadingComments(false);
     }
   };
 

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from 'uuid';
 import { BlogPost, BlogPostFormData, BlogCategory, BlogComment } from "./blog-types";
@@ -28,15 +29,18 @@ export const blogService = {
     
     // Type assertion to ensure compatibility
     const typedPosts = (posts || []).map(post => {
-      // Handle potential null/undefined values and ensure type compatibility
+      // Check if author is an object and not an error
+      const authorData = typeof post.author === 'object' && post.author !== null && !('error' in post.author) 
+        ? post.author 
+        : { id: post.author_id || '', full_name: undefined, email: undefined };
+      
+      // Check if categories is an array
+      const categoriesData = Array.isArray(post.categories) ? post.categories : [];
+      
       return {
         ...post,
-        author: post.author ? {
-          id: typeof post.author.id === 'string' ? post.author.id : '',
-          full_name: typeof post.author.full_name === 'string' ? post.author.full_name : undefined,
-          email: typeof post.author.email === 'string' ? post.author.email : undefined
-        } : undefined,
-        categories: Array.isArray(post.categories) ? post.categories : []
+        author: authorData,
+        categories: categoriesData
       } as BlogPost;
     });
 
@@ -60,14 +64,15 @@ export const blogService = {
 
     if (!post) return null;
 
+    // Check if author is an object and not an error
+    const authorData = typeof post.author === 'object' && post.author !== null && !('error' in post.author)
+      ? post.author
+      : { id: post.author_id || '', full_name: undefined, email: undefined };
+
     // Type assertion to ensure compatibility
     const typedPost: BlogPost = {
       ...post,
-      author: post.author ? {
-        id: typeof post.author.id === 'string' ? post.author.id : '',
-        full_name: typeof post.author.full_name === 'string' ? post.author.full_name : undefined,
-        email: typeof post.author.email === 'string' ? post.author.email : undefined
-      } : undefined,
+      author: authorData,
       categories: []
     };
 

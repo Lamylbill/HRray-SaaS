@@ -137,7 +137,7 @@ const ManageBlogPage = () => {
     });
   };
 
-  // Function to determine post status - correctly handle scheduled posts
+  // Improved function to determine post status - correctly handle scheduled posts
   const getPostStatus = (post: BlogPost) => {
     const now = new Date();
     

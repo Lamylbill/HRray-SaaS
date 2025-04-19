@@ -1,4 +1,3 @@
-
 import React, { Suspense, useEffect } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -22,7 +21,7 @@ import { LoadingSpinner } from "@/components/ui-custom/LoadingSpinner";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isLoading } = useAuth();  // Ensure this is properly checking JWT
+  const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,7 +38,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       </div>
     );
   }
-  return isAuthenticated ? <>{children}</> : null; // Protect the route, show nothing if unauthenticated
+  return isAuthenticated ? <>{children}</> : null;
 };
 
 // Dashboard Layout
@@ -114,9 +113,9 @@ const AppRoutes = () => {
       } />
       <Route path="/blog/manage" element={
         <BlogEditorRoute>
-          <DashboardLayout>
+          <LandingPageLayout>
             <ManageBlogPage />
-          </DashboardLayout>
+          </LandingPageLayout>
         </BlogEditorRoute>
       } />
       

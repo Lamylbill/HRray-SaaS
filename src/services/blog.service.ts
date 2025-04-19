@@ -12,6 +12,31 @@ const generateSlug = (title: string): string => {
     .trim();
 };
 
+// HR-related cute names for comments
+const HR_CUTE_NAMES = [
+  "The Onboarder", 
+  "The Culture Keeper", 
+  "The Team Builder", 
+  "The Benefits Guru", 
+  "The Performance Pro", 
+  "The Engagement Expert", 
+  "The Talent Scout", 
+  "The Policy Pilot",
+  "The Payroll Prodigy",
+  "The Interview Innovator",
+  "The Wellness Wizard",
+  "The Training Titan",
+  "The Feedback Friend",
+  "The Hiring Hero",
+  "The Development Dynamo"
+];
+
+// Get a random HR-related cute name
+const getRandomCuteName = (): string => {
+  const randomIndex = Math.floor(Math.random() * HR_CUTE_NAMES.length);
+  return HR_CUTE_NAMES[randomIndex];
+};
+
 export const blogService = {
   // Get all published blog posts with pagination
   async getPosts(page = 1, pageSize = 10, includeDrafts: string = "false", categorySlug?: string): Promise<{ posts: BlogPost[]; total: number }> {
@@ -159,7 +184,7 @@ export const blogService = {
         new Date().toISOString() : 
         postData.publish_at ? postData.publish_at.toISOString() : null;
 
-      // Create the post
+      // Create the post - make sure to save tags for all post types
       const postsQuery = client.from('blog_posts') as any;
       const { data, error } = await postsQuery
         .insert({
@@ -172,7 +197,7 @@ export const blogService = {
           author_id: userId,
           published_at,
           is_published: postData.is_published,
-          tags: postData.tags || []
+          tags: postData.tags || [] // Always save tags for all post types
         })
         .select('id')
         .single();
@@ -210,7 +235,7 @@ export const blogService = {
         new Date().toISOString() : 
         postData.publish_at ? postData.publish_at.toISOString() : null;
 
-      // Update post data, making sure to preserve tags
+      // Update post data, making sure to preserve tags for all post types
       const postsQuery = client.from('blog_posts') as any;
       const { error } = await postsQuery
         .update({
@@ -221,7 +246,7 @@ export const blogService = {
           cover_image: postData.cover_image,
           published_at,
           is_published: postData.is_published,
-          tags: postData.tags || []  // Ensure tags are always saved, even for scheduled posts
+          tags: postData.tags || []  // Always save tags for all post types
         })
         .eq('id', id);
 
@@ -272,17 +297,20 @@ export const blogService = {
     }
   },
 
-  // Add a comment to a blog post
+  // Add a comment to a blog post with a random cute name
   async addComment(postId: string, comment: Omit<BlogComment, 'id' | 'created_at' | 'is_approved'>): Promise<string> {
     const client = getAuthorizedClient();
 
     try {
+      // Generate a random cute HR-related name for the comment
+      const cuteName = getRandomCuteName();
+      
       const commentsQuery = client.from('blog_comments') as any;
       const { data, error } = await commentsQuery
         .insert({
           post_id: postId,
           user_id: comment.user_id || null,
-          name: comment.name,
+          name: comment.name || cuteName, // Use provided name or fall back to cute name
           email: comment.email,
           content: comment.content,
           is_approved: true // Auto-approve all comments
@@ -316,6 +344,32 @@ export const blogService = {
     } catch (error) {
       console.error('Error fetching comments:', error);
       return [];
+    }
+  },
+
+  // Delete a comment (restricted to specific user)
+  async deleteComment(commentId: string, userId: string): Promise<boolean> {
+    const client = getAuthorizedClient();
+    
+    // Only allow deletion by user with ID b17956a5-afbc-405b-af67-b02a93afc787
+    const authorizedUserId = 'b17956a5-afbc-405b-af67-b02a93afc787';
+    
+    if (userId !== authorizedUserId) {
+      throw new Error("Unauthorized: Only the blog administrator can delete comments");
+    }
+
+    try {
+      const commentsQuery = client.from('blog_comments') as any;
+      const { error } = await commentsQuery
+        .delete()
+        .eq('id', commentId);
+
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      throw error;
     }
   },
 

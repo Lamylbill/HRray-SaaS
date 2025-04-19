@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -152,9 +153,10 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
       return;
     }
     
+    // Set the correct publish status and date based on the action
     const updatedFormData = {
       ...formData,
-      is_published: publishAction === 'publish', 
+      is_published: publishAction === 'publish',
       publish_at: publishAction === 'schedule' ? formData.publish_at : null
     };
     
@@ -369,6 +371,7 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
           </div>
           
           <CardFooter className="px-0 pb-0 pt-4 flex gap-3 flex-wrap">
+            {/* Save as Draft button - Always visible */}
             <Button
               type="button"
               variant="outline"
@@ -385,6 +388,7 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
               )}
             </Button>
             
+            {/* Publish Now button - Only visible if is_published is true */}
             {formData.is_published && (
               <Button
                 type="button"
@@ -402,6 +406,7 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
               </Button>
             )}
             
+            {/* Schedule Post button - Only visible if is_published is false and publish_at is set */}
             {!formData.is_published && formData.publish_at && (
               <Button
                 type="button"

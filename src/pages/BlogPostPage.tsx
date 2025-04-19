@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { blogService } from '@/services/blog.service';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui-custom/loading-spinner';
-import { BlogPost, BlogComment } from "@/integrations/supabase/blog-types";
+import { BlogPost, BlogComment } from '@/integrations/supabase/blog-types';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -63,36 +63,10 @@ const BlogPostPage = () => {
     }
   }, [post]);
 
-
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-      return;
-    
-
-    setIsSubmittingComment(true);
-
-    try {
-      await blogService.addComment(post.id, {
-          user_id: user?.id || '',
-          content: commentContent,
-        });
-          setCommentContent('');
-          toast({
-              title: 'Comment Submitted',
-              description: 'Your comment has been submitted.',
-          });
-      } catch (error: any) {
-          console.error('Error submitting comment:', error);
-          toast({
-              title: 'Error',
-              description: 'Failed to submit your comment. Please try again.',
-              variant: 'destructive',
-          });
-      } finally {
-          setIsSubmittingComment(false);
-      }
-  }
+    return;
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

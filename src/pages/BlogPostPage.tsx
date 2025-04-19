@@ -107,10 +107,14 @@ const BlogPostPage = () => {
         content: commentContent
       });
 
+      // Clear form
+      setCommentContent('');
       toast({
-        title: 'Comment Submitted',
-        description: 'Your comment has been submitted and is awaiting approval.',
+        title: 'Comment Submitted',        
+        description: 'Your comment has been submitted.',
       });
+
+      loadComments();
 
       // Clear form
       setCommentContent('');

@@ -276,17 +276,190 @@ export const blogService = {
     return comments as BlogComment[] || [];
   },
 
-  async addComment(postId: string, commentData: Omit<BlogComment, 'id' | 'created_at' | 'is_approved'>): Promise<void> {
+  async addComment(postId: string, commentData: Omit<BlogComment, 'id' | 'created_at' | 'is_approved' | 'name'>): Promise<void> {
+    const cuteNames = [
+      "The Onboarder", "The Culture Keeper", "The Team Builder", "The Benefits Guru",
+      "The Performance Pro", "The Engagement Expert", "The Talent Scout", "The Policy Pilot"
+    ];
+    const randomName = cuteNames[Math.floor(Math.random() * cuteNames.length)];
+
     const { error } = await supabase
       .from('blog_comments')
       .insert([
         {
           post_id: postId,
           user_id: commentData.user_id,
-          name: commentData.name,
+          name: randomName,
           email: commentData.email,
           content: commentData.content,
-          is_approved: true // Auto-approve all comments
+        }
+      ]);
+
+    if (error) {
+      console.error("Error adding comment:", error);
+      throw new Error(error.message);
+    }
+  },
+
+  async deleteComment(commentId: string, userId: string): Promise<void> {
+    if (userId !== 'b17956a5-afbc-405b-af67-b02a93afc787') {
+      throw new Error("Unauthorized: Only specific user can delete comments.");
+    }
+
+    const { error } = await supabase
+      .from('blog_comments')
+      .delete()
+      .eq('id', commentId);
+
+    if (error) {
+      console.error("Error deleting comment:", error);
+      throw new Error(error.message);
+    }
+  },
+
+  async updatePostStatus(postId: string, status: 'Draft' | 'Published' | 'Scheduled', publishDate?: string): Promise<void> {
+    const updateFields: { is_published: boolean, published_at?: string } = {
+      is_published: status === 'Published',
+    };
+
+    if (status === 'Published') {
+      updateFields.published_at = new Date().toISOString();
+    } else if (status === 'Scheduled' && publishDate) {
+      updateFields.published_at = publishDate;
+    } else {
+      updateFields.published_at = null; // For Draft or clearing a scheduled date
+    }
+
+    const { error } = await supabase
+      .from('blog_posts')
+      .update(updateFields)
+      .eq('id', postId);
+
+    if (error) {
+      console.error(`Error updating post status to ${status}:`, error);
+      throw new Error(error.message);
+    }
+  },
+
+  async getPostStatus(postId: string): Promise<{ status: 'Draft' | 'Published' | 'Scheduled', published_at?: string }> {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('is_published, published_at')
+      .eq('id', postId)
+      .single();
+
+    if (error) {
+      console.error("Error fetching post status:", error);
+      throw new Error(error.message);
+    }
+
+    if (!data) {
+      throw new Error("Post not found");
+    }
+
+    let status: 'Draft' | 'Published' | 'Scheduled';
+    if (data.is_published) {
+      status = 'Published';
+    } else if (data.published_at) {
+      status = 'Scheduled';
+    } else {
+      status = 'Draft';
+    }
+
+    return { status, published_at: data.published_at || undefined };
+  },
+
+  async updateTags(postId: string, tags: string[]): Promise<void> {
+    const { error } = await supabase
+      .from('blog_posts')
+      .update({ tags: tags })
+      .eq('id', postId);
+
+    if (error) {
+      console.error("Error updating tags:", error);
+      throw new Error(error.message);
+    }
+  },
+
+  async getPostTags(postId: string): Promise<string[]> {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('tags')
+      .eq('id', postId)
+      .single();
+
+    if (error) {
+      console.error("Error fetching tags:", error);
+      throw new Error(error.message);
+    }
+
+    return data?.tags || [];
+  },
+
+  async getPostsByStatus(status: 'Draft' | 'Published' | 'Scheduled', page: number = 1, pageSize: number = PAGE_SIZE): Promise<{ posts: BlogPost[]; totalCount: number }> {
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize - 1;
+
+    let query = supabase
+      .from('blog_posts')
+      .select(`
+        id, title, slug, content, excerpt, cover_image, meta_description, author_id, created_at, updated_at, published_at, is_published, tags,
+        author: user_profiles (id, full_name, email)
+      `, { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(startIndex, endIndex);
+
+    if (status === 'Published') {
+      query = query.eq('is_published', true);
+    } else if (status === 'Scheduled') {
+      query = query.not('published_at', 'is', null).gt('published_at', new Date().toISOString());
+    } else {
+      query = query.eq('is_published', false).is('published_at', null);
+    }
+
+    const { data: posts, error, count } = await query;
+
+    if (error) {
+      console.error(`Error fetching ${status} posts:`, error);
+      throw new Error(error.message);
+    }
+
+    const totalCount = count || 0;
+
+    const typedPosts = (posts || []).map(post => {
+      const authorData = {
+        id: post.author_id || '',
+        full_name: undefined,
+        email: undefined
+      };
+
+      if (post.author && Array.isArray(post.author) && post.author.length > 0) {
+        authorData.id = post.author[0].id || post.author_id || '';
+        authorData.full_name = post.author[0].full_name;
+        authorData.email = post.author[0].email;
+      }
+
+      return {
+        ...post,
+        author: authorData,
+        categories: [] // Assuming categories are not filtered by status
+      } as BlogPost;
+    });
+
+    return { posts: typedPosts, totalCount };
+  },
+
+  // Helper function to determine post status based on database fields
+  determinePostStatus(post: BlogPost): 'Draft' | 'Published' | 'Scheduled' {
+    if (post.is_published) {
+      return 'Published';
+    } else if (post.published_at) {
+      return 'Scheduled';
+    } else {
+      return 'Draft';
+    }
+  }
+};
         }
       ]);
 

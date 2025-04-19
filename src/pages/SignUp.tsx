@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
+import { LoadingSpinner } from '@/components/ui-custom/loading-spinner';
 
 const SignUp = () => {
   const [fullName, setFullName] = useState('');

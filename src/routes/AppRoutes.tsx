@@ -17,7 +17,7 @@ import BlogEditorRoute from "./BlogEditorRoute";
 
 import { DashNavbar } from "@/components/layout/DashNavbar";
 import { LandNavbar } from "@/components/layout/LandNavbar";
-import { LoadingSpinner } from "@/components/ui-custom/LoadingSpinner";
+import { LoadingSpinner } from "@/components/ui-custom/loading-spinner";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {

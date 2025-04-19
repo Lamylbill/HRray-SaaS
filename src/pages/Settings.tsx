@@ -9,7 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { Camera, ArrowLeft } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui-custom/LoadingSpinner";
+import { LoadingSpinner } from "@/components/ui-custom/loading-spinner";
 import { useNavigate } from 'react-router-dom';
 
 interface SettingsProps {

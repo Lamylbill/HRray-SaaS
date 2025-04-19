@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { BlogPostForm } from '@/components/blog/BlogPostForm';
 import { blogService } from '@/services/blog.service';
-import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
+import { LoadingSpinner } from '@/components/ui-custom/loading-spinner';
 import { BlogPost, BlogCategory } from '@/integrations/supabase/blog-types';
 import { Button } from '@/components/ui/button';
 import { 

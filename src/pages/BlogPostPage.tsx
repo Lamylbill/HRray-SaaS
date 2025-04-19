@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { blogService } from '@/services/blog.service';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui-custom/loading-spinner.tsx';
-import { BlogPost, BlogComment } from "@/integrations/supabase/blog-types";
+import { BlogPost, BlogComment } from '@/integrations/supabase/blog-types';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

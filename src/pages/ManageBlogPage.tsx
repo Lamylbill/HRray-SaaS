@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -126,7 +125,7 @@ const ManageBlogPage = () => {
     });
   };
 
-  // Function to determine post status
+  // Function to determine post status - FIXED to properly detect scheduled posts
   const getPostStatus = (post: BlogPost) => {
     const now = new Date();
     
@@ -136,14 +135,15 @@ const ManageBlogPage = () => {
         statusIcon: <CheckCircle className="mr-1 h-4 w-4" />,
         statusClass: 'text-green-600'
       };
-    // Fixed: Changed publish_at to published_at and added check for future publication date
     } else if (post.published_at && new Date(post.published_at) > now) {
+      // This post is scheduled for future publication
       return {
         status: 'Scheduled',
         statusIcon: <Clock className="mr-1 h-4 w-4" />,
         statusClass: 'text-blue-600'
       };
     } else {
+      // Otherwise it's a draft
       return {
         status: 'Draft',
         statusIcon: <XCircle className="mr-1 h-4 w-4" />,
@@ -236,7 +236,6 @@ const ManageBlogPage = () => {
                                 <Calendar className="mr-1 h-4 w-4" />
                                 {post.is_published 
                                   ? formatDate(post.published_at || post.created_at)
-                                  // Fixed: Changed publish_at to published_at
                                   : post.published_at && new Date(post.published_at) > new Date()
                                     ? `Scheduled for ${formatDate(post.published_at)}`
                                     : formatDate(post.created_at)}

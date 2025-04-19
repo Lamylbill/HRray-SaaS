@@ -155,6 +155,11 @@ export const blogService = {
     try {
       const slug = generateSlug(postData.title);
 
+      // Set published_at based on whether the post is published immediately or scheduled
+      const published_at = postData.is_published ? 
+        new Date().toISOString() : 
+        postData.publish_at ? postData.publish_at.toISOString() : null;
+
       // Create the post
       const postsQuery = client.from('blog_posts') as any;
       const { data, error } = await postsQuery
@@ -166,7 +171,7 @@ export const blogService = {
           meta_description: postData.meta_description,
           cover_image: postData.cover_image || null,
           author_id: userId,
-          published_at: postData.is_published ? new Date().toISOString() : null,
+          published_at,
           is_published: postData.is_published,
           tags: postData.tags || []
         })
@@ -201,7 +206,12 @@ export const blogService = {
     const client = getAuthorizedClient();
 
     try {
-      // Update post data
+      // Set published_at based on whether the post is published immediately or scheduled
+      const published_at = postData.is_published ? 
+        new Date().toISOString() : 
+        postData.publish_at ? postData.publish_at.toISOString() : null;
+
+      // Update post data, making sure to preserve tags
       const postsQuery = client.from('blog_posts') as any;
       const { error } = await postsQuery
         .update({
@@ -210,9 +220,9 @@ export const blogService = {
           excerpt: postData.excerpt,
           meta_description: postData.meta_description,
           cover_image: postData.cover_image,
-          published_at: postData.is_published ? new Date().toISOString() : null,
+          published_at,
           is_published: postData.is_published,
-          tags: postData.tags || []
+          tags: postData.tags || []  // Ensure tags are always saved, even for scheduled posts
         })
         .eq('id', id);
 

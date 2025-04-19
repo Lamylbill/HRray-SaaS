@@ -28,8 +28,11 @@ export function DatePicker({
   disabled = false,
   fromDate = new Date(), // Default to current date
 }: DatePickerProps) {
+  // Track open state for popover
+  const [open, setOpen] = React.useState(false);
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant={"outline"}
@@ -48,11 +51,16 @@ export function DatePicker({
         <Calendar
           mode="single"
           selected={date || undefined}
-          onSelect={onDateChange}
+          onSelect={(selectedDate) => {
+            onDateChange(selectedDate);
+            if (selectedDate) {
+              setOpen(false);
+            }
+          }}
           initialFocus
           className={cn("p-3 pointer-events-auto")}
-          fromDate={fromDate} // Only allow dates from today forward
-          defaultMonth={new Date()} // Default to current month view
+          fromDate={fromDate} // Only allow dates from the specified date forward
+          defaultMonth={date || new Date()} // Use selected date or current date as default month view
           disabled={(date) => date < fromDate}
         />
       </PopoverContent>

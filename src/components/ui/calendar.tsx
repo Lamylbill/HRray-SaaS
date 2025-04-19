@@ -20,6 +20,18 @@ function Calendar({
   defaultMonth = new Date(), // Default to current month
   ...props
 }: CalendarProps) {
+  // Track the currently displayed month internally
+  const [currentMonth, setCurrentMonth] = React.useState<Date>(
+    props.selected instanceof Date ? props.selected : defaultMonth
+  );
+
+  // Update internal month state when selected date changes
+  React.useEffect(() => {
+    if (props.selected instanceof Date) {
+      setCurrentMonth(props.selected);
+    }
+  }, [props.selected]);
+
   // Custom caption component with month/year dropdowns
   function CustomCaption({ displayMonth }: CaptionProps) {
     const startYear = 1900;
@@ -34,12 +46,14 @@ function Calendar({
       const newDate = new Date(displayMonth);
       newDate.setFullYear(parseInt(year));
       props.onMonthChange?.(newDate);
+      setCurrentMonth(newDate);
     };
 
     const handleMonthChange = (month: string) => {
       const newDate = new Date(displayMonth);
       newDate.setMonth(months.indexOf(month));
       props.onMonthChange?.(newDate);
+      setCurrentMonth(newDate);
     };
 
     return (
@@ -81,6 +95,8 @@ function Calendar({
 
   return (
     <DayPicker
+      month={currentMonth}
+      onMonthChange={setCurrentMonth}
       showOutsideDays={showOutsideDays}
       className={cn("p-3 pointer-events-auto w-full", className)}
       classNames={{
@@ -127,7 +143,7 @@ function Calendar({
       }}
       captionLayout="buttons"
       defaultMonth={defaultMonth}
-      fromYear={new Date().getFullYear()}
+      fromYear={1900}
       toYear={2100}
       {...props}
     />

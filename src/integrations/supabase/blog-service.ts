@@ -292,6 +292,7 @@ export const blogService = {
           name: randomName,
           email: commentData.email,
           content: commentData.content,
+          is_approved: true,
         }
       ]);
 

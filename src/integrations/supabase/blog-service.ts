@@ -30,7 +30,7 @@ export const blogService = {
     // Type assertion to ensure compatibility
     const typedPosts = (posts || []).map(post => {
       // Check if author is an object and not an error
-      const authorData = typeof post.author === 'object' && post.author !== null && !('error' in post.author) 
+      const authorData = post.author && typeof post.author === 'object' && !('error' in post.author)
         ? post.author 
         : { id: post.author_id || '', full_name: undefined, email: undefined };
       
@@ -65,7 +65,7 @@ export const blogService = {
     if (!post) return null;
 
     // Check if author is an object and not an error
-    const authorData = typeof post.author === 'object' && post.author !== null && !('error' in post.author)
+    const authorData = post.author && typeof post.author === 'object' && !('error' in post.author)
       ? post.author
       : { id: post.author_id || '', full_name: undefined, email: undefined };
 

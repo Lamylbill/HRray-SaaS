@@ -30,10 +30,17 @@ export const blogService = {
     const typedPosts = (posts || []).map(post => {
       // Safely handle author data with optional chaining and nullish coalescing
       const authorData = {
-        id: post.author?.[0]?.id || post.author_id || '',
-        full_name: post.author?.[0]?.full_name ?? undefined,
-        email: post.author?.[0]?.email ?? undefined
+        id: post.author_id || '',
+        full_name: undefined,
+        email: undefined
       };
+      
+      // Handle author data if it exists and is in expected array format
+      if (post.author && Array.isArray(post.author) && post.author.length > 0) {
+        authorData.id = post.author[0].id || post.author_id || '';
+        authorData.full_name = post.author[0].full_name;
+        authorData.email = post.author[0].email;
+      }
       
       // Check if categories is an array
       const categoriesData = Array.isArray(post.categories) ? post.categories : [];
@@ -65,12 +72,19 @@ export const blogService = {
 
     if (!post) return null;
 
-    // Safely handle author data with optional chaining and nullish coalescing
+    // Initialize author data with defaults
     const authorData = {
-      id: post.author?.[0]?.id || post.author_id || '',
-      full_name: post.author?.[0]?.full_name ?? undefined,
-      email: post.author?.[0]?.email ?? undefined
+      id: post.author_id || '',
+      full_name: undefined,
+      email: undefined
     };
+    
+    // Handle author data if it exists and is in expected array format
+    if (post.author && Array.isArray(post.author) && post.author.length > 0) {
+      authorData.id = post.author[0].id || post.author_id || '';
+      authorData.full_name = post.author[0].full_name;
+      authorData.email = post.author[0].email;
+    }
 
     // Type assertion to ensure compatibility
     const typedPost: BlogPost = {

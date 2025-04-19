@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { 
   Calendar, Edit, Trash2, Eye, MoreHorizontal,
-  CheckCircle, XCircle, Plus 
+  CheckCircle, XCircle, Plus, Clock 
 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader,
@@ -47,7 +47,7 @@ const ManageBlogPage = () => {
         const categoriesData = await blogService.getCategories();
         setCategories(categoriesData);
         
-        const { posts } = await blogService.getPosts(1, 100); // Get all posts for management
+        const { posts } = await blogService.getPosts(1, 100, true); // Added true to include unpublished posts
         setPosts(posts);
       } catch (error) {
         console.error('Error loading blog data:', error);
@@ -103,7 +103,7 @@ const ManageBlogPage = () => {
   const handleFormSuccess = () => {
     // Reload posts
     setIsLoading(true);
-    blogService.getPosts(1, 100).then(({ posts }) => {
+    blogService.getPosts(1, 100, true).then(({ posts }) => { // Added true to include unpublished posts
       setPosts(posts);
       setIsLoading(false);
       setEditMode(false);
@@ -122,6 +122,31 @@ const ManageBlogPage = () => {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  // Function to determine post status
+  const getPostStatus = (post: BlogPost) => {
+    const now = new Date();
+    
+    if (post.is_published) {
+      return {
+        status: 'Published',
+        statusIcon: <CheckCircle className="mr-1 h-4 w-4" />,
+        statusClass: 'text-green-600'
+      };
+    } else if (post.publish_at && new Date(post.publish_at) > now) {
+      return {
+        status: 'Scheduled',
+        statusIcon: <Clock className="mr-1 h-4 w-4" />,
+        statusClass: 'text-blue-600'
+      };
+    } else {
+      return {
+        status: 'Draft',
+        statusIcon: <XCircle className="mr-1 h-4 w-4" />,
+        statusClass: 'text-amber-600'
+      };
+    }
   };
   
   return (
@@ -189,60 +214,63 @@ const ManageBlogPage = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {posts.map((post) => (
-                        <TableRow key={post.id}>
-                          <TableCell className="font-medium">
-                            {post.title}
-                          </TableCell>
-                          <TableCell>
-                            {post.is_published ? (
-                              <div className="flex items-center text-green-600">
-                                <CheckCircle className="mr-1 h-4 w-4" />
-                                Published
+                      {posts.map((post) => {
+                        const { status, statusIcon, statusClass } = getPostStatus(post);
+                        
+                        return (
+                          <TableRow key={post.id}>
+                            <TableCell className="font-medium">
+                              {post.title}
+                            </TableCell>
+                            <TableCell>
+                              <div className={`flex items-center ${statusClass}`}>
+                                {statusIcon}
+                                {status}
                               </div>
-                            ) : (
-                              <div className="flex items-center text-amber-600">
-                                <XCircle className="mr-1 h-4 w-4" />
-                                Draft
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center text-gray-500">
+                                <Calendar className="mr-1 h-4 w-4" />
+                                {post.is_published 
+                                  ? formatDate(post.published_at || post.created_at)
+                                  : post.publish_at 
+                                    ? `Scheduled for ${formatDate(post.publish_at)}`
+                                    : formatDate(post.created_at)}
                               </div>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center text-gray-500">
-                              <Calendar className="mr-1 h-4 w-4" />
-                              {formatDate(post.published_at || post.created_at)}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem asChild>
-                                  <Link to={`/blog/post/${post.slug}`} target="_blank">
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    View
-                                  </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEditClick(post)}>
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => handleDeleteClick(post.id)}
-                                  className="text-red-600 focus:text-red-600"
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  {post.is_published && (
+                                    <DropdownMenuItem asChild>
+                                      <Link to={`/blog/post/${post.slug}`} target="_blank">
+                                        <Eye className="mr-2 h-4 w-4" />
+                                        View
+                                      </Link>
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem onClick={() => handleEditClick(post)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDeleteClick(post.id)}
+                                    className="text-red-600 focus:text-red-600"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>

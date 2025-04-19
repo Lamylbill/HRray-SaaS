@@ -62,6 +62,24 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+// Landing Page Layout
+const LandingPageLayout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div className="flex flex-col min-h-screen bg-white">
+      <LandNavbar showLogo={true} />
+      <div className="flex-1">
+        <Suspense fallback={
+          <div className="flex items-center justify-center h-[calc(100vh-80px)]">
+            <LoadingSpinner size="lg" />
+          </div>
+        }>
+          {children}
+        </Suspense>
+      </div>
+    </div>
+  );
+};
+
 // Settings Wrapper
 const SettingsWrapper = () => {
   const location = useLocation();
@@ -83,26 +101,24 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<SignUp />} />
       
-      {/* Blog routes */}
+      {/* Blog routes - Now using the LandingPageLayout */}
       <Route path="/blog" element={
-        <>
-          <LandNavbar showLogo={true} />
+        <LandingPageLayout>
           <BlogPage />
-        </>
+        </LandingPageLayout>
       } />
       <Route path="/blog/post/:slug" element={
-        <>
-          <LandNavbar showLogo={true} />
+        <LandingPageLayout>
           <BlogPostPage />
-        </>
+        </LandingPageLayout>
       } />
-        <Route path="/blog/manage" element={
-          <BlogEditorRoute>
-            <DashboardLayout>
-              <ManageBlogPage />
-            </DashboardLayout>
-          </BlogEditorRoute>
-        } />
+      <Route path="/blog/manage" element={
+        <BlogEditorRoute>
+          <DashboardLayout>
+            <ManageBlogPage />
+          </DashboardLayout>
+        </BlogEditorRoute>
+      } />
       
       <Route path="/dashboard" element={
         <ProtectedRoute>

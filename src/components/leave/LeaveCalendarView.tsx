@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { LeaveRequest } from '../leave-calendar/interfaces';
 import MonthView from '../leave-calendar/MonthView';
 import WeekdayHeader from '../leave-calendar/WeekdayHeader';
+import BackToTodayButton from '../leave-calendar/BackToTodayButton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 const LeaveCalendarView: React.FC = () => {
@@ -15,8 +15,8 @@ const LeaveCalendarView: React.FC = () => {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const bottomTriggerRef = useRef<HTMLDivElement>(null);
   const topTriggerRef = useRef<HTMLDivElement>(null);
+  const [showBackToToday, setShowBackToToday] = useState(false);
 
-  // Generate months in the specified range
   const generateMonthsRange = useCallback((startOffset: number, endOffset: number) => {
     const today = new Date();
     const currentMonth = today.getMonth();
@@ -26,7 +26,7 @@ const LeaveCalendarView: React.FC = () => {
     for (let i = startOffset; i <= endOffset; i++) {
       const monthOffset = currentMonth + i;
       const yearOffset = Math.floor(monthOffset / 12);
-      const month = ((monthOffset % 12) + 12) % 12; // Ensure month is between 0-11
+      const month = ((monthOffset % 12) + 12) % 12;
       const year = currentYear + yearOffset;
       
       months.push({ month, year });
@@ -35,12 +35,10 @@ const LeaveCalendarView: React.FC = () => {
     return months;
   }, []);
 
-  // Initialize visible months
   useEffect(() => {
     setVisibleMonths(generateMonthsRange(renderedMonthRange.start, renderedMonthRange.end));
   }, [generateMonthsRange, renderedMonthRange]);
 
-  // Function to load more months (either past or future)
   const loadMoreMonths = useCallback((direction: 'past' | 'future') => {
     setRenderedMonthRange(prev => {
       if (direction === 'past') {
@@ -51,16 +49,13 @@ const LeaveCalendarView: React.FC = () => {
     });
   }, []);
 
-  // Set up intersection observers for infinite scroll
   useEffect(() => {
     if (!bottomTriggerRef.current || !topTriggerRef.current) return;
 
-    // Clean up previous observers
     if (observerRef.current) {
       observerRef.current.disconnect();
     }
 
-    // Observer for bottom trigger (loading future months)
     const bottomObserver = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
@@ -70,7 +65,6 @@ const LeaveCalendarView: React.FC = () => {
       { threshold: 0.1 }
     );
 
-    // Observer for top trigger (loading past months)
     const topObserver = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
@@ -89,14 +83,12 @@ const LeaveCalendarView: React.FC = () => {
     };
   }, [loadMoreMonths]);
 
-  // Fetch leave requests for all rendered months
   useEffect(() => {
     const fetchLeaveRequests = async () => {
       setLoading(true);
       try {
         const client = getAuthorizedClient();
         
-        // Get min and max dates from visibleMonths
         const startMonth = visibleMonths[0];
         const endMonth = visibleMonths[visibleMonths.length - 1];
         
@@ -106,7 +98,6 @@ const LeaveCalendarView: React.FC = () => {
         const startDateString = startDate.toISOString().split('T')[0];
         const endDateString = endDate.toISOString().split('T')[0];
 
-        // Fetch all leave requests in the date range in a single query
         const { data, error } = await client
           .from('leave_requests')
           .select('id, employee_id, start_date, end_date, status, leave_type:leave_type_id(id, name, color), employee:employee_id(full_name)')
@@ -151,27 +142,42 @@ const LeaveCalendarView: React.FC = () => {
     }
   }, [visibleMonths]);
 
-  // Scroll to current month on initial load
-  useEffect(() => {
-    if (!loading && scrollRef.current) {
-      // Find the current month div
-      const currentMonthElement = scrollRef.current.querySelector('[data-current="true"]');
-      if (currentMonthElement) {
-        // Offset to position it slightly below the header
-        const headerHeight = 40; // approximate header height
-        const offset = currentMonthElement.getBoundingClientRect().top + 
-                      scrollRef.current.scrollTop - 
-                      headerHeight - 80; // Additional offset to position it nicely
-        
-        scrollRef.current.scrollTo({
-          top: offset,
-          behavior: 'smooth'
-        });
-      }
-    }
-  }, [loading]);
+  const scrollToCurrentMonth = useCallback(() => {
+    if (!scrollRef.current) return;
 
-  // Function to check if a month is the current month
+    const currentMonthElement = scrollRef.current.querySelector('[data-current="true"]');
+    if (currentMonthElement) {
+      const headerHeight = 40;
+      const offset = currentMonthElement.getBoundingClientRect().top + 
+                    scrollRef.current.scrollTop - 
+                    headerHeight - 80;
+      
+      scrollRef.current.scrollTo({
+        top: offset,
+        behavior: 'smooth'
+      });
+    }
+  }, []);
+
+  const handleScroll = useCallback((e: Event) => {
+    const target = e.target as HTMLDivElement;
+    const currentMonthElement = target.querySelector('[data-current="true"]');
+    
+    if (currentMonthElement) {
+      const rect = currentMonthElement.getBoundingClientRect();
+      const isCurrentMonthVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
+      setShowBackToToday(!isCurrentMonthVisible);
+    }
+  }, []);
+
+  useEffect(() => {
+    const scrollElement = scrollRef.current;
+    if (scrollElement) {
+      scrollElement.addEventListener('scroll', handleScroll);
+      return () => scrollElement.removeEventListener('scroll', handleScroll);
+    }
+  }, [handleScroll]);
+
   const isCurrentMonth = (month: number, year: number) => {
     const now = new Date();
     return month === now.getMonth() && year === now.getFullYear();
@@ -179,16 +185,12 @@ const LeaveCalendarView: React.FC = () => {
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      {/* Sticky weekday header */}
       <WeekdayHeader />
-      
-      {/* Top trigger for loading past months */}
       <div ref={topTriggerRef} className="h-4 w-full" />
       
-      {/* Scrollable calendar container */}
       <div 
         ref={scrollRef} 
-        className="h-[calc(100vh-220px)] overflow-y-auto pb-10"
+        className="h-[calc(100vh-220px)] overflow-y-auto pb-10 relative"
       >
         {loading && visibleMonths.length === 0 ? (
           <div className="flex items-center justify-center h-48">
@@ -209,9 +211,13 @@ const LeaveCalendarView: React.FC = () => {
           </div>
         )}
         
-        {/* Bottom trigger for loading future months */}
         <div ref={bottomTriggerRef} className="h-4 w-full" />
       </div>
+
+      <BackToTodayButton 
+        onClick={scrollToCurrentMonth}
+        isVisible={showBackToToday}
+      />
     </div>
   );
 };

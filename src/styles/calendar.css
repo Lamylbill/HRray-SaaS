@@ -10,3 +10,8 @@
     min-height: 60px !important;
   }
 }
+
+/* Ensure smooth scrolling for the calendar container */
+.calendar-scroll {
+  scroll-behavior: smooth;
+}

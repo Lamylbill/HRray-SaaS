@@ -97,14 +97,14 @@ const MonthView: React.FC<MonthViewProps> = ({
       {/* Month header - sticky within the scroll container */}
       <div 
         ref={monthHeaderRef}
-        className={`month-header sticky top-10 z-20 bg-white bg-opacity-95 border-b border-gray-200 py-2 px-4 font-bold text-gray-800 mb-1 transition-all duration-200 ${
+        className={`month-header sticky top-10 z-20 bg-white bg-opacity-95 border-b border-gray-200 py-2 px-4 font-bold text-gray-800 transition-all duration-200 ${
           isCurrent ? 'bg-blue-50' : ''
         }`}
       >
         {monthName} {year} {isCurrent && <span className="text-blue-500 text-sm font-normal ml-2">(Current)</span>}
       </div>
 
-      {/* Calendar grid */}
+      {/* Calendar grid - removed mb-1 and other spacing */}
       <div className="grid grid-cols-7 gap-px border-b border-gray-200">
         {/* Empty cells for days before the 1st of the month */}
         {emptyCells.map((_, index) => (

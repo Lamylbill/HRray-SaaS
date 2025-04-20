@@ -4,7 +4,7 @@ import LeaveCalendarView from '../leave/LeaveCalendarView';
 
 const LeaveCalendar: React.FC = () => {
   return (
-    <div className="container mx-auto py-10 flex flex-col items-center w-full max-w-[1200px]">
+    <div className="h-[calc(100vh-180px)] overflow-hidden">
       <LeaveCalendarView />
     </div>
   );

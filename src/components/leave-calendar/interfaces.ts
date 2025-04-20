@@ -31,6 +31,8 @@ export interface MonthViewProps {
   month: number;
   year: number;
   leaveRequests: LeaveRequest[];
+  isFirst?: boolean;
+  isCurrent?: boolean;
 }
 
 export interface LeaveQuota {

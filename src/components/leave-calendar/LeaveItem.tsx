@@ -11,8 +11,9 @@ const LeaveItem: React.FC<LeaveItemProps> = ({ leaveRequest }) => {
 
   return (
     <div 
-      className="rounded px-1.5 py-1 text-xs text-white hover:opacity-90 truncate"
+      className="rounded px-1.5 py-1 text-xs text-white hover:opacity-90 truncate cursor-pointer transition-all hover:shadow-md"
       style={{ backgroundColor: leave_type.color }}
+      title={`${employee.full_name} - ${leave_type.name} (${status})`}
     >
       <div className="font-medium truncate">{employee.full_name}</div>
       <div className="text-xs opacity-90 truncate flex items-center justify-between">

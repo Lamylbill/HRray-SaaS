@@ -1,8 +1,27 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from 'uuid';
 import { BlogPost, BlogPostFormData, BlogCategory, BlogComment } from "./blog-types";
 
 const PAGE_SIZE = 10;
+
+// HR-related cute names for comments
+const HR_CUTE_NAMES = [
+  "The Onboarder", 
+  "The Culture Keeper", 
+  "The Team Builder", 
+  "The Benefits Guru", 
+  "The Performance Pro", 
+  "The Engagement Expert", 
+  "The Talent Scout", 
+  "The Policy Pilot"
+];
+
+// Get a random HR-related cute name
+const getRandomCuteName = (): string => {
+  const randomIndex = Math.floor(Math.random() * HR_CUTE_NAMES.length);
+  return HR_CUTE_NAMES[randomIndex];
+};
 
 export const blogService = {
   async getPosts(page: number = 1, pageSize: number = PAGE_SIZE): Promise<{ posts: BlogPost[]; totalCount: number }> {
@@ -116,7 +135,7 @@ export const blogService = {
           tags: postData.tags,
         }
       ])
-      .select()
+      .select();
 
     if (error) {
       console.error("Error creating post:", error);
@@ -211,7 +230,7 @@ export const blogService = {
     const { data, error } = await supabase
       .from('blog_categories')
       .insert([{ name, slug }])
-      .select()
+      .select();
 
     if (error) {
       console.error("Error creating category:", error);
@@ -250,13 +269,11 @@ export const blogService = {
     // If no post ID is provided, return an empty array. This prevents a Supabase error.
     if (!postId) return [];
 
-
     let { data: comments, error: commentsError } = await supabase
       .from('blog_comments')
       .select('*')
-      .eq('post_id', post.id)
+      .eq('post_id', postId)
       .order('created_at', { ascending: false });
-
 
     if (commentsError) {
       console.error("Error fetching comments:", commentsError);
@@ -268,23 +285,19 @@ export const blogService = {
 
   async addComment(postId: string, commentData: Omit<BlogComment, 'id' | 'created_at' | 'is_approved' | 'name'>): Promise<void> {
     console.log('Adding comment');
-    const cuteNames = [
-      "The Onboarder", "The Culture Keeper", "The Team Builder", "The Benefits Guru",
-      "The Performance Pro", "The Engagement Expert", "The Talent Scout", "The Policy Pilot"
-    ];
-    const randomName = cuteNames[Math.floor(Math.random() * cuteNames.length)];
+    const randomName = getRandomCuteName();
     const name = commentData.user_id === 'b17956a5-afbc-405b-af67-b02a93afc787' ? 'Platform Developer' : randomName;
+    
     const { error } = await supabase
       .from('blog_comments')
       .insert([{
-          post_id: postId,
-          // user_id: commentData.user_id,
-          name: randomName,
-
-          content: commentData.content,
-          is_approved: true,
-        },
-      ]);
+        post_id: postId,
+        user_id: commentData.user_id,
+        name: name,
+        email: commentData.email,
+        content: commentData.content,
+        is_approved: true,
+      }]);
 
     if (error) {
       console.error("Error adding comment:", error);
@@ -448,15 +461,6 @@ export const blogService = {
       return 'Scheduled';
     } else {
       return 'Draft';
-    }
-  }
-};
-        }
-      ]);
-
-    if (error) {
-      console.error("Error adding comment:", error);
-      throw new Error(error.message);
     }
   },
 

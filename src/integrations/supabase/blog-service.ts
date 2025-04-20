@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from 'uuid';
 import { BlogPost, BlogPostFormData, BlogCategory, BlogComment } from "./blog-types";
@@ -24,54 +23,38 @@ const getRandomCuteName = (): string => {
 };
 
 export const blogService = {
-  async getPosts(page: number = 1, pageSize: number = PAGE_SIZE): Promise<{ posts: BlogPost[]; totalCount: number }> {
+  async getPosts(page = 1, pageSize = 10, includeDrafts: string = "false", categorySlug?: string): Promise<{ posts: BlogPost[]; total: number }> {
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize - 1;
 
-    let { data: posts, error, count } = await supabase
+    let query = supabase
       .from('blog_posts')
       .select(`
         id, title, slug, content, excerpt, cover_image, meta_description, author_id, created_at, updated_at, published_at, is_published, tags,
-        author: user_profiles (id, full_name, email),
-        categories: blog_categories (id, name, slug)
+        author: user_profiles (id, full_name, email)
       `, { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(startIndex, endIndex);
 
+    if (includeDrafts === "false") {
+      query = query.eq('is_published', true);
+    }
+
+    if (categorySlug) {
+      query = query.eq('categories.slug', categorySlug);
+    }
+
+    const { data: posts, error, count } = await query;
+
     if (error) {
-      console.error("Error fetching posts:", error);
+      console.error(`Error fetching posts:`, error);
       throw new Error(error.message);
     }
 
-    const totalCount = count || 0;
-    
-    // Type assertion to ensure compatibility
-    const typedPosts = (posts || []).map(post => {
-      // Safely handle author data with optional chaining and nullish coalescing
-      const authorData = {
-        id: post.author_id || '',
-        full_name: undefined,
-        email: undefined
-      };
-      
-      // Handle author data if it exists and is in expected array format
-      if (post.author && Array.isArray(post.author) && post.author.length > 0) {
-        authorData.id = post.author[0].id || post.author_id || '';
-        authorData.full_name = post.author[0].full_name;
-        authorData.email = post.author[0].email;
-      }
-      
-      // Check if categories is an array
-      const categoriesData = Array.isArray(post.categories) ? post.categories : [];
-      
-      return {
-        ...post,
-        author: authorData,
-        categories: categoriesData
-      } as BlogPost;
-    });
-
-    return { posts: typedPosts, totalCount };
+    return {
+      posts: (data || []) as unknown as BlogPost[],
+      total: count || 0
+    };
   },
 
   async getPostBySlug(slug: string): Promise<BlogPost | null> {
@@ -364,7 +347,7 @@ export const blogService = {
     let status: 'Draft' | 'Published' | 'Scheduled';
     if (data.is_published) {
       status = 'Published';
-    } else if (data.published_at) {
+    } else if (data.published_at || data.publish_at) {
       status = 'Scheduled';
     } else {
       status = 'Draft';
@@ -457,7 +440,7 @@ export const blogService = {
   determinePostStatus(post: BlogPost): 'Draft' | 'Published' | 'Scheduled' {
     if (post.is_published) {
       return 'Published';
-    } else if (post.published_at) {
+    } else if (post.published_at || post.publish_at) {
       return 'Scheduled';
     } else {
       return 'Draft';

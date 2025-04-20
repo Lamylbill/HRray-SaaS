@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -199,7 +198,7 @@ const BlogPage = () => {
                       <CardContent className="flex-grow">
                         <div className="flex items-center text-sm text-gray-500 mb-2">
                           <Calendar size={14} className="mr-1" />
-                          <span>{formatDate(post.published_at)}</span>
+                          <span>{formatDate(post.published_at || post.publish_at || post.created_at)}</span>
                         </div>
                         <p className="text-gray-600 line-clamp-3 mb-4">
                           {post.excerpt || post.content.substring(0, 120) + '...'}

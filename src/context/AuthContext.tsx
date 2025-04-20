@@ -1,8 +1,10 @@
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Session, User } from '@supabase/supabase-js';
+import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { User } from '@/integrations/supabase/blog-types';
 
 interface AuthContextType {
   user: User | null;
@@ -60,7 +62,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (initialSession) {
             console.log('Found existing session:', initialSession.user.id);
             setSession(initialSession);
-            setUser(initialSession.user);
+            // Convert SupabaseUser to our User type
+            setUser({
+              id: initialSession.user.id,
+              email: initialSession.user.email
+            });
             setUserId(initialSession.user.id);
 
             // Fetch user profile
@@ -73,10 +79,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (profileError) {
               console.error('Error fetching profile:', profileError);
               // Handle error appropriately, e.g., set a default name
-              setUser({ ...initialSession.user, full_name: 'Anonymous' });
+              setUser({
+                id: initialSession.user.id,
+                email: initialSession.user.email,
+                full_name: 'Anonymous'
+              });
             } else if (profileData) {
               console.log('Fetched profile data:', profileData);
-              setUser({ ...initialSession.user, full_name: profileData.full_name });
+              setUser({
+                id: initialSession.user.id,
+                email: initialSession.user.email,
+                full_name: profileData.full_name
+              });
             }
 
           } else {
@@ -108,7 +122,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (newSession) {
             console.log('New session established:', newSession.user.id);
             setSession(newSession);
-            setUser(newSession.user);
+            // Convert to our User type
+            setUser({
+              id: newSession.user.id,
+              email: newSession.user.email
+            });
             setUserId(newSession.user.id);
             
             // Only navigate on actual sign-in events, not session refreshes or focus changes
@@ -172,7 +190,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       console.log('Login successful:', data.user?.id);
-      setUser(data.user);
+      // Convert to our User type
+      const userData: User = {
+        id: data.user.id,
+        email: data.user.email
+      };
+      
+      setUser(userData);
       setSession(data.session);
       setUserId(data.user.id);
 
@@ -185,13 +209,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (profileError) {
         console.error('Error fetching profile:', profileError);
-        // Handle error appropriately, e.g., set a default name
-        setUser({ ...data.user, full_name: 'Anonymous' });
+        // Handle error appropriately, set a default name
+        setUser({
+          ...userData,
+          full_name: 'Anonymous'
+        });
       } else if (profileData) {
         console.log('Fetched profile data:', profileData);
-        setUser({ ...data.user, full_name: profileData.full_name });
+        setUser({
+          ...userData,
+          full_name: profileData.full_name
+        });
       }
-
 
        // Store the JWT token in localStorage
       localStorage.setItem('jwt_token', data.session?.access_token || '');  // Store JWT token

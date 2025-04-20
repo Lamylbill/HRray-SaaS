@@ -102,7 +102,7 @@ const BlogPostPage = () => {
       toast({
         title: 'Warning',
         description: 'Please enter a comment before submitting.',
-        variant: 'warning',
+        variant: 'default',
       });
       return;
     }
@@ -121,7 +121,12 @@ const BlogPostPage = () => {
       setComments(prevComments => [...prevComments, {
         id: uuidv4(),
         created_at: new Date().toISOString(),
-        ...newComment
+        post_id: post.id,
+        content: commentContent,
+        user_id: user?.id || null,
+        name: user?.full_name || 'Anonymous',
+        email: user?.email || '',
+        is_approved: true
       }]);
       setCommentContent('');
       toast({
@@ -247,7 +252,7 @@ const BlogPostPage = () => {
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-6">
                   <div className="flex items-center">
                     <Calendar size={16} className="mr-1" />
-                    <span>{formatDate(post.published_at)}</span>
+                    <span>{formatDate(post.published_at || post.publish_at || post.created_at)}</span>
                   </div>
 
                   {post.author && (

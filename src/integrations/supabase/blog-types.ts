@@ -1,3 +1,4 @@
+
 export interface BlogPostFormData {
   title: string;
   content: string;
@@ -30,7 +31,7 @@ export interface BlogPost {
   author_id: string;
   is_published: boolean;
   publish_at?: string;
-  published_at?: string; // Adding this field to align with what's used in the codebase
+  published_at?: string;
   created_at: string;
   updated_at: string;
   categories?: BlogCategory[];
@@ -44,9 +45,13 @@ export interface BlogPost {
 export interface User {
   id: string;
   email?: string;
-  full_name?: string; // Adding this property to the User interface
-  userId?: string; // Add this property to support existing code
-  // ... keep any other existing User properties
+  full_name?: string;
+  userId?: string;
+  user_metadata?: {
+    full_name?: string;
+    avatar_url?: string;
+    [key: string]: any;
+  };
 }
 
 export interface BlogComment {

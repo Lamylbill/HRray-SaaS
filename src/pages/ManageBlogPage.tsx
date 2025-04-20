@@ -102,11 +102,11 @@ const ManageBlogPage = () => {
     // For scheduled posts, set publish_at
     const formattedPost = {
       ...post,
-      // If post has a future published_at date and is not published, it's scheduled
+      // Convert string date to Date object for the form
       publish_at: (!post.is_published && publishDate && publishDate > now) ? publishDate : null
-    } as BlogPost; // Force type to BlogPost
+    };
     
-    setCurrentPost(formattedPost);
+    setCurrentPost(formattedPost as unknown as BlogPost);
     setEditMode(true);
     setActiveTab('new');
   };
@@ -296,7 +296,17 @@ const ManageBlogPage = () => {
         
         <TabsContent value="new">
           <BlogPostForm
-            initialData={currentPost || undefined}
+            initialData={currentPost ? {
+              title: currentPost.title,
+              content: currentPost.content,
+              excerpt: currentPost.excerpt,
+              meta_description: currentPost.meta_description,
+              cover_image: currentPost.cover_image,
+              tags: currentPost.tags,
+              category_ids: currentPost.categories?.map(cat => cat.id),
+              is_published: currentPost.is_published,
+              publish_at: currentPost.publish_at ? new Date(currentPost.publish_at) : null
+            } : undefined}
             categories={categories}
             postId={currentPost?.id}
             onSuccess={handleFormSuccess}

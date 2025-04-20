@@ -6,7 +6,7 @@ const WeekdayHeader: React.FC = () => {
 
   return (
     <div className="sticky top-0 z-30 bg-white shadow-sm w-full">
-      <div className="grid grid-cols-7">
+      <div className="grid grid-cols-7 border-b border-gray-200">
         {days.map((day, index) => (
           <div
             key={index}

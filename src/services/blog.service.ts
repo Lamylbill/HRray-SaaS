@@ -117,6 +117,7 @@ export const blogService = {
       // Get author details
       const profilesQuery = client.from('profiles') as any;
       const { data: author } = await profilesQuery
+        .select('id, full_name, email', { head: false })
         .select('id, full_name, email')
         .eq('id', post.author_id)
         .single();

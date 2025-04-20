@@ -85,9 +85,49 @@ const BlogPostPage = () => {
     }
   }, [post]);
 
-  const handleCommentSubmit = async (e: React.FormEvent) => {
+  const handleCommentSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    return;
+    if (!post || !post.id) {
+      toast({
+        title: 'Error',
+        description: 'Unable to submit comment: Post information is missing.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!commentContent.trim()) {
+      toast({
+        title: 'Warning',
+        description: 'Please enter a comment before submitting.',
+        variant: 'warning',
+      });
+      return;
+    }
+
+    setIsSubmittingComment(true);
+    try {
+      const newComment = {
+        post_id: post.id,
+        content: commentContent,
+        user_id: user?.userId || null, // Use user ID if available
+        name: user?.full_name || 'Anonymous', // Use user name if available
+        email: user?.email || '', // Use user email if available
+      };
+      await blogService.addComment(post.id, newComment);
+      setComments(prevComments => [...prevComments, {
+        ...newComment,
+        id: Math.random().toString(36).substring(7), // Temporary ID
+        created_at: new Date().toISOString(),
+      }]);
+      setCommentContent(''); // Clear the comment input
+      toast({ title: 'Success', description: 'Comment submitted successfully!' });
+    } catch (error) {
+      console.error('Error submitting comment:', error);
+      toast({ title: 'Error', description: 'Failed to submit comment. Please try again.', variant: 'destructive' });
+    } finally {
+      setIsSubmittingComment(false);
+    }
   };
 
   const formatDate = (dateString: string) => {

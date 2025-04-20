@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { blogService } from '@/services/blog.service';
 import { useToast } from '@/hooks/use-toast';
-import { LoadingSpinner } from '@/components/ui-custom/loading-spinner';
+import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 import { BlogPost, BlogCategory } from '@/integrations/supabase/blog-types';
 import { useAuth } from '@/context/AuthContext';
 import { Search, Calendar, Tag, User } from 'lucide-react';

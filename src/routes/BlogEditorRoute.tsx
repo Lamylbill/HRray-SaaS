@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { LoadingSpinner } from '@/components/ui-custom/loading-spinner';
+import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 
 const BlogEditorRoute = ({ children }: { children: React.ReactNode }) => {
   const { isBlogEditor, isLoading } = useAuth();

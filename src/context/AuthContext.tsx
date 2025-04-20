@@ -61,6 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log('Found existing session:', initialSession.user.id);
             setSession(initialSession);
             setUser(initialSession.user);
+            setUserId(initialSession.user.id);
           } else {
             console.log('No session found');
             setSession(null);

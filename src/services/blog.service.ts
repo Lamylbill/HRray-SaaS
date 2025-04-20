@@ -348,22 +348,28 @@ export const blogService = {
     }
   },
 
-  // Delete a comment (restricted to specific user)
+  // Delete a comment (allow deletion for comment owner or admin)
   async deleteComment(commentId: string, userId: string): Promise<boolean> {
     const client = getAuthorizedClient();
-    
-    // Only allow deletion by user with ID b17956a5-afbc-405b-af67-b02a93afc787
-    const authorizedUserId = 'b17956a5-afbc-405b-af67-b02a93afc787';
-    
-    if (userId !== authorizedUserId) {
-      throw new Error("Unauthorized: Only the blog administrator can delete comments");
-    }
 
     try {
-      const commentsQuery = client.from('blog_comments') as any;
-      const { error } = await commentsQuery
-        .delete()
-        .eq('id', commentId);
+      // Get the comment to check the owner
+      const { data: comment, error: selectError } = await client
+        .from('blog_comments')
+        .select('user_id')
+        .eq('id', commentId)
+        .single();
+
+      if (selectError || !comment) {
+        throw new Error("Comment not found or error fetching comment");
+      }
+
+      // Allow deletion if the user is the comment owner or the admin
+      if (comment.user_id !== userId && userId !== 'b17956a5-afbc-405b-af67-b02a93afc787') {
+        throw new Error("Unauthorized: You can only delete your own comments");
+      }
+
+      const { error } = await client.from('blog_comments').delete().eq('id', commentId);
 
       if (error) throw error;
       

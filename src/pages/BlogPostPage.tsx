@@ -17,6 +17,7 @@ const BlogPostPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { toast } = useToast();
   const { user } = useAuth();
+  console.log(user);
 
   const [post, setPost] = useState<BlogPost | null>(null);
   const [comments, setComments] = useState<BlogComment[]>([]);
@@ -24,6 +25,7 @@ const BlogPostPage = () => {
   const [isLoadingComments, setIsLoadingComments] = useState(true);
   const [commentContent, setCommentContent] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [isDeletingComment, setIsDeletingComment] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -111,7 +113,7 @@ const BlogPostPage = () => {
         post_id: post.id,
         content: commentContent,
         user_id: user?.userId || null, // Use user ID if available
-        name: user?.full_name || 'Anonymous', // Use user name if available
+        name: user?.full_name || 'Anonymous', // Use user name if available,
         email: user?.email || '', // Use user email if available
       };
       await blogService.addComment(post.id, newComment);
@@ -127,6 +129,36 @@ const BlogPostPage = () => {
       toast({ title: 'Error', description: 'Failed to submit comment. Please try again.', variant: 'destructive' });
     } finally {
       setIsSubmittingComment(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!user || !user.id) {
+      toast({
+        title: 'Error',
+        description: 'You must be logged in to delete comments.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsDeletingComment(true);
+    try {
+      await blogService.deleteComment(commentId, user.id);
+      setComments(prevComments => prevComments.filter(comment => comment.id !== commentId));
+      toast({
+        title: 'Success',
+        description: 'Comment deleted successfully!',
+      });
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete comment. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeletingComment(false);
     }
   };
 
@@ -293,12 +325,33 @@ const BlogPostPage = () => {
                           <div className="flex justify-between items-start mb-2">
                             <div className="">
                               <h3 className="font-medium text-base">{comment.name}</h3>
-                              <p className="text-sm text-gray-500">{formatDate(comment.created_at)}</p>
+                              <p className="text-sm text-gray-500">
+                                {formatDate(comment.created_at)}
+                              </p>
                             </div>
+                            {console.log(user)}
+                            {user && user.id === 'b17956a5-afbc-405b-af67-b02a93afc787' && (
+                                <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-500 hover:bg-red-100"
+                                onClick={() => handleDeleteComment(comment.id)}
+                                disabled={isDeletingComment}
+                              >
+                                {isDeletingComment ? (
+                                  <LoadingSpinner size="sm" />
+                                ) : (
+                                  'Delete'
+                                )}
+                              </Button>
+                            )}
                           </div>
                           <p className="text-gray-700">{comment.content}</p>
                         </div>
                       ))}
+
+
+
                     </div>
                   )}
                 </CardContent>

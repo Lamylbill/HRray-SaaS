@@ -1,46 +1,51 @@
-export interface BlogPost {
-  id: string;
-  title: string;
-  slug: string;
-  content: string;
-  excerpt: string;
-  cover_image: string;
-  meta_description: string;
-  author_id: string;
-  author?: {
-    id: string;
-    full_name?: string;
-    email?: string;
-  };
-  created_at: string;
-  updated_at: string;
-  published_at: string;
-  is_published: boolean;
-  tags: string[];
-  categories?: Array<{
-    id: string;
-    name: string;
-    slug: string;
-  }>;
-}
-
 export interface BlogPostFormData {
   title: string;
   content: string;
-  excerpt: string;
-  meta_description: string;
+  excerpt?: string;
+  meta_description?: string;
   cover_image?: string;
   tags?: string[];
   category_ids?: string[];
   is_published: boolean;
-  publish_at?: Date | null;
+  publish_at: Date | null;
 }
 
 export interface BlogCategory {
   id: string;
   name: string;
   slug: string;
+  description?: string;
   created_at: string;
+}
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt?: string;
+  meta_description?: string;
+  cover_image?: string;
+  tags?: string[];
+  author_id: string;
+  is_published: boolean;
+  publish_at?: string;
+  created_at: string;
+  updated_at: string;
+  categories?: BlogCategory[];
+  author?: {
+    id: string;
+    full_name: string;
+    avatar_url?: string;
+  };
+}
+
+export interface User {
+  id: string;
+  email?: string;
+  full_name?: string;
+  userId?: string; // Add this property to support existing code
+  // ... keep any other existing User properties
 }
 
 export interface BlogComment {
@@ -48,7 +53,7 @@ export interface BlogComment {
   post_id: string;
   user_id?: string;
   name: string;
-  email: string;
+  email?: string;
   content: string;
   created_at: string;
   is_approved: boolean;

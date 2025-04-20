@@ -1,3 +1,4 @@
+
 import React, { Suspense, useEffect } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -90,7 +91,7 @@ const SettingsWrapper = () => {
 // Routes Setup
 const AppRoutes = () => {
   return (
-    <Routes future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <Routes>
       <Route path="/" element={
         <>
           <LandNavbar showLogo={true} />

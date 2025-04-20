@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Calendar, Tag, MessageSquare, Share2, Facebook, Linkedin, X } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Helmet } from 'react-helmet-async';
+import { v4 as uuidv4 } from 'uuid';
 
 const BlogPostPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -111,21 +112,30 @@ const BlogPostPage = () => {
       const newComment = {
         post_id: post.id,
         content: commentContent,
-        user_id: user?.userId || null, // Use user ID if available
-        name: user?.full_name || 'Anonymous', // Use user name if available,
-        email: user?.email || '', // Use user email if available
+        user_id: user?.id || null,
+        name: user?.full_name || 'Anonymous',
+        email: user?.email || '',
+        is_approved: true
       };
       await blogService.addComment(post.id, newComment);
       setComments(prevComments => [...prevComments, {
-        ...newComment,
-        id: Math.random().toString(36).substring(7), // Temporary ID
+        id: uuidv4(),
         created_at: new Date().toISOString(),
+        ...newComment
       }]);
-      setCommentContent(''); // Clear the comment input
-      toast({ title: 'Success', description: 'Comment submitted successfully!' });
+      setCommentContent('');
+      toast({
+        title: "Comment added",
+        description: "Your comment has been added and will be visible once approved",
+        variant: "default"
+      });
     } catch (error) {
       console.error('Error submitting comment:', error);
-      toast({ title: 'Error', description: 'Failed to submit comment. Please try again.', variant: 'destructive' });
+      toast({
+        title: 'Error',
+        description: 'Failed to submit comment. Please try again.',
+        variant: 'destructive'
+      });
     } finally {
       setIsSubmittingComment(false);
     }
@@ -347,9 +357,6 @@ const BlogPostPage = () => {
                           <p className="text-gray-700">{comment.content}</p>
                         </div>
                       ))}
-
-
-
                     </div>
                   )}
                 </CardContent>

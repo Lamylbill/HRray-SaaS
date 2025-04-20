@@ -73,7 +73,7 @@ export const LeaveActionButtons = ({ leaveId, onActionComplete }: LeaveActionBut
         onClick={() => setIsApproveDialogOpen(true)}
         disabled={isLoading}
       >
-        {isLoading ? <LoadingSpinner size="sm" color="white" /> : <Check className="h-4 w-4" />}
+        {isLoading ? <LoadingSpinner size="sm" className="text-white" /> : <Check className="h-4 w-4" />}
       </Button>
 
       <Button
@@ -82,7 +82,7 @@ export const LeaveActionButtons = ({ leaveId, onActionComplete }: LeaveActionBut
         onClick={() => setIsRejectDialogOpen(true)}
         disabled={isLoading}
       >
-        {isLoading ? <LoadingSpinner size="sm" color="white" /> : <X className="h-4 w-4" />}
+        {isLoading ? <LoadingSpinner size="sm" className="text-white" /> : <X className="h-4 w-4" />}
       </Button>
 
       <AlertDialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>

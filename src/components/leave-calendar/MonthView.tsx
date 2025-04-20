@@ -1,7 +1,7 @@
-
 import React, { useRef, useEffect } from 'react';
 import { LeaveRequest } from './interfaces';
 import LeaveItem from './LeaveItem';
+import { format, isSameDay, isWithinInterval } from 'date-fns';
 
 interface MonthViewProps {
   month: number;
@@ -23,41 +23,38 @@ const MonthView: React.FC<MonthViewProps> = ({
   const firstDayOfMonth = new Date(year, month, 1).getDay();
   const monthHeaderRef = useRef<HTMLDivElement>(null);
   
-  // Generate array for days in the month
   const calendarDays = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-  
-  // Calculate number of empty cells before the first day
   const emptyCells = Array.from({ length: firstDayOfMonth }, (_, i) => i);
 
-  // Helper function to get the day of week for a specific date
   const getDayOfWeek = (day: number) => {
     return new Date(year, month, day).getDay();
   };
 
-  // Filter leave requests for this month
-  const monthLeaveRequests = leaveRequests.filter(request => {
-    const startDate = new Date(request.start_date);
-    const endDate = new Date(request.end_date);
-    const monthStart = new Date(year, month, 1);
-    const monthEnd = new Date(year, month + 1, 0);
-    
-    return (
-      (startDate <= monthEnd && endDate >= monthStart) // Date ranges overlap
-    );
-  });
+  const isLeaveStartDate = (date: Date, leaveRequest: LeaveRequest) => {
+    return isSameDay(date, new Date(leaveRequest.start_date));
+  };
 
-  // Set up Intersection Observer for sticky month header
+  const isLeaveEndDate = (date: Date, leaveRequest: LeaveRequest) => {
+    return isSameDay(date, new Date(leaveRequest.end_date));
+  };
+
+  const shouldRenderLeave = (date: Date, leaveRequest: LeaveRequest) => {
+    const leaveInterval = {
+      start: new Date(leaveRequest.start_date),
+      end: new Date(leaveRequest.end_date)
+    };
+    return isWithinInterval(date, leaveInterval);
+  };
+
   useEffect(() => {
     if (!monthHeaderRef.current) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.target.previousElementSibling) {
-          // When this month header is at the top, make it sticky
           const isStuck = entry.intersectionRatio < 1;
           entry.target.classList.toggle('is-stuck', isStuck);
           
-          // If there's a previous month header, hide it when this one becomes sticky
           if (isStuck && entry.boundingClientRect.top <= 40) {
             const prevMonthHeaders = document.querySelectorAll('.month-header.is-stuck');
             prevMonthHeaders.forEach(header => {
@@ -66,7 +63,6 @@ const MonthView: React.FC<MonthViewProps> = ({
               }
             });
           } else {
-            // Show all month headers when not sticky
             const prevMonthHeaders = document.querySelectorAll('.month-header');
             prevMonthHeaders.forEach(header => {
               (header as HTMLElement).style.opacity = '1';
@@ -76,7 +72,7 @@ const MonthView: React.FC<MonthViewProps> = ({
       },
       { 
         threshold: [0, 0.25, 0.5, 0.75, 1],
-        rootMargin: '-40px 0px 0px 0px' // Account for the weekday header height
+        rootMargin: '-40px 0px 0px 0px'
       }
     );
 
@@ -94,35 +90,29 @@ const MonthView: React.FC<MonthViewProps> = ({
       className="w-full"
       data-current={isCurrent}
     >
-      {/* Month header - sticky within the scroll container */}
       <div 
         ref={monthHeaderRef}
         className={`month-header sticky top-10 z-20 bg-white bg-opacity-95 border-b border-gray-200 py-2 px-4 font-bold text-gray-800 transition-all duration-200 ${
           isCurrent ? 'bg-blue-50' : ''
         }`}
       >
-        {monthName} {year} {isCurrent && <span className="text-blue-500 text-sm font-normal ml-2">(Current)</span>}
+        {monthName} {year}
+        {isCurrent && <span className="text-blue-500 text-sm font-normal ml-2">(Current)</span>}
       </div>
 
-      {/* Calendar grid - removed mb-1 and other spacing */}
       <div className="grid grid-cols-7 gap-px border-b border-gray-200">
-        {/* Empty cells for days before the 1st of the month */}
         {emptyCells.map((_, index) => (
-          <div key={`empty-${index}`} className="bg-gray-50 min-h-[85px] border border-gray-100"></div>
+          <div key={`empty-${index}`} className="bg-gray-50 min-h-[85px] border border-gray-100" />
         ))}
         
-        {/* Actual calendar days */}
         {calendarDays.map((day) => {
           const currentDate = new Date(year, month, day);
           const isToday = new Date().toDateString() === currentDate.toDateString();
           const isWeekend = getDayOfWeek(day) === 0 || getDayOfWeek(day) === 6;
           
-          // Get leave requests for this specific day
-          const dayLeaveRequests = monthLeaveRequests.filter(request => {
-            const leaveStart = new Date(request.start_date);
-            const leaveEnd = new Date(request.end_date);
-            return currentDate >= leaveStart && currentDate <= leaveEnd;
-          });
+          const dayLeaveRequests = leaveRequests.filter(request => 
+            shouldRenderLeave(currentDate, request)
+          );
 
           return (
             <div 
@@ -137,18 +127,15 @@ const MonthView: React.FC<MonthViewProps> = ({
                 {day}
               </div>
               
-              {/* Leave items with scrollable container for overflow */}
               <div className="space-y-1 overflow-y-auto max-h-[80%]">
-                {dayLeaveRequests.length > 0 ? (
-                  dayLeaveRequests.map((leaveRequest) => (
-                    <LeaveItem 
-                      key={`${leaveRequest.id}-${day}`} 
-                      leaveRequest={leaveRequest} 
-                    />
-                  ))
-                ) : (
-                  <div className="text-xs text-gray-400 h-8"></div>
-                )}
+                {dayLeaveRequests.map((leaveRequest) => (
+                  <LeaveItem 
+                    key={`${leaveRequest.id}-${day}`}
+                    leaveRequest={leaveRequest}
+                    isStart={isLeaveStartDate(currentDate, leaveRequest)}
+                    isEnd={isLeaveEndDate(currentDate, leaveRequest)}
+                  />
+                ))}
               </div>
             </div>
           );

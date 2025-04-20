@@ -1,18 +1,20 @@
 
-/* Create this file if it doesn't exist and import it in your main.tsx or App.tsx */
-.month-header.is-stuck {
+/* ... keep existing code */
+
+/* Add styles for multi-day leave blocks */
+.leave-block {
+  transition: all 0.2s;
+}
+
+.leave-block:hover {
+  transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  z-index: 25;
-  top: 40px !important; /* Adjust to match weekday header height */
 }
 
+/* Responsive styling for mobile devices */
 @media (max-width: 640px) {
-  .grid-cols-7 > div {
-    min-height: 60px !important;
+  .leave-block {
+    font-size: 10px;
+    padding: 2px 4px;
   }
-}
-
-/* Ensure smooth scrolling for the calendar container */
-.calendar-scroll {
-  scroll-behavior: smooth;
 }

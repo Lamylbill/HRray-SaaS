@@ -90,7 +90,7 @@ const SettingsWrapper = () => {
 // Routes Setup
 const AppRoutes = () => {
   return (
-    <Routes>
+    <Routes future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Route path="/" element={
         <>
           <LandNavbar showLogo={true} />

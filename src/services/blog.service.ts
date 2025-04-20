@@ -327,15 +327,15 @@ export const blogService = {
     }
   },
 
-  // Get comments for a blog post
-  async getComments(postSlug: string): Promise<BlogComment[]> {
-    const client = getAuthorizedClient();
-
-    try {
-      const commentsQuery = client.from('blog_comments') as any;
-      const { data, error } = await commentsQuery
-        .select('*')
-        .eq('post_id', postSlug)
+   // Get comments for a blog post
+   async getComments(postId: string): Promise<BlogComment[]> {
+     const client = getAuthorizedClient();
+ 
+     try {
+       const commentsQuery = client.from('blog_comments') as any;
+       const { data, error } = await commentsQuery
+         .select('*')
+         .eq('post_id', postId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

@@ -59,7 +59,29 @@ const BlogPostPage = () => {
 
   useEffect(() => {
     if (post) {
-      loadComments()
+      const loadComments = async () => {
+        setIsLoadingComments(true);
+        try {
+          if (post && post.id) {
+            const commentsData = await blogService.getComments(post.id);
+            setComments(commentsData);
+          } else {
+            console.warn("Post ID is undefined, cannot fetch comments.");
+            setComments([]);
+          }
+        } catch (error) {
+          console.error('Error loading comments:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to load comments for this post.',
+            variant: 'destructive'
+          });
+          setComments([]);
+        } finally {
+          setIsLoadingComments(false);
+        }
+      };
+      loadComments();
     }
   }, [post]);
 

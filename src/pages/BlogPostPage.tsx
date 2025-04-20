@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Calendar, Tag, MessageSquare, Share2, Facebook, Linkedin, Twitter } from 'lucide-react';
+import { Calendar, Tag, MessageSquare, Share2, Facebook, Linkedin, X } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Helmet } from 'react-helmet-async';
 
@@ -17,7 +17,6 @@ const BlogPostPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { toast } = useToast();
   const { user } = useAuth();
-  console.log(user);
 
   const [post, setPost] = useState<BlogPost | null>(null);
   const [comments, setComments] = useState<BlogComment[]>([]);
@@ -270,7 +269,7 @@ const BlogPostPage = () => {
                   <span className="font-medium">Share:</span>
                   <div className="flex gap-2">
                     <a 
-                      href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`}
+                      href={`https://www.facebook.com/sharer/sharer.php?u=${currentUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-800"
@@ -283,9 +282,9 @@ const BlogPostPage = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-400 hover:text-blue-600"
-                      aria-label="Share on Twitter"
+                      aria-label="Share on X"
                     >
-                      <Twitter size={20} />
+                      <X size={20} />
                     </a>
                     <a 
                       href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`}
@@ -329,7 +328,6 @@ const BlogPostPage = () => {
                                 {formatDate(comment.created_at)}
                               </p>
                             </div>
-                            {console.log(user)}
                             {user && user.id === 'b17956a5-afbc-405b-af67-b02a93afc787' && (
                                 <Button
                                 variant="ghost"

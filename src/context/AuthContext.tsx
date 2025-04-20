@@ -62,7 +62,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setSession(initialSession);
             setUser(initialSession.user);
             setUserId(initialSession.user.id);
+
+            // Fetch user profile
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('id', initialSession.user.id)
+              .single();
+
+            if (profileError) {
+              console.error('Error fetching profile:', profileError);
+              // Handle error appropriately, e.g., set a default name
+              setUser({ ...initialSession.user, full_name: 'Anonymous' });
+            } else if (profileData) {
+              console.log('Fetched profile data:', profileData);
+              setUser({ ...initialSession.user, full_name: profileData.full_name });
+            }
+
           } else {
+
             console.log('No session found');
             setSession(null);
             setUser(null);
@@ -157,6 +175,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(data.user);
       setSession(data.session);
       setUserId(data.user.id);
+
+      // Fetch user profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        // Handle error appropriately, e.g., set a default name
+        setUser({ ...data.user, full_name: 'Anonymous' });
+      } else if (profileData) {
+        console.log('Fetched profile data:', profileData);
+        setUser({ ...data.user, full_name: profileData.full_name });
+      }
+
 
        // Store the JWT token in localStorage
       localStorage.setItem('jwt_token', data.session?.access_token || '');  // Store JWT token

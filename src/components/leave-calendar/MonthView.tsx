@@ -72,7 +72,6 @@ const MonthView: React.FC<MonthViewProps> = ({
       },
       { 
         threshold: [0, 0.25, 0.5, 0.75, 1],
-        rootMargin: '-40px 0px 0px 0px'
       }
     );
 

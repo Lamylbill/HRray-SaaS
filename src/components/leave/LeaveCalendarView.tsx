@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+
+import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { getWeek, startOfWeek, addDays, isThisWeek, getDay, format, isSameDay, isWithinInterval } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';

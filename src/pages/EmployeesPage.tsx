@@ -276,282 +276,287 @@ const EmployeesPage = () => {
   const allSelected = filteredEmployees.length > 0 && selectedEmployees.length === filteredEmployees.length;
 
   return (
-    <div className="px-4 sm:px-6 py-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Employees</h1>
-          <p className="mt-1 text-sm text-gray-600">Manage your organization's employees</p>
-        </div>
-        <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-2">
-          {selectedEmployees.length > 0 ? (
-            <>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="text-red-600 border-red-200 hover:bg-red-50"
-                onClick={showBulkDeleteDialog}
-              >
-                <Trash className="mr-2 h-4 w-4" />
-                Delete Selected ({selectedEmployees.length})
+    <AnimatedSection className="h-full flex flex-col">
+      <div className="min-h-screen bg-gray-50 pb-12">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl h-full">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Employees</h1>
+              <p className="mt-1 text-sm text-gray-600">Manage your organization's employees</p>
+            </div>
+            <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-2">
+              {selectedEmployees.length > 0 ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 border-red-200 hover:bg-red-50 transition"
+                    onClick={showBulkDeleteDialog}
+                  >
+                    <Trash className="mr-2 h-4 w-4" />
+                    Delete Selected ({selectedEmployees.length})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className='transition'
+                    onClick={clearSelection}
+                  >
+                    <X className="mr-2 h-4 w-4" />
+                    Clear Selection
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <ImportEmployeesDialog onImportSuccess={fetchEmployees} />
+                  <Button variant="outline" size="sm" className='transition' onClick={exportEmployees}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export
+                  </Button>
+                  <Button variant="primary" size="sm" className='transition' onClick={handleAddEmployee}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Employee
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="mb-6 flex flex-wrap gap-3 items-center justify-between">
+            <div className="relative w-full sm:w-auto sm:min-w-[300px]">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+              <Input
+                placeholder="Search employees..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={handleSearchChange}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className='transition' onClick={() =>
+                setViewMode(prev => prev === 'list' ? 'card' : 'list')
+              }>
+                {viewMode === 'list' ? <><Grid className="h-4 w-4 mr-2" /> Card View</> : <><ListFilter className="h-4 w-4 mr-2" /> List View</>}
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={clearSelection}
-              >
-                <X className="mr-2 h-4 w-4" />
-                Clear Selection
-              </Button>
-            </>
-          ) : (
-            <>
-              <ImportEmployeesDialog onImportSuccess={fetchEmployees} />
-              <Button variant="outline" size="sm" onClick={exportEmployees}>
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
-              <Button variant="primary" size="sm" onClick={handleAddEmployee}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add Employee
-              </Button>
-            </>
+
+              <AdvancedFilterDropdown
+                employees={employees}
+                onFiltersChange={handleFilterChange}
+              />
+            </div>
+          </div>
+
+          {error && (
+            <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-md">
+              <AlertCircle className="inline-block mr-2" />
+              {error}
+            </div>
           )}
-        </div>
-      </div>
 
-      <div className="mb-6 flex flex-wrap gap-3 items-center justify-between">
-        <div className="relative w-full sm:w-auto sm:min-w-[300px]">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-          <Input
-            placeholder="Search employees..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={handleSearchChange}
-          />
-        </div>
-
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() =>
-            setViewMode(prev => prev === 'list' ? 'card' : 'list')
-          }>
-            {viewMode === 'list' ? <><Grid className="h-4 w-4 mr-2" /> Card View</> : <><ListFilter className="h-4 w-4 mr-2" /> List View</>}
-          </Button>
-
-          <AdvancedFilterDropdown
-            employees={employees}
-            onFiltersChange={handleFilterChange}
-          />
-        </div>
-      </div>
-
-      {error && (
-        <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-md">
-          <AlertCircle className="inline-block mr-2" />
-          {error}
-        </div>
-      )}
-
-      {viewMode === 'list' ? (
-        <div className="border rounded-md overflow-hidden bg-white shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">
-                  <Checkbox 
-                    checked={allSelected} 
-                    onClick={toggleSelectAll}
-                    className={allSelected ? "data-[state=checked]:bg-hrflow-blue" : ""}
-                  />
-                </TableHead>
-                <TableHead>Employee</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Employment</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredEmployees.map(emp => (
-                <TableRow 
-                  key={emp.id} 
-                  onClick={() => handleViewDetails(emp)} 
-                  className={`cursor-pointer ${isSelected(emp.id) ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
-                >
-                  <TableCell onClick={(e) => e.stopPropagation()} className="w-10">
-                    <Checkbox 
-                      checked={isSelected(emp.id)} 
-                      onClick={(e) => toggleSelectEmployee(emp.id, e)}
-                      className={isSelected(emp.id) ? "data-[state=checked]:bg-hrflow-blue" : ""}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Avatar 
-                        className={`h-10 w-10 border cursor-pointer ${isSelected(emp.id) ? 'ring-2 ring-hrflow-blue' : ''}`}
-                        onClick={(e) => {
+          {viewMode === 'list' ? (
+            <div className="border rounded-md overflow-hidden bg-white shadow-sm">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={allSelected}
+                        onClick={toggleSelectAll}
+                        className={allSelected ? "data-[state=checked]:bg-hrflow-blue" : ""}
+                      />
+                    </TableHead>
+                    <TableHead>Employee</TableHead>
+                    <TableHead>Department</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Employment</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredEmployees.map(emp => (
+                    <TableRow
+                      key={emp.id}
+                      onClick={() => handleViewDetails(emp)}
+                      className={`cursor-pointer ${isSelected(emp.id) ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+                    >
+                      <TableCell onClick={(e) => e.stopPropagation()} className="w-10">
+                        <Checkbox
+                          checked={isSelected(emp.id)}
+                          onClick={(e) => toggleSelectEmployee(emp.id, e)}
+                          className={isSelected(emp.id) ? "data-[state=checked]:bg-hrflow-blue" : ""}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar
+                            className={`h-10 w-10 border cursor-pointer ${isSelected(emp.id) ? 'ring-2 ring-hrflow-blue' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleSelectEmployee(emp.id);
+                            }}
+                          >
+                            <AvatarImage src={emp.profile_photo || emp.profile_picture || undefined} />
+                            <AvatarFallback className={isSelected(emp.id) ? "bg-hrflow-blue text-white" : "bg-gray-200"}>
+                              {isSelected(emp.id) ? <Check className="h-5 w-5" /> : emp.full_name?.[0] || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{emp.full_name}</div>
+                            <div className="text-sm text-muted-foreground">{emp.job_title || 'No Job Title'}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{emp.department || 'N/A'}</TableCell>
+                      <TableCell>{emp.email}<br /><span className="text-sm text-muted-foreground">{emp.contact_number || emp.phone_number || 'N/A'}</span></TableCell>
+                      <TableCell>{emp.employment_type || 'N/A'}<br /><span className="text-sm text-muted-foreground">{formatDate(emp.date_of_hire)}</span></TableCell>
+                      <TableCell><StatusBadge status={emp.employment_status} /></TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="sm" className='transition' onClick={(e) => {
                           e.stopPropagation();
-                          toggleSelectEmployee(emp.id);
-                        }}
-                      >
-                        <AvatarImage src={emp.profile_photo || emp.profile_picture || undefined} />
-                        <AvatarFallback className={isSelected(emp.id) ? "bg-hrflow-blue text-white" : "bg-gray-200"}>
-                          {isSelected(emp.id) ? <Check className="h-5 w-5" /> : emp.full_name?.[0] || '?'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">{emp.full_name}</div>
-                        <div className="text-sm text-muted-foreground">{emp.job_title || 'No Job Title'}</div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{emp.department || 'N/A'}</TableCell>
-                  <TableCell>{emp.email}<br /><span className="text-sm text-muted-foreground">{emp.contact_number || emp.phone_number || 'N/A'}</span></TableCell>
-                  <TableCell>{emp.employment_type || 'N/A'}<br /><span className="text-sm text-muted-foreground">{formatDate(emp.date_of_hire)}</span></TableCell>
-                  <TableCell><StatusBadge status={emp.employment_status} /></TableCell>
-                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="sm" onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditEmployee(emp);
-                    }}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteEmployee(emp);
-                    }}>
-                      <Trash className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                          handleEditEmployee(emp);
+                        }}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className='transition' onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteEmployee(emp);
+                        }}>
+                          <Trash className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredEmployees.map(emp => (
+                <EmployeeCard
+                  key={emp.id}
+                  employee={emp}
+                  onViewDetails={handleViewDetails}
+                  onEdit={handleEditEmployee}
+                  onDelete={handleDeleteEmployee}
+                />
               ))}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredEmployees.map(emp => (
-            <EmployeeCard
-              key={emp.id}
-              employee={emp}
-              onViewDetails={handleViewDetails}
-              onEdit={handleEditEmployee}
-              onDelete={handleDeleteEmployee}
-            />
-          ))}
-        </div>
-      )}
+            </div>
+          )}
 
-      <Dialog
-        open={isDetailsOpen || isAddEmployeeOpen}
-        onOpenChange={(open) => {
-          setIsDetailsOpen(open);
-          setIsAddEmployeeOpen(open);
-        }}
-      >
-        <DialogContent 
-          className="max-w-screen-2xl w-full" 
-          title={selectedEmployee ? "Employee Details" : "Add New Employee"} 
-          description={selectedEmployee ? "View and manage employee information" : "Add an Employee to your organization."}
-        >
-        {selectedEmployee ? (
-          <EmployeeDetailsDialog
-            employee={selectedEmployee}
-            onEdit={() => {
-              fetchEmployees();
-              setIsDetailsOpen(false);
+          <Dialog
+            open={isDetailsOpen || isAddEmployeeOpen}
+            onOpenChange={(open) => {
+              setIsDetailsOpen(open);
+              setIsAddEmployeeOpen(open);
             }}
-            onDelete={() => {
-              fetchEmployees();
-              setIsDetailsOpen(false);
-            }}
-          />
-        ) : (
-          <AddEmployeeForm
-            onSuccess={() => {
-              fetchEmployees();
-              setIsAddEmployeeOpen(false);
-            }}
-            onCancel={() => {
-              setIsAddEmployeeOpen(false);
-            }}
-          />
-        )}
-      </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete {employeeToDelete?.full_name}'s 
-              record and all associated data.
-              <div className="mt-4">
-                <p className="font-medium mb-2">Type DELETE to confirm:</p>
-                <Input 
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  placeholder="Type DELETE here"
-                  className="mt-1"
-                />
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setDeleteConfirmText('');
-              setEmployeeToDelete(null);
-            }}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDeleteEmployee}
-              disabled={deleteConfirmText !== 'DELETE'}
-              className={`${deleteConfirmText !== 'DELETE' ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <DialogContent
+              className="max-w-screen-2xl w-full"
+              title={selectedEmployee ? "Employee Details" : "Add New Employee"}
+              description={selectedEmployee ? "View and manage employee information" : "Add an Employee to your organization."}
             >
-              Delete Employee
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete multiple employees?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete {selectedEmployees.length} employee 
-              {selectedEmployees.length > 1 ? 's' : ''} and all associated data.
-              <div className="mt-4">
-                <p className="font-medium mb-2">Type DELETE to confirm:</p>
-                <Input 
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  placeholder="Type DELETE here"
-                  className="mt-1"
+              {selectedEmployee ? (
+                <EmployeeDetailsDialog
+                  employee={selectedEmployee}
+                  onEdit={() => {
+                    fetchEmployees();
+                    setIsDetailsOpen(false);
+                  }}
+                  onDelete={() => {
+                    fetchEmployees();
+                    setIsDetailsOpen(false);
+                  }}
                 />
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setDeleteConfirmText('');
-              setIsBulkDeleteDialogOpen(false);
-            }}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={deleteSelectedEmployees}
-              disabled={deleteConfirmText !== 'DELETE'}
-              className={`${deleteConfirmText !== 'DELETE' ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              Delete Employees
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+              ) : (
+                <AddEmployeeForm
+                  onSuccess={() => {
+                    fetchEmployees();
+                    setIsAddEmployeeOpen(false);
+                  }}
+                  onCancel={() => {
+                    setIsAddEmployeeOpen(false);
+                  }}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete {employeeToDelete?.full_name}'s
+                  record and all associated data.
+                  <div className="mt-4">
+                    <p className="font-medium mb-2">Type DELETE to confirm:</p>
+                    <Input
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      placeholder="Type DELETE here"
+                      className="mt-1"
+                    />
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => {
+                  setDeleteConfirmText('');
+                  setEmployeeToDelete(null);
+                }}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={confirmDeleteEmployee}
+                  disabled={deleteConfirmText !== 'DELETE'}
+                  className={`${deleteConfirmText !== 'DELETE' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  Delete Employee
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete multiple employees?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete {selectedEmployees.length} employee
+                  {selectedEmployees.length > 1 ? 's' : ''} and all associated data.
+                  <div className="mt-4">
+                    <p className="font-medium mb-2">Type DELETE to confirm:</p>
+                    <Input
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      placeholder="Type DELETE here"
+                      className="mt-1"
+                    />
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => {
+                  setDeleteConfirmText('');
+                  setIsBulkDeleteDialogOpen(false);
+                }}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={deleteSelectedEmployees}
+                  disabled={deleteConfirmText !== 'DELETE'}
+                  className={`${deleteConfirmText !== 'DELETE' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  Delete Employees
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
+    </AnimatedSection>
   );
 };
 

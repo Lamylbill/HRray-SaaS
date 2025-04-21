@@ -118,7 +118,7 @@ const MonthView: React.FC<MonthViewProps> = ({
           return (
             <div
               key={day} 
-              className={`min-h-[85px] p-2 relative border border-gray-100 ${
+              className={`min-h-[100px] p-2 relative border border-gray-100 ${
                 isToday ? 'bg-blue-50' : isWeekend ? 'bg-gray-50' : 'bg-white'
               }`}
             >

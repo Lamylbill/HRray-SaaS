@@ -4,7 +4,7 @@ import MonthCalendarView from './MonthCalendarView';
 
 const LeaveCalendar: React.FC = () => {
   return (
-    <div className="h-[calc(100vh-180px)] overflow-hidden flex flex-col">
+    <div className="flex-1 flex flex-col overflow-hidden">
       <MonthCalendarView />
     </div>
   );

@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ListFilter, RefreshCw, Upload, Link, Plus } from 'lucide-react';
+import { ListFilter, RefreshCw, Upload, Link as LinkIcon, Plus } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
 import { AnimatedSection } from '@/components/ui-custom/AnimatedSection';
 import { useAuth } from '@/context/AuthContext';
@@ -78,7 +79,7 @@ const Leave = () => {
 
   const handleGenerateBotLink = () => {
     if (user) {
-      const botUsername = 'hrflow_leave_bot';
+      const botUsername = 'hrray_leave_bot';
       const generatedLink = `https://t.me/${botUsername}?start=${user.id}`;
 
       setBotLink(generatedLink);
@@ -154,13 +155,12 @@ const Leave = () => {
               <Button
                 variant="default"
                 size="sm"
-                className="bg-blue-500 text-white hover:bg-blue-700"
+                className="bg-indigo-600 text-white hover:bg-indigo-700"
                 onClick={() => setAddLeaveDialogOpen(true)}
               > 
                 <Plus className="mr-2 h-4 w-4" />
                 Add Leave
               </Button>
-
             </div>
           </div>
 
@@ -190,7 +190,7 @@ const Leave = () => {
                 onClick={handleGenerateBotLink}
                 className="flex items-center"
               >
-                <Link className="mr-2 h-4 w-4" />
+                <LinkIcon className="mr-2 h-4 w-4" />
                 Generate Bot Link
               </Button>
             </div>
@@ -221,7 +221,7 @@ const Leave = () => {
             <p className="text-xs text-gray-500 mt-2">(Employee will click this to start leave application process)</p>
           </div>
           <DialogFooter className="sm:justify-start">
-            <Button type="button" onClick={copyToClipboard} className="w-full sm:w-auto">
+            <Button type="button" onClick={copyToClipboard} className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white">
               Copy Link
             </Button>
           </DialogFooter>

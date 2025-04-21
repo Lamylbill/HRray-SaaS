@@ -14,7 +14,7 @@ const BackToTodayButton: React.FC<BackToTodayButtonProps> = ({ onClick, isVisibl
   return (
     <Button
       onClick={onClick}
-      className="fixed top-24 right-6 shadow-lg z-50 bg-white text-gray-800 hover:bg-gray-100"
+      className="fixed top-24 right-6 shadow-lg z-50 bg-indigo-600 hover:bg-indigo-700 text-white"
       size="sm"
     >
       <CalendarClock className="w-4 h-4 mr-2" />

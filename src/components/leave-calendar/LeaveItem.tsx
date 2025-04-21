@@ -16,12 +16,15 @@ const LeaveItem: React.FC<LeaveItemProps> = ({ leaveRequest, isStart, isEnd }) =
     <LeavePopover leaveRequest={leaveRequest}>
       <div 
         className={`
-          px-1.5 py-1 text-xs text-white hover:opacity-90 cursor-pointer transition-all hover:shadow-md
+          px-1.5 py-1 text-xs hover:opacity-90 cursor-pointer transition-all hover:shadow-md
           ${isStart ? 'rounded-l-md pl-2' : 'rounded-none pl-0'}
           ${isEnd ? 'rounded-r-md pr-2' : 'rounded-none pr-0'}
           ${!isStart && !isEnd ? 'px-0' : ''}
         `}
-        style={{ backgroundColor: leave_type.color }}
+        style={{ 
+          backgroundColor: leave_type.color,
+          color: '#fff'
+        }}
         title={`${employee.full_name} - ${leave_type.name} (${status})`}
       >
         <div className={`font-medium truncate ${!isStart ? 'hidden' : ''}`}>

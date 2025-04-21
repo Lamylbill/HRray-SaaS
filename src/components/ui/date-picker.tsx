@@ -3,8 +3,8 @@ import * as React from "react";
 import { format } from "date-fns";
 import {
   Calendar as CalendarIcon,
-  CalendarArrowUp,
-  CalendarArrowDown,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -15,11 +15,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-// New: Month/year selection drop-down for blog post scheduling!
 const SELECTED_DAY_CLASS =
-  "bg-[#6E59A5] text-white font-bold border-none shadow transition-all";
+  "bg-indigo-600 text-white font-bold border-none shadow transition-all";
 const TODAY_CLASS =
-  "text-[#6E59A5] font-semibold underline underline-offset-2 cursor-pointer px-2 py-1 rounded hover:bg-[#6E59A5]/10";
+  "text-indigo-600 font-semibold underline underline-offset-2 cursor-pointer px-2 py-1 rounded hover:bg-indigo-100";
 
 interface DatePickerProps {
   date?: Date | null;
@@ -92,12 +91,12 @@ export function DatePicker({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
-        <div className="rounded-xl border border-[#eee] bg-white shadow-md overflow-hidden min-w-[320px] max-w-[360px]">
+        <div className="rounded-xl border border-gray-100 bg-white shadow-md overflow-hidden min-w-[320px] max-w-[360px]">
           {/* Calendar header with month/year dropdowns */}
           <div className="flex items-center justify-between px-4 py-3 border-b">
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" onClick={() => handleYearChange(-1)} className="rounded-full p-1">
-                <CalendarArrowUp className="w-4 h-4 rotate-180" />
+              <Button variant="ghost" size="icon" onClick={() => handleMonthChange(-1)} className="rounded-full p-1">
+                <ChevronUp className="w-4 h-4" />
               </Button>
               <select
                 className="bg-white rounded border border-gray-200 px-2 py-1 text-base font-medium"
@@ -113,11 +112,14 @@ export function DatePicker({
                   <option key={name} value={i}>{name}</option>
                 ))}
               </select>
-              <Button variant="ghost" size="icon" onClick={() => handleYearChange(1)} className="rounded-full p-1">
-                <CalendarArrowDown className="w-4 h-4" />
+              <Button variant="ghost" size="icon" onClick={() => handleMonthChange(1)} className="rounded-full p-1">
+                <ChevronDown className="w-4 h-4" />
               </Button>
             </div>
             <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" onClick={() => handleYearChange(-1)} className="rounded-full p-1">
+                <ChevronUp className="w-4 h-4" />
+              </Button>
               <input
                 type="number"
                 className="border rounded px-2 py-1 w-20 text-center font-medium"
@@ -132,14 +134,8 @@ export function DatePicker({
                 max={2099}
                 style={{ width: '60px' }}
               />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setDisplayMonth(new Date())}
-                className="rounded-full p-1"
-                title="Go to current month"
-              >
-                <CalendarIcon className="w-4 h-4" />
+              <Button variant="ghost" size="icon" onClick={() => handleYearChange(1)} className="rounded-full p-1">
+                <ChevronDown className="w-4 h-4" />
               </Button>
             </div>
           </div>
@@ -168,12 +164,12 @@ export function DatePicker({
               head_row: "flex w-full mb-2",
               head_cell: "text-gray-400 font-medium text-sm w-10 h-10 flex items-center justify-center",
               row: "flex w-full",
-              cell: "relative w-10 h-10 p-0 text-center text-base cursor-pointer rounded-lg transition-colors hover:bg-[#eee] active:bg-[#d6bcfa]",
+              cell: "relative w-10 h-10 p-0 text-center text-base cursor-pointer rounded-lg transition-colors hover:bg-gray-100 active:bg-indigo-200",
               day: "w-full h-full flex items-center justify-center",
               day_selected: SELECTED_DAY_CLASS,
             }}
           />
-          <div className="flex justify-center py-2 border-t border-[#f0f0f0]">
+          <div className="flex justify-center py-2 border-t border-gray-100">
             <button
               type="button"
               className={TODAY_CLASS}

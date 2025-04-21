@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect } from 'react';
 import { LeaveRequest } from './interfaces';
 import LeaveItem from './LeaveItem';
@@ -20,7 +21,7 @@ const WeekView: React.FC<WeekViewProps> = ({
   isFirst = false,
   isCurrent = false,
 }) => {
-    const weekHeaderRef = useRef<HTMLDivElement>(null);
+  const weekHeaderRef = useRef<HTMLDivElement>(null);
 
   const getMondayOfWeek = (year: number, month: number, week: number): Date => {
     const firstDayOfYear = new Date(year, 0, 1);
@@ -43,21 +44,20 @@ const WeekView: React.FC<WeekViewProps> = ({
     return days;
   };
 
-    const getDayOfWeek = (day: number, month: number, year: number): number => {
-        return (getDay(new Date(year, month, day)) + 6) % 7;
-    };
+  const getDayOfWeek = (day: number, month: number, year: number): number => {
+    return (getDay(new Date(year, month, day)) + 6) % 7;
+  };
 
-    const isCurrentWeek = (year: number, month: number, week: number): boolean => {
-        const monday = getMondayOfWeek(year, month, week);
-        return isThisWeek(monday, { weekStartsOn: 1 });
-    };
-
-
+  const isCurrentWeek = (year: number, month: number, week: number): boolean => {
     const monday = getMondayOfWeek(year, month, week);
-    const calendarDays = getCalendarDays(monday);
+    return isThisWeek(monday, { weekStartsOn: 1 });
+  };
 
-    const weekNumber = getWeek(monday, { weekStartsOn: 1 });
-    const monthName = monday.toLocaleString('default', { month: 'long' });
+  const monday = getMondayOfWeek(year, month, week);
+  const calendarDays = getCalendarDays(monday);
+
+  const weekNumber = getWeek(monday, { weekStartsOn: 1 });
+  const monthName = monday.toLocaleString('default', { month: 'long' });
 
   const isLeaveStartDate = (date: Date, leaveRequest: LeaveRequest) => {
     return isSameDay(date, new Date(leaveRequest.start_date));
@@ -74,54 +74,55 @@ const WeekView: React.FC<WeekViewProps> = ({
     };
     return isWithinInterval(date, leaveInterval);
   };
-    useEffect(() => {
-        if (!weekHeaderRef.current) return;
+  
+  useEffect(() => {
+    if (!weekHeaderRef.current) return;
 
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.target.previousElementSibling) {
-                    const isStuck = entry.intersectionRatio < 1;
-                    entry.target.classList.toggle('is-stuck', isStuck);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.target.previousElementSibling) {
+          const isStuck = entry.intersectionRatio < 1;
+          entry.target.classList.toggle('is-stuck', isStuck);
 
-                    if (isStuck && entry.boundingClientRect.top <= 40) {
-                        const prevMonthHeaders = document.querySelectorAll('.week-header.is-stuck');
-                        prevMonthHeaders.forEach(header => {
-                            if (header !== entry.target) {
-                                (header as HTMLElement).style.opacity = '0';
-                            }
-                        });
-                    } else {
-                        const prevMonthHeaders = document.querySelectorAll('.week-header');
-                        prevMonthHeaders.forEach(header => {
-                            (header as HTMLElement).style.opacity = '1';
-                        });
-                    }
-                }
-            },
-            {
-                threshold: [0, 0.25, 0.5, 0.75, 1],
-            }
-        );
+          if (isStuck && entry.boundingClientRect.top <= 40) {
+            const prevMonthHeaders = document.querySelectorAll('.week-header.is-stuck');
+            prevMonthHeaders.forEach(header => {
+              if (header !== entry.target) {
+                (header as HTMLElement).style.opacity = '0';
+              }
+            });
+          } else {
+            const prevMonthHeaders = document.querySelectorAll('.week-header');
+            prevMonthHeaders.forEach(header => {
+              (header as HTMLElement).style.opacity = '1';
+            });
+          }
+        }
+      },
+      {
+        threshold: [0, 0.25, 0.5, 0.75, 1],
+      }
+    );
 
-        observer.observe(weekHeaderRef.current);
+    observer.observe(weekHeaderRef.current);
 
-        return () => {
-            if (weekHeaderRef.current) {
-                observer.unobserve(weekHeaderRef.current);
-            }
-        };
-    }, []);
+    return () => {
+      if (weekHeaderRef.current) {
+        observer.unobserve(weekHeaderRef.current);
+      }
+    };
+  }, []);
 
   return (
     <section className="w-full" data-current={isCurrent}>
-          <div
-              ref={weekHeaderRef}
+      <div
+        ref={weekHeaderRef}
         className={`week-header sticky top-40 z-20 bg-white bg-opacity-95 border-b border-gray-200 py-2 px-4 font-bold text-gray-800 transition-all duration-200 ${
-          isCurrent ? 'bg-blue-50' : ''
+          isCurrent ? 'bg-indigo-50' : ''
         }`}
       >
         Week {weekNumber} - {monthName} {year}
-          {isCurrent && <span className="text-blue-500 text-sm font-normal ml-2">(Current)</span>}
+        {isCurrent && <span className="text-indigo-600 text-sm font-normal ml-2">(Current)</span>}
       </div>
       <div className="grid grid-cols-7 gap-px border-b border-gray-200">
         {calendarDays.map((currentDate) => {
@@ -136,13 +137,13 @@ const WeekView: React.FC<WeekViewProps> = ({
             <div
               key={currentDate.toDateString()}
               className={`min-h-[85px] p-2 relative border border-gray-100 ${
-                isToday ? 'bg-blue-50' : isWeekend ? 'bg-gray-50' : 'bg-white'
+                isToday ? 'bg-indigo-50' : isWeekend ? 'bg-gray-50' : 'bg-white'
               }`}
             >
               <div
                 className={`text-sm mb-1 ${
                   isToday
-                    ? 'bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center'
+                    ? 'bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center'
                     : ''
                 }`}
               >

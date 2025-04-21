@@ -10,8 +10,8 @@ const WeekdayHeader: React.FC = () => {
         {days.map((day, index) => (
           <div
             key={index}
-            className={`py-2.5 text-center font-medium text-gray-700 border-x border-gray-100 first:border-l-0 last:border-r-0 ${
-              index === 0 || index === 6 ? 'bg-gray-50' : ''
+            className={`py-3 text-center font-medium text-gray-700 ${
+              index === 0 || index === 6 ? 'text-indigo-600' : ''
             }`}
           >
             {day}

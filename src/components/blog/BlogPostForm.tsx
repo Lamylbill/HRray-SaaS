@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -153,7 +152,6 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
       return;
     }
     
-    // Set the correct publish status and date based on the action
     const updatedFormData = {
       ...formData,
       is_published: publishAction === 'publish',
@@ -210,7 +208,7 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>{postId ? 'Edit Post' : 'Create New Post'}</CardTitle>
+        <CardTitle>{postId ? 'Edit Post - HRray' : 'Create New Post - HRray'}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
@@ -356,7 +354,7 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
               />
               <Label htmlFor="is_published">Publish immediately</Label>
             </div>
-            
+
             {!formData.is_published && (
               <div className="space-y-2">
                 <Label htmlFor="publish_at">Schedule publication</Label>
@@ -371,7 +369,6 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
           </div>
           
           <CardFooter className="px-0 pb-0 pt-4 flex gap-3 flex-wrap">
-            {/* Save as Draft button - Always visible */}
             <Button
               type="button"
               variant="outline"
@@ -388,7 +385,6 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
               )}
             </Button>
             
-            {/* Publish Now button - Only visible if is_published is true */}
             {formData.is_published && (
               <Button
                 type="button"
@@ -406,7 +402,6 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
               </Button>
             )}
             
-            {/* Schedule Post button - Only visible if is_published is false and publish_at is set */}
             {!formData.is_published && formData.publish_at && (
               <Button
                 type="button"

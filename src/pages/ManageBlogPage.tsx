@@ -46,7 +46,6 @@ const ManageBlogPage = () => {
         const categoriesData = await blogService.getCategories();
         setCategories(categoriesData);
         
-        // Convert boolean to string "true" for the API call
         const { posts } = await blogService.getPosts(1, 100, "true");
         setPosts(posts);
       } catch (error) {
@@ -95,14 +94,11 @@ const ManageBlogPage = () => {
   };
   
   const handleEditClick = (post: BlogPost) => {
-    // Format post data for editing, including handling scheduled posts
     const publishDate = post.published_at || post.publish_at ? new Date(post.published_at || post.publish_at || '') : null;
     const now = new Date();
     
-    // For scheduled posts, set publish_at
     const formattedPost = {
       ...post,
-      // Convert string date to Date object for the form
       publish_at: (!post.is_published && publishDate && publishDate > now) ? publishDate : null
     };
     
@@ -112,9 +108,7 @@ const ManageBlogPage = () => {
   };
   
   const handleFormSuccess = () => {
-    // Reload posts
     setIsLoading(true);
-    // Convert boolean to string "true" for the API call
     blogService.getPosts(1, 100, "true").then(({ posts }) => {
       setPosts(posts);
       setIsLoading(false);
@@ -136,7 +130,6 @@ const ManageBlogPage = () => {
     });
   };
 
-  // Improved function to determine post status - correctly handle scheduled posts
   const getPostStatus = (post: BlogPost) => {
     const now = new Date();
     const publishDate = post.published_at || post.publish_at;
@@ -148,14 +141,12 @@ const ManageBlogPage = () => {
         statusClass: 'text-green-600'
       };
     } else if (publishDate && new Date(publishDate) > now) {
-      // This post is scheduled for future publication
       return {
         status: 'Scheduled',
         statusIcon: <Clock className="mr-1 h-4 w-4" />,
         statusClass: 'text-blue-600'
       };
     } else {
-      // Otherwise it's a draft
       return {
         status: 'Draft',
         statusIcon: <XCircle className="mr-1 h-4 w-4" />,
@@ -167,7 +158,7 @@ const ManageBlogPage = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Manage Blog</h1>
+        <h1 className="text-3xl font-bold">Manage Blog - HRray</h1>
         <Link to="/blog">
           <Button variant="outline">View Blog</Button>
         </Link>

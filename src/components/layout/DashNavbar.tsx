@@ -99,22 +99,22 @@ export const DashNavbar = () => {
         </Link>
 
         <div className="hidden md:flex flex-1 justify-center">
-          <div className={cn("flex space-x-2", isCompact && "justify-center")}>
+          <div className={cn("flex space-x-1", isCompact && "justify-center")}>
             {navigationItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "px-4 py-2 min-w-[120px] h-10 rounded-full text-sm font-medium flex items-center justify-center transition",
+                  "px-3 py-2 min-w-[110px] h-10 rounded-full text-sm font-medium flex items-center justify-center transition",
                   location.pathname === item.path
-                    ? "bg-indigo-600/90 text-white"
-                    : "text-indigo-800 hover:text-indigo-600 hover:bg-indigo-50"
+                    ? "bg-[#1d4ED8] text-white"
+                    : "text-indigo-700 hover:text-indigo-700 hover:bg-indigo-50"
                 )}
               >
                 {isCompact ? (
                   <div className="w-10 h-10 flex items-center justify-center">
                     {item.icon}
-                  </div>
+                   </div>
                 ) : (
                   <>
                     <span className="mr-2">{item.icon}</span>
@@ -127,7 +127,7 @@ export const DashNavbar = () => {
         </div>
 
         <div className="flex items-center space-x-4">
-          <button className="text-indigo-700 hover:text-indigo-500 p-2 rounded-full hover:bg-indigo-50 hidden md:inline">
+          <button className="text-indigo-800 hover:text-indigo-800 hover:bg-indigo-50 p-2 rounded-full hover:bg-indigo-50 hidden md:inline">
             <Bell className="h-5 w-5" />
           </button>
 

@@ -131,8 +131,8 @@ const Leave = () => {
         <AnimatedSection className="h-full flex flex-col">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Leave Management</h1>
-              <p className="mt-1 text-gray-600">Manage employee leave, shifts, and attendance</p>
+              <h1 className="text-2xl font-bold text-gray-900">Leave Management</h1>
+              <p className="mt-1 text-gray-600 text-sm">Manage employee leave, shifts, and attendance</p>
             </div>
 
             <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-2">

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -70,27 +69,38 @@ export const DashNavbar = () => {
     <header className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-30">
       <nav className="px-6 py-3" ref={containerRef}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center">
+          <div className="flex items-center flex-1">
             <Link to="/" replace className="flex items-center gap-2">
               <span className="bg-indigo-600 text-white font-display font-bold px-2 py-1 rounded-md text-lg">HR</span>
               <span className="font-display font-bold text-lg text-indigo-800">ray</span>
             </Link>
 
-            <div className="hidden md:flex ml-10 space-x-4">
+            <div className={cn(
+              "hidden md:flex flex-1 space-x-4",
+              isCompact ? "justify-center" : "ml-10"
+            )}>
               {navigationItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
                   aria-label={item.name}
                   className={cn(
-                    "px-3 py-2 rounded-md text-sm font-medium flex items-center",
-                    location.pathname === item.path
-                      ? "bg-indigo-600 text-white"
-                      : "text-indigo-800 hover:text-indigo-600 hover:bg-indigo-50"
+                    "h-10 rounded-md text-sm font-medium flex items-center justify-center transition",
+  location.pathname === item.path
+    ? "bg-indigo-600 text-white"
+    : "text-indigo-800 hover:text-indigo-600 hover:bg-indigo-50"
                   )}
                 >
-                  <span className="mr-2">{item.icon}</span>
-                  {!isCompact && item.name}
+                  {isCompact ? (
+  <div className="w-10 h-10 flex items-center justify-center">
+    {item.icon}
+  </div>
+) : (
+  <>
+    <span className="mr-2">{item.icon}</span>
+    {item.name}
+  </>
+)}
                 </Link>
               ))}
             </div>

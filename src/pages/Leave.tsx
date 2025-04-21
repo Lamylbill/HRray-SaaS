@@ -135,7 +135,7 @@ const Leave = () => {
               <p className="mt-1 text-gray-600">Manage employee leave, shifts, and attendance</p>
             </div>
 
-            <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
+            <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-2">
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -165,7 +165,7 @@ const Leave = () => {
           </div>
 
           <div className="mb-6">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button
                 variant={activeTab === 'calendar' ? 'secondary' : 'outline'}
                 size="sm"

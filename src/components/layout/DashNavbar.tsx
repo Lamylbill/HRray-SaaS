@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, FileText,
-  Calendar, Shield, Bell, LogOut, Settings, Menu, X
+  Calendar, Shield, Bell, LogOut, Settings, Menu, X, Home
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui-custom/Button';
@@ -23,6 +23,7 @@ export const DashNavbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const navigationItems = [
     { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
@@ -31,6 +32,20 @@ export const DashNavbar = () => {
     { name: 'Leave', path: '/leave', icon: <Calendar className="h-5 w-5" /> },
     { name: 'Compliance', path: '/compliance', icon: <Shield className="h-5 w-5" /> },
   ];
+
+  const mobileMenuItems = [
+    { name: 'Home', path: '/', icon: <Home className="h-5 w-5" /> },
+    ...navigationItems,
+    { name: 'Settings', path: '/settings', icon: <Settings className="h-5 w-5" /> },
+    { name: 'Log out', path: '/logout', icon: <LogOut className="h-5 w-5" />, onClick: () => logout() },
+  ];
+
+  const logo = (
+    <>
+      <span className="bg-indigo-600 text-white font-display font-bold px-2 py-1 rounded-md text-lg">HR</span>
+      <span className="font-display font-bold text-lg text-indigo-800">ray</span>
+    </>
+  );
 
   const getUserInitials = () => {
     if (!user?.email) return 'U';
@@ -65,47 +80,102 @@ export const DashNavbar = () => {
     return () => resizeObserver.disconnect();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMobileMenuOpen]);
+
   return (
-    <header className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-30">
-      <nav className="px-6 py-3" ref={containerRef}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center flex-1">
-            <Link to="/" replace className="flex items-center gap-2">
-              <span className="bg-indigo-600 text-white font-display font-bold px-2 py-1 rounded-md text-lg">HR</span>
-              <span className="font-display font-bold text-lg text-indigo-800">ray</span>
-            </Link>
+    <header className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50" ref={containerRef}>
+      <nav className="px-6 py-3 flex items-center justify-between">
+        <Link to="/" replace className="flex items-center gap-2 z-50">
+          {logo}
+        </Link>
 
-            <div className={cn(
-              "hidden md:flex flex-1 space-x-4",
-              isCompact ? "justify-center" : "ml-10"
-            )}>
-              {navigationItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  aria-label={item.name}
-                  className={cn(
-                    "h-10 rounded-md text-sm font-medium flex items-center justify-center transition",
-  location.pathname === item.path
-    ? "bg-indigo-600 text-white"
-    : "text-indigo-800 hover:text-indigo-600 hover:bg-indigo-50"
-                  )}
-                >
-                  {isCompact ? (
-  <div className="w-10 h-10 flex items-center justify-center">
-    {item.icon}
-  </div>
-) : (
-  <>
-    <span className="mr-2">{item.icon}</span>
-    {item.name}
-  </>
-)}
-                </Link>
-              ))}
-            </div>
+        <div className="hidden md:flex flex-1 justify-center">
+          <div className={cn("flex space-x-4", isCompact && "justify-center")}>
+            {navigationItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "h-10 rounded-md text-sm font-medium flex items-center justify-center transition",
+                  location.pathname === item.path
+                    ? "bg-indigo-600 text-white"
+                    : "text-indigo-800 hover:text-indigo-600 hover:bg-indigo-50"
+                )}
+              >
+                {isCompact ? (
+                  <div className="w-10 h-10 flex items-center justify-center">
+                    {item.icon}
+                  </div>
+                ) : (
+                  <>
+                    <span className="mr-2">{item.icon}</span>
+                    {item.name}
+                  </>
+                )}
+              </Link>
+            ))}
           </div>
+        </div>
 
+        <div className="flex items-center space-x-4">
+          <button className="text-indigo-700 hover:text-indigo-500 p-2 rounded-full hover:bg-indigo-50 hidden md:inline">
+            <Bell className="h-5 w-5" />
+          </button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium text-indigo-800 border-indigo-200 hover:bg-indigo-50">
+                My Account
+                <Avatar className="h-7 w-7 border-2 border-indigo-600/20">
+                  {avatarImageUrl ? (
+                    <AvatarImage src={avatarImageUrl} alt="Profile" className="object-cover w-full h-full rounded-full" />
+                  ) : (
+                    <AvatarFallback className="bg-indigo-600 text-white text-sm font-medium">
+                      {getUserInitials()}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-white shadow-lg border border-gray-200 z-50">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <Link
+                  to="/settings"
+                  className="flex w-full items-center text-gray-700 hover:text-indigo-700"
+                  state={{ from: location.pathname }}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => logout()}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Mobile Menu Toggle */}
           <div className="md:hidden">
             <Button
               variant="ghost"
@@ -117,53 +187,53 @@ export const DashNavbar = () => {
               {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
           </div>
-
-          <div className="hidden md:flex items-center space-x-4">
-            <button className="text-indigo-700 hover:text-indigo-500 p-2 rounded-full hover:bg-indigo-50">
-              <Bell className="h-5 w-5" />
-            </button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium text-indigo-800 border-indigo-200 hover:bg-indigo-50">
-                  My Account
-                  <Avatar className="h-7 w-7 border-2 border-indigo-600/20">
-                    {avatarImageUrl ? (
-                      <AvatarImage src={avatarImageUrl} alt="Profile" className="object-cover w-full h-full rounded-full" />
-                    ) : (
-                      <AvatarFallback className="bg-indigo-600 text-white text-sm font-medium">
-                        {getUserInitials()}
-                      </AvatarFallback>
-                    )}
-                  </Avatar>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-white shadow-lg border border-gray-200 z-50">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Link
-                    to="/settings"
-                    className="flex w-full items-center text-gray-700 hover:text-indigo-700"
-                    state={{ from: location.pathname }}
-                  >
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => logout()}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
         </div>
       </nav>
+
+      {/* Mobile Menu Drawer */}
+      <div
+        className={cn(
+          "fixed inset-0 bg-black bg-opacity-25 z-40 transition-opacity duration-300 md:hidden",
+          isMobileMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+      />
+
+      <aside
+        ref={mobileMenuRef}
+        className={cn(
+          "fixed top-0 bottom-0 right-0 w-72 bg-white shadow-lg z-50 transition-transform duration-300 md:hidden",
+          isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+        )}
+      >
+        <div className="flex flex-col h-full p-6">
+          <div className="mb-8">
+            <Link to="/" className="flex items-center gap-2">
+              {logo}
+            </Link>
+          </div>
+          <nav className="flex flex-col space-y-4">
+            {mobileMenuItems.map((item) => (
+              <Link
+                key={item.name}
+                to={item.path}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  if (item.onClick) item.onClick();
+                }}
+                className={cn(
+                  "flex items-center px-4 py-2 rounded-md text-sm font-medium",
+                  location.pathname === item.path
+                    ? "bg-indigo-600 text-white"
+                    : "text-indigo-800 hover:text-indigo-600 hover:bg-indigo-50"
+                )}
+              >
+                <span className="mr-2">{item.icon}</span>
+                <span>{item.name}</span>
+              </Link>
+            ))}
+          </nav>
+        </div>
+      </aside>
     </header>
   );
 };

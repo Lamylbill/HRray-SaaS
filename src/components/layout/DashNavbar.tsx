@@ -40,12 +40,7 @@ export const DashNavbar = () => {
     { name: 'Log out', path: '/logout', icon: <LogOut className="h-5 w-5" />, onClick: () => logout() },
   ];
 
-  const logo = (
-    <>
-      <span className="bg-indigo-600 text-white font-display font-bold px-2 py-1 rounded-md text-lg">HR</span>
-      <span className="font-display font-bold text-lg text-indigo-800">ray</span>
-    </>
-  );
+  const logo = (    <Button variant="ghost" className="gap-0 text-inherit text-left normal-case p-0"><span className="text-blue-700 font-display font-bold text-[30px]">HR</span><span className="font-display font-bold text-[30px] text-orange-500">ray</span></Button>  );
 
   const getUserInitials = () => {
     if (!user?.email) return 'U';
@@ -104,15 +99,15 @@ export const DashNavbar = () => {
         </Link>
 
         <div className="hidden md:flex flex-1 justify-center">
-          <div className={cn("flex space-x-4", isCompact && "justify-center")}>
+          <div className={cn("flex space-x-2", isCompact && "justify-center")}>
             {navigationItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "px-4 py-2 min-w-[120px] h-11 rounded-full text-sm font-medium flex items-center justify-center transition",
+                  "px-4 py-2 min-w-[120px] h-10 rounded-full text-sm font-medium flex items-center justify-center transition",
                   location.pathname === item.path
-                    ? "bg-indigo-600 text-white"
+                    ? "bg-indigo-600/90 text-white"
                     : "text-indigo-800 hover:text-indigo-600 hover:bg-indigo-50"
                 )}
               >

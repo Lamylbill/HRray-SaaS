@@ -145,12 +145,16 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
     >
       <nav className="container mx-auto px-6 py-3 flex items-center justify-between" ref={containerRef}>
         <Link to="/" className="flex items-center gap-2 z-50" onClick={handleHomeClick}>
-          <span className="bg-indigo-600 text-white font-display font-bold px-2 py-1 rounded-md">HR</span>
-          <span className="font-display font-bold text-xl text-indigo-800">ray</span>
+          <Button variant="ghost" className="gap-0 text-inherit text-left normal-case p-0">
+            <span className="text-blue-700 font-display font-bold text-[30px]">
+              HR
+            </span>
+            <span className="font-display font-bold text-[30px] text-orange-500">
+              ray
+            </span>
+          </Button>
         </Link>
-  
-        {/* Desktop Navigation */}
-        <div className={cn('hidden md:flex', isCompact ? 'justify-center w-full' : 'ml-10')}>
+        {/* Desktop Navigation */}        <div className={cn('hidden md:flex', isCompact ? 'justify-center w-full' : 'ml-10')}>
           <NavigationMenu>
             <NavigationMenuList>
               {publicNavItems.map((item) => (
@@ -254,8 +258,12 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
     {/* Logo */}
     <div className="flex items-center justify-between mb-8">
       <Link to="/" className="flex items-center gap-2" onClick={handleHomeClick}>
-        <span className="bg-indigo-600 text-white font-display font-bold px-2 py-1 rounded-md">HR</span>
-        <span className="font-display font-bold text-xl text-indigo-800">ray</span>
+          <Button variant="ghost" className="gap-0 text-inherit text-left normal-case p-0">
+            <span className="text-blue-700 font-display font-bold text-[30px]">HR</span>
+            <span className="font-display font-bold text-[30px] text-orange-500">
+              ray
+            </span>
+          </Button>
       </Link>
       <button onClick={() => setIsMobileMenuOpen(false)} className="text-indigo-800">
         <X className="h-6 w-6" />

@@ -110,7 +110,7 @@ export const DashNavbar = () => {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "h-10 rounded-md text-sm font-medium flex items-center justify-center transition",
+                  "px-4 py-2 min-w-[120px] h-11 rounded-full text-sm font-medium flex items-center justify-center transition",
                   location.pathname === item.path
                     ? "bg-indigo-600 text-white"
                     : "text-indigo-800 hover:text-indigo-600 hover:bg-indigo-50"
@@ -222,10 +222,13 @@ export const DashNavbar = () => {
                 }}
                 className={cn(
                   "flex items-center px-4 py-2 rounded-md text-sm font-medium",
-                  location.pathname === item.path
+                  item.name === 'Log out'
+                    ? "text-red-600 hover:bg-red-50"
+                    : location.pathname === item.path
                     ? "bg-indigo-600 text-white"
                     : "text-indigo-800 hover:text-indigo-600 hover:bg-indigo-50"
                 )}
+                
               >
                 <span className="mr-2">{item.icon}</span>
                 <span>{item.name}</span>

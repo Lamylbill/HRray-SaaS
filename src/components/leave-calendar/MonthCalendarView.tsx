@@ -40,19 +40,17 @@ const MonthCalendarView: React.FC = () => {
         year: getYear(monthDate),
       });
     }
-    const sortedMonths = initialMonths.sort((a, b) => (a.year - b.year) || (a.month - b.month));
-    return sortedMonths;
-  }, []);  
+    return initialMonths.sort((a, b) => a.year - b.year || a.month - b.month);
+  }, []);
 
   const generateMoreMonths = useCallback(
     (direction: 'past' | 'future', count: number = 3) => {
-      const newMonths = [];
       if (visibleMonths.length === 0) return [];
-      const referenceMonth = 
-        direction === 'past' ? visibleMonths[0] : visibleMonths[visibleMonths.length - 1];
+      const referenceMonth = direction === 'past' ? visibleMonths[0] : visibleMonths[visibleMonths.length - 1];
       const startDate = new Date(referenceMonth.year, referenceMonth.month, 1);
       const delta = direction === 'past' ? -1 : 1;
 
+      const newMonths = [];
       for (let i = 1; i <= count; i++) {
         const monthDate = addMonths(startDate, delta * i);
         newMonths.push({
@@ -192,7 +190,7 @@ const MonthCalendarView: React.FC = () => {
     if (!monthExists) {
       setVisibleMonths((prev) =>
         [...prev, currentMonthYear].sort((a, b) => a.year - b.year || a.month - b.month)
-      )
+      );
     }
     setTimeout(() => {
       const currentMonthElement = document.querySelector(
@@ -210,10 +208,12 @@ const MonthCalendarView: React.FC = () => {
   };
 
   return (
-    <div>
-      <WeekdayHeader/>
+    <div className="w-full">
+      <WeekdayHeader />
       <div
-        ref={scrollContainerRef} className="h-[calc(100vh-280px)] max-h-[calc(100vh-300px)] sm:max-h-[700px] overflow-y-auto border-t border-gray-200 mt-6">
+        ref={scrollContainerRef}
+        className="h-[calc(100vh-280px)] max-h-[calc(100vh-300px)] sm:max-h-[700px] overflow-y-auto border-t border-gray-200 mt-0"
+      >
         {loading && visibleMonths.length === 0 ? (
           <div className="flex items-center justify-center h-48">
             <p className="text-center">Loading calendar data...</p>

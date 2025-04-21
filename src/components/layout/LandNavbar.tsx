@@ -146,7 +146,7 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
           {showLogo && (
             <Link to="/" className="flex items-center gap-2" onClick={handleHomeClick}>
               <span className="bg-indigo-600 text-white font-display font-bold px-2 py-1 rounded-md">HR</span>
-              <span className="font-display font-bold text-xl text-indigo-800">Flow</span>
+              <span className="font-display font-bold text-xl text-indigo-800">ray</span>
             </Link>
           )}
 
@@ -293,3 +293,4 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
     </header>
   );
 };
+

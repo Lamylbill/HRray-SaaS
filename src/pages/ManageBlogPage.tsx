@@ -287,20 +287,25 @@ const ManageBlogPage = () => {
         
         <TabsContent value="new">
           <BlogPostForm
-            initialData={currentPost ? {
-              title: currentPost.title,
-              content: currentPost.content,
-              excerpt: currentPost.excerpt,
-              meta_description: currentPost.meta_description,
-              cover_image: currentPost.cover_image,
-              tags: currentPost.tags,
-              category_ids: currentPost.categories?.map(cat => cat.id),
-              is_published: currentPost.is_published,
-              publish_at: currentPost.publish_at ? new Date(currentPost.publish_at) : null
-            } : undefined}
+            initialData={
+              currentPost
+                ? {
+                    title: currentPost.title,
+                    content: currentPost.content,
+                    excerpt: currentPost.excerpt,
+                    meta_description: currentPost.meta_description,
+                    cover_image: currentPost.cover_image,
+                    tags: currentPost.tags,
+                    category_ids: currentPost.categories?.map((cat) => cat.id),
+                    is_published: currentPost.is_published,
+                    publish_at: currentPost.publish_at ? new Date(currentPost.publish_at) : null,
+                  }
+                : undefined
+            }
             categories={categories}
             postId={currentPost?.id}
             onSuccess={handleFormSuccess}
+            key={currentPost?.id || "new"}
           />
         </TabsContent>
       </Tabs>

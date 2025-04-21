@@ -72,7 +72,7 @@ export const DashNavbar = () => {
           <div className="flex items-center">
             <Link to="/" replace className="flex items-center gap-2">
               <span className="bg-indigo-600 text-white font-display font-bold px-2 py-1 rounded-md text-lg">HR</span>
-              <span className="font-display font-bold text-lg text-indigo-800">Flow</span>
+              <span className="font-display font-bold text-lg text-indigo-800">ray</span>
             </Link>
 
             <div className="hidden md:flex ml-10 space-x-4">

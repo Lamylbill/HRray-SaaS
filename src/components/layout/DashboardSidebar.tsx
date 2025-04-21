@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -145,17 +144,17 @@ export const DashboardSidebar = () => {
         collapsed ? 'justify-center' : 'justify-between'
       )}>
         {!collapsed && (
-          <div 
-            onClick={navigateToLanding} 
+          <div
+            onClick={navigateToLanding}
             className="flex items-center gap-1 cursor-pointer"
           >
             <span className="bg-indigo-600 text-white font-display font-bold px-1 py-0.5 rounded text-xs">HR</span>
-            <span className="font-display font-bold text-sm text-indigo-800">Flow</span>
+            <span className="font-display font-bold text-sm text-indigo-800">ray</span>
           </div>
         )}
         {collapsed && (
-          <div 
-            onClick={navigateToLanding} 
+          <div
+            onClick={navigateToLanding}
             className="flex items-center justify-center cursor-pointer"
           >
             <span className="bg-indigo-600 text-white font-display font-bold px-1 py-0.5 rounded text-xs">HR</span>

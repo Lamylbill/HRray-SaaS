@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { format, startOfMonth, addMonths, getMonth, getYear, getDaysInMonth, isSameDay, isWithinInterval } from 'date-fns';
@@ -6,6 +5,7 @@ import WeekdayHeader from './WeekdayHeader';
 import BackToTodayButton from './BackToTodayButton';
 import { LeaveRequest } from './interfaces';
 import LeaveItem from './LeaveItem';
+import MonthView from './MonthView';
 
 const MonthCalendarView: React.FC = () => {
   const [visibleMonths, setVisibleMonths] = useState<{ month: number, year: number }[]>([]);
@@ -21,7 +21,7 @@ const MonthCalendarView: React.FC = () => {
   // Generate initial 6 months starting from 3 months ago 
   const generateInitialMonths = useCallback(() => {
     const today = new Date();
-    const startMonth = new Date(today.getFullYear(), today.getMonth() - 3, 1); // Start 3 months ago
+    const startMonth = startOfMonth(addMonths(today, -3)); // Start 3 months ago
     
     const initialMonths = [];
     for (let i = 0; i < 6; i++) {
@@ -31,6 +31,13 @@ const MonthCalendarView: React.FC = () => {
         year: getYear(monthDate)
       });
     }
+    
+    // Sort months chronologically
+    initialMonths.sort((a, b) => {
+      if (a.year !== b.year) return a.year - b.year;
+      return a.month - b.month;
+    });
+    
     return initialMonths;
   }, []);
 
@@ -41,10 +48,10 @@ const MonthCalendarView: React.FC = () => {
     const newMonths = [];
     if (direction === 'past') {
       const firstMonth = visibleMonths[0];
-      const startDate = new Date(firstMonth.year, firstMonth.month - count, 1);
+      const startDate = new Date(firstMonth.year, firstMonth.month, 1);
       
-      for (let i = count - 1; i >= 0; i--) {
-        const monthDate = addMonths(startDate, i);
+      for (let i = count; i > 0; i--) {
+        const monthDate = addMonths(startDate, -i);
         newMonths.push({
           month: getMonth(monthDate),
           year: getYear(monthDate)
@@ -52,9 +59,9 @@ const MonthCalendarView: React.FC = () => {
       }
     } else {
       const lastMonth = visibleMonths[visibleMonths.length - 1];
-      const startDate = new Date(lastMonth.year, lastMonth.month + 1, 1);
+      const startDate = new Date(lastMonth.year, lastMonth.month, 1);
       
-      for (let i = 0; i < count; i++) {
+      for (let i = 1; i <= count; i++) {
         const monthDate = addMonths(startDate, i);
         newMonths.push({
           month: getMonth(monthDate),
@@ -62,6 +69,12 @@ const MonthCalendarView: React.FC = () => {
         });
       }
     }
+    
+    // Sort months chronologically
+    newMonths.sort((a, b) => {
+      if (a.year !== b.year) return a.year - b.year;
+      return a.month - b.month;
+    });
     
     return newMonths;
   }, [visibleMonths]);
@@ -141,13 +154,26 @@ const MonthCalendarView: React.FC = () => {
     const newMonths = generateMoreMonths(direction);
     
     if (direction === 'past') {
-      setVisibleMonths(prev => [...newMonths, ...prev]);
+      setVisibleMonths(prev => {
+        const combined = [...newMonths, ...prev];
+        // Sort to ensure chronological order
+        return combined.sort((a, b) => {
+          if (a.year !== b.year) return a.year - b.year;
+          return a.month - b.month;
+        });
+      });
     } else {
-      setVisibleMonths(prev => [...prev, ...newMonths]);
+      setVisibleMonths(prev => {
+        const combined = [...prev, ...newMonths];
+        // Sort to ensure chronological order
+        return combined.sort((a, b) => {
+          if (a.year !== b.year) return a.year - b.year;
+          return a.month - b.month;
+        });
+      });
     }
   }, [generateMoreMonths, isLoadingMore]);
 
-  // Set up intersection observers for infinite scroll
   useEffect(() => {
     const bottomObserver = new IntersectionObserver(
       (entries) => {
@@ -185,7 +211,6 @@ const MonthCalendarView: React.FC = () => {
     };
   }, [loadMoreMonths]);
 
-  // Scroll to current month on first load
   useEffect(() => {
     if (isFirstLoad && !loading && visibleMonths.length > 0) {
       const today = new Date();
@@ -200,7 +225,6 @@ const MonthCalendarView: React.FC = () => {
     }
   }, [visibleMonths, loading, isFirstLoad]);
 
-  // Monitor scroll to show/hide back to today button
   useEffect(() => {
     const handleScroll = () => {
       if (scrollContainerRef.current) {
@@ -296,162 +320,6 @@ const MonthCalendarView: React.FC = () => {
       
       <BackToTodayButton onClick={scrollToCurrentMonth} isVisible={showBackToToday} />
     </div>
-  );
-};
-
-// Month View Component
-interface MonthViewProps {
-  month: number;
-  year: number;
-  leaveRequests: LeaveRequest[];
-  isFirst?: boolean;
-  isCurrent?: boolean;
-}
-
-const MonthView: React.FC<MonthViewProps> = ({ 
-  month, 
-  year, 
-  leaveRequests,
-  isFirst = false,
-  isCurrent = false
-}) => {
-  const monthHeaderRef = useRef<HTMLDivElement>(null);
-  
-  const monthName = format(new Date(year, month), 'MMMM yyyy');
-  const daysInMonth = getDaysInMonth(new Date(year, month));
-  const firstDayOfMonth = new Date(year, month, 1).getDay();
-  
-  // Create array for all days in month
-  const calendarDays = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-  // Create array for empty cells before first day of month
-  const emptyCells = Array.from({ length: firstDayOfMonth }, (_, i) => i);
-
-  const isToday = (day: number): boolean => {
-    const today = new Date();
-    return (
-      today.getDate() === day &&
-      today.getMonth() === month &&
-      today.getFullYear() === year
-    );
-  };
-
-  const isWeekend = (day: number): boolean => {
-    const date = new Date(year, month, day);
-    const dayOfWeek = date.getDay();
-    return dayOfWeek === 0 || dayOfWeek === 6;
-  };
-
-  const isLeaveStartDate = (date: Date, leaveRequest: LeaveRequest) => {
-    return isSameDay(date, new Date(leaveRequest.start_date));
-  };
-
-  const isLeaveEndDate = (date: Date, leaveRequest: LeaveRequest) => {
-    return isSameDay(date, new Date(leaveRequest.end_date));
-  };
-
-  const shouldRenderLeave = (date: Date, leaveRequest: LeaveRequest) => {
-    const leaveInterval = {
-      start: new Date(leaveRequest.start_date),
-      end: new Date(leaveRequest.end_date)
-    };
-    return isWithinInterval(date, leaveInterval);
-  };
-
-  // Sticky month header effect
-  useEffect(() => {
-    if (!monthHeaderRef.current) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.target.previousElementSibling) {
-          const isStuck = entry.intersectionRatio < 1;
-          entry.target.classList.toggle('is-stuck', isStuck);
-          
-          if (isStuck && entry.boundingClientRect.top <= 40) {
-            const prevMonthHeaders = document.querySelectorAll('.month-header.is-stuck');
-            prevMonthHeaders.forEach(header => {
-              if (header !== entry.target) {
-                (header as HTMLElement).style.opacity = '0';
-              }
-            });
-          } else {
-            const prevMonthHeaders = document.querySelectorAll('.month-header');
-            prevMonthHeaders.forEach(header => {
-              (header as HTMLElement).style.opacity = '1';
-            });
-          }
-        }
-      },
-      { 
-        threshold: [0, 0.25, 0.5, 0.75, 1],
-      }
-    );
-
-    observer.observe(monthHeaderRef.current);
-
-    return () => {
-      if (monthHeaderRef.current) {
-        observer.unobserve(monthHeaderRef.current);
-      }
-    };
-  }, []);
-
-  return (
-    <section 
-      className="w-full"
-      data-month={month}
-      data-year={year}
-      data-current={isCurrent}
-    >
-      <div 
-        ref={monthHeaderRef}
-        className={`month-header sticky top-10 z-20 bg-white bg-opacity-95 border-b border-gray-200 py-2 px-4 font-bold text-gray-800 transition-all duration-200 ${
-          isCurrent ? 'bg-indigo-50' : ''
-        }`}
-      >
-        {monthName}
-        {isCurrent && <span className="text-indigo-600 text-sm font-normal ml-2">(Current)</span>}
-      </div>
-
-      <div className="grid grid-cols-7 gap-px border-b border-gray-200">
-        {emptyCells.map((_, index) => (
-          <div key={`empty-${index}`} className="bg-gray-50 min-h-[85px] border border-gray-100" />
-        ))}
-        
-        {calendarDays.map((day) => {
-          const currentDate = new Date(year, month, day);
-          const dayLeaveRequests = leaveRequests.filter(request => 
-            shouldRenderLeave(currentDate, request)
-          );
-
-          return (
-            <div 
-              key={day} 
-              className={`min-h-[85px] p-2 relative border border-gray-100 ${
-                isToday(day) ? 'bg-indigo-50' : isWeekend(day) ? 'bg-gray-50' : 'bg-white'
-              }`}
-            >
-              <div className={`text-sm mb-1 ${
-                isToday(day) ? 'bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center' : ''
-              }`}>
-                {day}
-              </div>
-              
-              <div className="space-y-1 overflow-y-auto max-h-[80%]">
-                {dayLeaveRequests.map((leaveRequest) => (
-                  <LeaveItem 
-                    key={`${leaveRequest.id}-${day}`}
-                    leaveRequest={leaveRequest}
-                    isStart={isLeaveStartDate(currentDate, leaveRequest)}
-                    isEnd={isLeaveEndDate(currentDate, leaveRequest)}
-                  />
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </section>
   );
 };
 

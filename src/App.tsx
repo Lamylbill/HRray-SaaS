@@ -5,6 +5,10 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from './context/AuthContext';
 import AppRoutes from './routes/AppRoutes';
 import { HelmetProvider } from 'react-helmet-async';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Create a new QueryClient instance
+const queryClient = new QueryClient();
 
 // Error fallback component
 const ErrorFallback = () => {
@@ -59,14 +63,16 @@ class AppErrorBoundary extends React.Component<AppErrorBoundaryProps, AppErrorBo
 function App() {
   return (
     <AppErrorBoundary>
-      <BrowserRouter>
-        <AuthProvider>
-          <HelmetProvider>
-            <Toaster />
-            <AppRoutes />
-          </HelmetProvider>
-        </AuthProvider>
-      </BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <HelmetProvider>
+              <Toaster />
+              <AppRoutes />
+            </HelmetProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
     </AppErrorBoundary>
   );
 }

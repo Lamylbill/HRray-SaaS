@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -11,12 +10,13 @@ const Dashboard = () => {
   const [activeEmployees, setActiveEmployees] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [selectedLeaveTypes, setSelectedLeaveTypes] = useState<string[]>([]); // State for leave type filters
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (!user) {
+      // Only fetch if authentication is complete and user is authenticated
+      if (authLoading || !isAuthenticated || !user) {
         setIsLoading(false);
         return;
       }
@@ -24,6 +24,13 @@ const Dashboard = () => {
       try {
         setIsLoading(true);
         const authorizedClient = getAuthorizedClient();
+        
+        if (!authorizedClient) {
+          console.error("Authorized client not available");
+          setError("Authentication error. Please try logging in again.");
+          setIsLoading(false);
+          return;
+        }
         
         // Fetch total employee count
         const { count: totalCount, error: countError } = await authorizedClient
@@ -54,7 +61,7 @@ const Dashboard = () => {
     };
 
     fetchStats();
-  }, [user]);
+  }, [user, isAuthenticated, authLoading]);
 
   // Handle leave type filter change
   const handleLeaveTypeFilter = (types: string[]) => {

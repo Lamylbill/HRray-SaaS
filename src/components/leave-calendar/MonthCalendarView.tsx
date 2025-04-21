@@ -210,9 +210,10 @@ const MonthCalendarView: React.FC = () => {
   };
 
   return (
-    <div className="relative h-full w-full overflow-hidden">
-      <WeekdayHeader />
-      <div ref={scrollContainerRef} className="h-[calc(100vh-220px)] overflow-y-auto pb-10 relative">
+    <div>
+      <WeekdayHeader/>
+      <div
+        ref={scrollContainerRef} className="h-[calc(100vh-280px)] max-h-[calc(100vh-300px)] sm:max-h-[700px] overflow-y-auto border-t border-gray-200 mt-6">
         {loading && visibleMonths.length === 0 ? (
           <div className="flex items-center justify-center h-48">
             <p className="text-center">Loading calendar data...</p>

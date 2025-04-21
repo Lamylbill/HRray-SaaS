@@ -102,7 +102,7 @@ const MonthView: React.FC<MonthViewProps> = ({
       </div>
 
       <div className="grid grid-cols-7 gap-px border-b border-gray-200">
-        {emptyCells.map((_, index) => (
+        {emptyCells.map((_, index) => ( 
           <div key={`empty-${index}`} className="bg-gray-50 min-h-[85px] border border-gray-100" />
         ))}
         
@@ -116,7 +116,7 @@ const MonthView: React.FC<MonthViewProps> = ({
           );
 
           return (
-            <div 
+            <div
               key={day} 
               className={`min-h-[85px] p-2 relative border border-gray-100 ${
                 isToday ? 'bg-blue-50' : isWeekend ? 'bg-gray-50' : 'bg-white'

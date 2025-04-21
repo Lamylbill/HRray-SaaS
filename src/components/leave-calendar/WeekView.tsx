@@ -1,4 +1,3 @@
-tsx
 import React, { useRef, useEffect } from 'react';
 import { LeaveRequest } from './interfaces';
 import LeaveItem from './LeaveItem';

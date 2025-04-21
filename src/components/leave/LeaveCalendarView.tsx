@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { getWeek, startOfWeek, addDays, isThisWeek, getDay, format, isSameDay, isWithinInterval } from 'date-fns';
@@ -5,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { LeaveRequest } from '../leave-calendar/interfaces';
 import WeekdayHeader from '../leave-calendar/WeekdayHeader';
 import BackToTodayButton from '../leave-calendar/BackToTodayButton';
+import LeaveItem from '../leave-calendar/LeaveItem';
 import { uniq } from 'lodash';
 
 const LeaveCalendarView: React.FC = () => {

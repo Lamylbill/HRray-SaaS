@@ -1,11 +1,11 @@
 
 import React from 'react';
-import LeaveCalendarView from '../leave/LeaveCalendarView';
+import MonthCalendarView from './MonthCalendarView';
 
 const LeaveCalendar: React.FC = () => {
   return (
     <div className="h-[calc(100vh-180px)] overflow-hidden">
-      <LeaveCalendarView />
+      <MonthCalendarView />
     </div>
   );
 };

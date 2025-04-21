@@ -85,7 +85,9 @@ const MonthView: React.FC<MonthViewProps> = ({
   }, []);
 
   return (
-    <section 
+    <section
+      data-month={month}
+      data-year={year}
       className="w-full"
       data-current={isCurrent}
     >

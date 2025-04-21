@@ -1,147 +1,110 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { getAuthorizedClient } from '@/integrations/supabase/client';
-import { format, startOfMonth, addMonths, getMonth, getYear, getDaysInMonth, isSameDay, isWithinInterval } from 'date-fns';
+import {
+  startOfMonth,
+  addMonths,
+  getMonth,
+  getYear,
+} from 'date-fns';
 import WeekdayHeader from './WeekdayHeader';
 import BackToTodayButton from './BackToTodayButton';
 import { LeaveRequest } from './interfaces';
-import LeaveItem from './LeaveItem';
 import MonthView from './MonthView';
 
 const MonthCalendarView: React.FC = () => {
-  const [visibleMonths, setVisibleMonths] = useState<{ month: number, year: number }[]>([]);
+  const [visibleMonths, setVisibleMonths] = useState<{ month: number; year: number }[]>([]);
   const [showBackToToday, setShowBackToToday] = useState(false);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadingPastMonths, setLoadingPastMonths] = useState(false);
+  const [scrollDirection, setScrollDirection] = useState<'up' | 'down' | null>(null);
+  const [lastScrollTop, setLastScrollTop] = useState(0);
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const bottomObserverRef = useRef<HTMLDivElement>(null);
-  const topObserverRef = useRef<HTMLDivElement>(null);
-  
-  // Generate initial 6 months starting from 3 months ago 
+
+  const getCurrentMonthYear = useCallback(() => {
+    const today = new Date();
+    return { month: getMonth(today), year: getYear(today) };
+  }, []);
+
   const generateInitialMonths = useCallback(() => {
     const today = new Date();
-    const startMonth = startOfMonth(addMonths(today, -3)); // Start 3 months ago
-    
+    const startMonth = startOfMonth(addMonths(today, -5));
     const initialMonths = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 11; i++) {
       const monthDate = addMonths(startMonth, i);
       initialMonths.push({
         month: getMonth(monthDate),
-        year: getYear(monthDate)
+        year: getYear(monthDate),
       });
     }
-    
-    // Sort months chronologically
-    initialMonths.sort((a, b) => {
-      if (a.year !== b.year) return a.year - b.year;
-      return a.month - b.month;
-    });
-    
-    return initialMonths;
-  }, []);
+    const sortedMonths = initialMonths.sort((a, b) => (a.year - b.year) || (a.month - b.month));
+    return sortedMonths;
+  }, []);  
 
-  // Generate months to add when scrolling up or down
-  const generateMoreMonths = useCallback((direction: 'past' | 'future', count: number = 3) => {
-    if (visibleMonths.length === 0) return [];
-    
-    const newMonths = [];
-    if (direction === 'past') {
-      const firstMonth = visibleMonths[0];
-      const startDate = new Date(firstMonth.year, firstMonth.month, 1);
-      
-      for (let i = count; i > 0; i--) {
-        const monthDate = addMonths(startDate, -i);
-        newMonths.push({
-          month: getMonth(monthDate),
-          year: getYear(monthDate)
-        });
-      }
-    } else {
-      const lastMonth = visibleMonths[visibleMonths.length - 1];
-      const startDate = new Date(lastMonth.year, lastMonth.month, 1);
-      
+  const generateMoreMonths = useCallback(
+    (direction: 'past' | 'future', count: number = 3) => {
+      const newMonths = [];
+      if (visibleMonths.length === 0) return [];
+      const referenceMonth = 
+        direction === 'past' ? visibleMonths[0] : visibleMonths[visibleMonths.length - 1];
+      const startDate = new Date(referenceMonth.year, referenceMonth.month, 1);
+      const delta = direction === 'past' ? -1 : 1;
+
       for (let i = 1; i <= count; i++) {
-        const monthDate = addMonths(startDate, i);
+        const monthDate = addMonths(startDate, delta * i);
         newMonths.push({
           month: getMonth(monthDate),
-          year: getYear(monthDate)
+          year: getYear(monthDate),
         });
       }
-    }
-    
-    // Sort months chronologically
-    newMonths.sort((a, b) => {
-      if (a.year !== b.year) return a.year - b.year;
-      return a.month - b.month;
-    });
-    
-    return newMonths;
-  }, [visibleMonths]);
 
-  useEffect(() => {
-    setVisibleMonths(generateInitialMonths());
-  }, [generateInitialMonths]);
+      return newMonths;
+    },
+    [visibleMonths]
+  );
 
-  useEffect(() => {
+  const fetchLeaveRequests = useCallback(async () => {
     if (visibleMonths.length === 0) return;
-    
-    const fetchLeaveRequests = async () => {
-      setLoading(true);
-      try {
-        const client = getAuthorizedClient();
-        
-        // Determine date range from all visible months
-        const firstMonth = visibleMonths[0];
-        const lastMonth = visibleMonths[visibleMonths.length - 1];
-        
-        const startDate = new Date(firstMonth.year, firstMonth.month, 1);
-        const endDate = new Date(lastMonth.year, lastMonth.month + 1, 0); // Last day of the last month
-        
-        const startDateString = startDate.toISOString().split('T')[0];
-        const endDateString = endDate.toISOString().split('T')[0];
-        
-        const { data, error } = await client
-          .from('leave_requests')
-          .select('id, employee_id, start_date, end_date, status, leave_type:leave_type_id(id, name, color), employee:employee_id(full_name)')
-          .gte('end_date', startDateString)
-          .lte('start_date', endDateString);
-        
-        if (error) {
-          console.error('Error fetching leave requests:', error);
-        }
-        
-        const formattedData: LeaveRequest[] = data
-          ? data.map((item) => ({
-              id: item.id,
-              employee: {
-                id: item.employee_id,
-                full_name: item.employee.full_name,
-              },
-              leave_type: {
-                id: item.leave_type.id,
-                name: item.leave_type.name,
-                color: item.leave_type.color,
-              },
-              start_date: item.start_date,
-              end_date: item.end_date,
-              status: item.status as 'Approved' | 'Pending' | 'Rejected',
-            }))
-          : [];
-        
-        console.log(`Fetched ${formattedData.length} leave requests for date range:`, { startDateString, endDateString });
-        setLeaveRequests(formattedData);
-      } catch (error) {
+    setLoading(true);
+    try {
+      const client = getAuthorizedClient();
+      const firstMonth = visibleMonths[0];
+      const lastMonth = visibleMonths[visibleMonths.length - 1];
+      const startDate = new Date(firstMonth.year, firstMonth.month, 1);
+      const endDate = new Date(lastMonth.year, lastMonth.month + 1, 0);
+
+      const { data, error } = await client
+        .from('leave_requests')
+        .select('id, employee_id, start_date, end_date, status, leave_type:leave_type_id(id, name, color), employee:employee_id(full_name)')
+        .gte('end_date', startDate.toISOString().split('T')[0])
+        .lte('start_date', endDate.toISOString().split('T')[0]);
+
+      if (error) {
         console.error('Error fetching leave requests:', error);
-      } finally {
-        setLoading(false);
-        setIsLoadingMore(false);
+      } else {
+        const formattedData: LeaveRequest[] = data.map((item) => ({
+          id: item.id,
+          employee: {
+            id: item.employee_id,
+            full_name: item.employee.full_name,
+          },
+          leave_type: {
+            id: item.leave_type.id,
+            name: item.leave_type.name,
+            color: item.leave_type.color,
+          },
+          start_date: item.start_date,
+          end_date: item.end_date,
+          status: item.status,
+        }));
+        setLeaveRequests(formattedData);
       }
-    };
-    
-    if (getAuthorizedClient()) {
-      fetchLeaveRequests();
-    } else {
+    } catch (err) {
+      console.error('Error fetching leave requests:', err);
+    } finally {
       setLoading(false);
       setIsLoadingMore(false);
     }
@@ -149,134 +112,97 @@ const MonthCalendarView: React.FC = () => {
 
   const loadMoreMonths = useCallback((direction: 'past' | 'future') => {
     if (isLoadingMore) return;
-    
     setIsLoadingMore(true);
     const newMonths = generateMoreMonths(direction);
-    
-    if (direction === 'past') {
-      setVisibleMonths(prev => {
-        const combined = [...newMonths, ...prev];
-        // Sort to ensure chronological order
-        return combined.sort((a, b) => {
-          if (a.year !== b.year) return a.year - b.year;
-          return a.month - b.month;
-        });
-      });
-    } else {
-      setVisibleMonths(prev => {
-        const combined = [...prev, ...newMonths];
-        // Sort to ensure chronological order
-        return combined.sort((a, b) => {
-          if (a.year !== b.year) return a.year - b.year;
-          return a.month - b.month;
-        });
-      });
-    }
+    setVisibleMonths((prev) => {
+      const combined = direction === 'past' ? [...newMonths, ...prev] : [...prev, ...newMonths];
+      return combined.sort((a, b) => a.year - b.year || a.month - b.month);
+    });
   }, [generateMoreMonths, isLoadingMore]);
 
+  const loadPastMonths = useCallback(async () => {
+    if (isLoadingMore) return;
+    setIsLoadingMore(true);
+    const newMonths = generateMoreMonths('past');
+    setVisibleMonths((prev) =>
+      [...newMonths, ...prev].sort((a, b) => a.year - b.year || a.month - b.month)
+    );
+    setIsLoadingMore(false);
+  }, [generateMoreMonths, isLoadingMore]);
+
+  const handleScroll = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    setShowBackToToday(scrollTop > 100);
+    setScrollDirection(scrollTop > lastScrollTop ? 'down' : 'up');
+    setLastScrollTop(scrollTop);
+
+    if (scrollTop + clientHeight >= scrollHeight - 50) {
+      loadMoreMonths('future');
+    }
+
+    if (scrollTop < 50 && scrollDirection === 'up' && !loadingPastMonths) {
+      setLoadingPastMonths(true);
+      loadPastMonths().then(() => setLoadingPastMonths(false));
+    }
+  }, [lastScrollTop, scrollDirection, loadingPastMonths, loadPastMonths, loadMoreMonths]);
+
   useEffect(() => {
-    const bottomObserver = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMoreMonths('future');
-        }
-      },
-      { threshold: 0.1 }
-    );
-    
-    const topObserver = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMoreMonths('past');
-        }
-      },
-      { threshold: 0.1 }
-    );
-    
-    if (bottomObserverRef.current) {
-      bottomObserver.observe(bottomObserverRef.current);
+    setVisibleMonths(generateInitialMonths());
+  }, [generateInitialMonths]);
+
+  useEffect(() => {
+    fetchLeaveRequests();
+  }, [visibleMonths, fetchLeaveRequests]);
+
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll);
     }
-    
-    if (topObserverRef.current) {
-      topObserver.observe(topObserverRef.current);
-    }
-    
     return () => {
-      if (bottomObserverRef.current) {
-        bottomObserver.unobserve(bottomObserverRef.current);
-      }
-      if (topObserverRef.current) {
-        topObserver.unobserve(topObserverRef.current);
+      if (scrollContainer) {
+        scrollContainer.removeEventListener('scroll', handleScroll);
       }
     };
-  }, [loadMoreMonths]);
+  }, [handleScroll]);
 
   useEffect(() => {
     if (isFirstLoad && !loading && visibleMonths.length > 0) {
       const today = new Date();
       const currentMonthYear = { month: today.getMonth(), year: today.getFullYear() };
-      
-      const currentMonthElement = document.querySelector(`[data-month="${currentMonthYear.month}"][data-year="${currentMonthYear.year}"]`);
-      
-      if (currentMonthElement && scrollContainerRef?.current) {
+      const currentMonthElement = document.querySelector(
+        `[data-month="${currentMonthYear.month}"][data-year="${currentMonthYear.year}"]`
+      );
+      if (currentMonthElement && scrollContainerRef.current) {
         currentMonthElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
         setIsFirstLoad(false);
       }
     }
   }, [visibleMonths, loading, isFirstLoad]);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (scrollContainerRef.current) {
-        const { scrollTop } = scrollContainerRef.current;
-        setShowBackToToday(scrollTop > 100);
-      }
-    };
-    
-    const scrollContainer = scrollContainerRef.current;
-    if (scrollContainer) {
-      scrollContainer.addEventListener('scroll', handleScroll);
-    }
-    
-    return () => {
-      if (scrollContainer) {
-        scrollContainer.removeEventListener('scroll', handleScroll);
-      }
-    };
-  }, []);
-
   const scrollToCurrentMonth = useCallback(() => {
-    const today = new Date();
-    const currentMonthYear = { month: today.getMonth(), year: today.getFullYear() };
-    
-    // Check if current month is in visible months
+    const currentMonthYear = getCurrentMonthYear();
+
     const monthExists = visibleMonths.some(
-      m => m.month === currentMonthYear.month && m.year === currentMonthYear.year
+      (m) => m.month === currentMonthYear.month && m.year === currentMonthYear.year
     );
-    
-    // If not, add current month to visible months
     if (!monthExists) {
-      setVisibleMonths(prev => {
-        const newMonths = [...prev, currentMonthYear];
-        newMonths.sort((a, b) => {
-          if (a.year !== b.year) return a.year - b.year;
-          return a.month - b.month;
-        });
-        return newMonths;
-      });
+      setVisibleMonths((prev) =>
+        [...prev, currentMonthYear].sort((a, b) => a.year - b.year || a.month - b.month)
+      )
     }
-    
-    // Wait a bit to ensure the DOM has updated
     setTimeout(() => {
       const currentMonthElement = document.querySelector(
         `[data-month="${currentMonthYear.month}"][data-year="${currentMonthYear.year}"]`
       );
-      
-      if (currentMonthElement && scrollContainerRef?.current) {
+      if (currentMonthElement && scrollContainerRef.current) {
         currentMonthElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }, 100);
-  }, [visibleMonths]);
+  }, [visibleMonths, getCurrentMonthYear]);
 
   const isCurrentMonth = (month: number, year: number): boolean => {
     const today = new Date();
@@ -286,7 +212,6 @@ const MonthCalendarView: React.FC = () => {
   return (
     <div className="relative h-full w-full overflow-hidden">
       <WeekdayHeader />
-      
       <div ref={scrollContainerRef} className="h-[calc(100vh-220px)] overflow-y-auto pb-10 relative">
         {loading && visibleMonths.length === 0 ? (
           <div className="flex items-center justify-center h-48">
@@ -294,8 +219,6 @@ const MonthCalendarView: React.FC = () => {
           </div>
         ) : (
           <>
-            <div ref={topObserverRef} className="h-1" />
-            
             {visibleMonths.map(({ month, year }, index) => (
               <MonthView
                 key={`${year}-${month}`}
@@ -306,9 +229,6 @@ const MonthCalendarView: React.FC = () => {
                 isCurrent={isCurrentMonth(month, year)}
               />
             ))}
-            
-            <div ref={bottomObserverRef} className="h-1" />
-            
             {isLoadingMore && (
               <div className="py-4 flex justify-center">
                 <p className="text-gray-500">Loading more months...</p>
@@ -317,7 +237,6 @@ const MonthCalendarView: React.FC = () => {
           </>
         )}
       </div>
-      
       <BackToTodayButton onClick={scrollToCurrentMonth} isVisible={showBackToToday} />
     </div>
   );

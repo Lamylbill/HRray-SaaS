@@ -11,6 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Camera, ArrowLeft } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui-custom/LoadingSpinner";
 import { useNavigate } from 'react-router-dom';
+import { Badge } from "@/components/ui/badge";
+import { getCurrentSubscription, refreshSubscriptionStatus, openCustomerPortal, startCheckout } from "@/utils/subscriptionUtils";
 
 interface SettingsProps {
   returnTo?: string;
@@ -31,17 +33,18 @@ const Settings = ({ returnTo = '/dashboard' }: SettingsProps) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
-  // Notification settings
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [pushNotifications, setPushNotifications] = useState(true);
+  
+  const [subscription, setSubscription] = useState<any | null>(null);
+  const [subLoading, setSubLoading] = useState<boolean>(false);
   
   useEffect(() => {
     if (user) {
       setEmail(user.email || '');
       setFullName(user.user_metadata?.full_name || '');
       
-      // Fetch user avatar if available
       const fetchAvatar = async () => {
         try {
           if (user.id) {
@@ -77,11 +80,20 @@ const Settings = ({ returnTo = '/dashboard' }: SettingsProps) => {
     }
   }, [user]);
   
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      setSubLoading(true);
+      const data = await getCurrentSubscription();
+      setSubscription(data);
+      setSubLoading(false);
+    };
+    fetchSubscription();
+  }, [user]);
+  
   const handleSaveProfile = async () => {
     try {
       setIsSaving(true);
       
-      // Update profile data first
       const { data, error: updateError } = await supabase.auth.updateUser({
         data: { full_name: fullName }
       });
@@ -95,13 +107,11 @@ const Settings = ({ returnTo = '/dashboard' }: SettingsProps) => {
         return;
       }
       
-      // Handle avatar upload if available
       if (avatar) {
         const fileExt = avatar.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
         const filePath = `${user?.id}/${fileName}`;
         
-        // Upload the new avatar
         const { error: uploadError } = await supabase
           .storage
           .from('avatars')
@@ -118,7 +128,6 @@ const Settings = ({ returnTo = '/dashboard' }: SettingsProps) => {
           return;
         }
         
-        // Get the public URL for the avatar
         const { data } = supabase
           .storage
           .from('avatars')
@@ -155,7 +164,6 @@ const Settings = ({ returnTo = '/dashboard' }: SettingsProps) => {
         return;
       }
       
-      // Call Supabase auth API to update password
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -169,7 +177,6 @@ const Settings = ({ returnTo = '/dashboard' }: SettingsProps) => {
         return;
       }
       
-      // Clear password fields
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -196,7 +203,6 @@ const Settings = ({ returnTo = '/dashboard' }: SettingsProps) => {
     const file = e.target.files[0];
     if (file) {
       setAvatar(file);
-      // Preview the selected image
       const objectUrl = URL.createObjectURL(file);
       setAvatarUrl(objectUrl);
     }
@@ -204,6 +210,26 @@ const Settings = ({ returnTo = '/dashboard' }: SettingsProps) => {
   
   const handleNavigateBack = () => {
     navigate(returnTo);
+  };
+  
+  const handleRefreshPlan = async () => {
+    setSubLoading(true);
+    const res = await refreshSubscriptionStatus();
+    if (res.success) {
+      toast({ title: "Subscription status refreshed!" });
+      setSubscription(await getCurrentSubscription());
+    } else {
+      toast({ variant: "destructive", title: "Refresh failed", description: res.error });
+    }
+    setSubLoading(false);
+  };
+  
+  const handleUpgrade = async () => {
+    await startCheckout("pro", "monthly");
+  };
+  
+  const handleManageSubscription = async () => {
+    await openCustomerPortal();
   };
   
   if (isLoading) {
@@ -230,6 +256,57 @@ const Settings = ({ returnTo = '/dashboard' }: SettingsProps) => {
           <h1 className="text-3xl font-bold">Account Settings</h1>
         </div>
         
+        {/* My Plan Card */}
+        <Card className="mb-10">
+          <CardHeader>
+            <CardTitle>My Plan</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {subLoading ? (
+              <div className="flex items-center py-8"><LoadingSpinner /> <span className="ml-3">Loading plan info...</span></div>
+            ) : (
+              <div className="md:flex md:items-center md:justify-between py-2">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg font-bold">
+                      {subscription?.subscription_tier ? subscription.subscription_tier : "No Plan"}
+                    </span>
+                    {subscription?.subscribed && (
+                      <Badge className="bg-green-500 text-white">Active</Badge>
+                    )}
+                    {!subscription?.subscribed && (
+                      <Badge variant="outline" className="text-gray-700 border-gray-300">Inactive</Badge>
+                    )}
+                  </div>
+                  <div className="text-blue-800 text-sm mt-2">
+                    {subscription && subscription.subscription_end
+                      ? (
+                        <>Renews / Ends: {new Date(subscription.subscription_end).toLocaleDateString()}</>
+                      )
+                      : <>No subscription on file.</>
+                    }
+                  </div>
+                </div>
+                <div className="mt-4 md:mt-0 flex gap-3">
+                  {!subscription?.subscribed && (
+                    <Button onClick={handleUpgrade} className="bg-blue-600 text-white font-bold">
+                      Upgrade to Pro
+                    </Button>
+                  )}
+                  {subscription?.subscribed && (
+                    <Button variant="outline" onClick={handleManageSubscription}>
+                      Manage Subscription
+                    </Button>
+                  )}
+                  <Button variant="secondary" onClick={handleRefreshPlan} disabled={subLoading}>
+                    {subLoading ? <LoadingSpinner size="sm" /> : "Refresh"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
         <Tabs defaultValue="profile" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="profile">Profile</TabsTrigger>
@@ -237,7 +314,6 @@ const Settings = ({ returnTo = '/dashboard' }: SettingsProps) => {
             <TabsTrigger value="preferences">Preferences</TabsTrigger>
           </TabsList>
           
-          {/* Profile Settings */}
           <TabsContent value="profile">
             <Card>
               <CardHeader>
@@ -313,7 +389,6 @@ const Settings = ({ returnTo = '/dashboard' }: SettingsProps) => {
             </Card>
           </TabsContent>
           
-          {/* Security Settings */}
           <TabsContent value="security">
             <Card>
               <CardHeader>
@@ -366,7 +441,6 @@ const Settings = ({ returnTo = '/dashboard' }: SettingsProps) => {
             </Card>
           </TabsContent>
           
-          {/* Preferences Settings */}
           <TabsContent value="preferences">
             <Card>
               <CardHeader>

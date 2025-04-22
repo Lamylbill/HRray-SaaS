@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { format } from "date-fns";
 import {
@@ -164,7 +163,6 @@ export function DatePicker({
               head_row: "flex w-full mb-2",
               head_cell: "text-[#1d4ED8] font-medium text-sm w-10 h-10 flex items-center justify-center",
               row: "flex w-full",
-              cell: "relative w-10 h-10 p-0 text-center text-base cursor-pointer rounded-lg transition-colors hover:bg-gray-100",
               cell: "relative w-10 h-10 p-0 text-center text-base cursor-pointer rounded-lg transition-colors hover:bg-[#1d4ED8]/10",
               day_selected: SELECTED_DAY_CLASS,
             }}

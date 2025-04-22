@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { getAuthorizedClient } from '@/integrations/supabase/client';
 import {
@@ -96,7 +97,7 @@ const MonthCalendarView: React.FC = () => {
           },
           start_date: item.start_date,
           end_date: item.end_date,
-          status: item.status,
+          status: item.status as 'Approved' | 'Pending' | 'Rejected',
         }));
         setLeaveRequests(formattedData);
       }

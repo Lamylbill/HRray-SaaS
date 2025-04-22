@@ -78,7 +78,9 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
     e.preventDefault();
     let sectionId;
 
-    if (id.startsWith('/#')) {
+    if (id === '/#pricing' || id === '#pricing' || id === 'pricing') {
+      sectionId = 'pricing-comparison'; // Redirect to pricing comparison section
+    } else if (id.startsWith('/#')) {
       sectionId = id.substring(2);
     } else if (id.startsWith('#')) {
       sectionId = id.substring(1);
@@ -98,7 +100,7 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
     const element = document.getElementById(sectionId);
     if (element) {
       window.scrollTo({ top: element.offsetTop - 100, behavior: 'smooth' });
-      setActiveSection(sectionId);
+      setActiveSection(sectionId === 'pricing-comparison' ? 'pricing' : sectionId);
       setIsMobileMenuOpen(false);
     } else if (location.pathname !== '/') {
       navigate('/');
@@ -106,7 +108,7 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
         const targetElement = document.getElementById(sectionId);
         if (targetElement) {
           window.scrollTo({ top: targetElement.offsetTop - 100, behavior: 'smooth' });
-          setActiveSection(sectionId);
+          setActiveSection(sectionId === 'pricing-comparison' ? 'pricing' : sectionId);
         }
       }, 100);
     }
@@ -120,7 +122,12 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
     setIsMobileMenuOpen(false);
   };
 
-  const isSectionActive = (section: string) => activeSection === section.toLowerCase();
+  const isSectionActive = (section: string) => {
+    if (section.toLowerCase() === 'pricing') {
+      return activeSection === 'pricing'; // Highlight 'Pricing' nav when comparison is reached
+    }
+    return activeSection === section.toLowerCase();
+  };
 
   return (
     <header

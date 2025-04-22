@@ -10,7 +10,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-hrflow-blue text-white hover:bg-hrflow-blue/90 shadow-sm border border-transparent",
+        default: "bg-[#1d4ED8] text-white hover:bg-[#1d4ED8]/90 shadow-sm border border-transparent",
         destructive:
           "bg-red-600 text-white hover:bg-red-700 shadow-sm border border-transparent",
         outline:
@@ -19,7 +19,7 @@ const buttonVariants = cva(
           "bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-200",
         ghost: "hover:bg-gray-100 text-gray-700 hover:text-hrflow-blue",
         link: "text-hrflow-blue underline-offset-4 hover:underline",
-        primary: "bg-hrflow-blue text-white hover:bg-hrflow-blue/90 shadow-sm border border-transparent",
+        primary: "bg-[#1d4ED8] text-white hover:bg-[#1d4ED8]/90 shadow-sm border border-transparent",
         success: "bg-green-600 text-white hover:bg-green-700 shadow-sm border border-transparent",
         premium: "bg-gradient-to-r from-blue-600 to-indigo-600 hover:to-indigo-700 text-white font-medium shadow-lg",
         glass: "backdrop-blur-xl bg-white/30 hover:bg-white/40 border border-white/40 text-white font-medium shadow-md",

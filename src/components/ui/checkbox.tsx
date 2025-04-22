@@ -15,7 +15,7 @@ const Checkbox = React.forwardRef<
       "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
       "disabled:cursor-not-allowed disabled:opacity-50",
       "data-[state=checked]:bg-hrflow-blue data-[state=checked]:border-hrflow-blue data-[state=checked]:text-primary-foreground",
-      className
+      className,
     )}
     {...props}
   >
@@ -24,6 +24,7 @@ const Checkbox = React.forwardRef<
     </CheckboxPrimitive.Indicator>
   </CheckboxPrimitive.Root>
 ));
+
 
 Checkbox.displayName = CheckboxPrimitive.Root.displayName;
 

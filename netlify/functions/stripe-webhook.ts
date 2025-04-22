@@ -1,13 +1,13 @@
+
 import { Handler } from '@netlify/functions';
 import Stripe from 'stripe';
-import { buffer } from 'micro';
 
 // Secret keys stored in Netlify's environment settings
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2022-11-15',
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: '2023-10-16', // Updated to a newer API version
 });
 
-const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -21,7 +21,7 @@ export const handler: Handler = async (event) => {
 
   try {
     const sig = event.headers['stripe-signature'] as string;
-    const body = event.body!;
+    const body = event.body || '';
 
     stripeEvent = stripe.webhooks.constructEvent(body, sig, endpointSecret);
   } catch (err) {

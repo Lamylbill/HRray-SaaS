@@ -40,7 +40,12 @@ export const DashNavbar = () => {
     { name: 'Log out', path: '/logout', icon: <LogOut className="h-5 w-5" />, onClick: () => logout() },
   ];
 
-  const logo = (    <Button variant="ghost" className="gap-0 text-inherit text-left normal-case p-0"><span className="text-blue-700 font-display font-bold text-[30px]">HR</span><span className="font-display font-bold text-[30px] text-orange-500">ray</span></Button>  );
+  const logo = (
+    <Button variant="ghost" className="gap-0 text-inherit text-left normal-case p-0">
+      <span className="text-blue-700 font-display font-bold text-[30px]">HR</span>
+      <span className="font-display font-bold text-[30px] text-orange-500">ray</span>
+    </Button>
+  );
 
   const getUserInitials = () => {
     if (!user?.email) return 'U';
@@ -58,11 +63,6 @@ export const DashNavbar = () => {
 
   const avatarImageUrl = user?.user_metadata?.avatar_url || null;
 
-  const setMobileMenuOpen = (isOpen: boolean) => {
-    setIsMobileMenuOpen(isOpen);
-    document.body.style.overflow = isOpen ? 'hidden' : '';
-  };
-
   useEffect(() => {
     const resizeObserver = new ResizeObserver((entries) => {
       for (let entry of entries) {
@@ -78,12 +78,16 @@ export const DashNavbar = () => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
-        setMobileMenuOpen(false);
+        setIsMobileMenuOpen(false);
+        document.body.style.overflow = '';
       }
     };
 
     if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
       document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.body.style.overflow = '';
     }
 
     return () => {
@@ -93,7 +97,7 @@ export const DashNavbar = () => {
 
   return (
     <header className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50" ref={containerRef}>
-      <nav className="px-6 py-3 flex items-center justify-between">
+      <nav className="container mx-auto px-6 py-3 flex items-center justify-between">
         <Link to="/" replace className="flex items-center gap-2 z-50">
           {logo}
         </Link>
@@ -105,29 +109,21 @@ export const DashNavbar = () => {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "px-3 py-2 min-w-[110px] h-10 rounded-full text-sm font-medium flex items-center justify-center transition",
+                  "inline-flex items-center px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
                   location.pathname === item.path
-                    ? "bg-[#1d4ED8] text-white"
-                    : "text-indigo-700 hover:text-indigo-700 hover:bg-indigo-50"
+                    ? "bg-blue-700 text-white hover:bg-blue-800"
+                    : "text-indigo-800 hover:bg-indigo-100"
                 )}
               >
-                {isCompact ? (
-                  <div className="w-10 h-10 flex items-center justify-center">
-                    {item.icon}
-                   </div>
-                ) : (
-                  <>
-                    <span className="mr-2">{item.icon}</span>
-                    {item.name}
-                  </>
-                )}
+                {item.icon}
+                {!isCompact && <span className="ml-2">{item.name}</span>}
               </Link>
             ))}
           </div>
         </div>
 
         <div className="flex items-center space-x-4">
-          <button className="text-indigo-800 hover:text-indigo-800 hover:bg-indigo-50 p-2 rounded-full hover:bg-indigo-50 hidden md:inline">
+          <button className="text-indigo-800 hover:text-indigo-800 hover:bg-indigo-50 p-2 rounded-full hidden md:inline">
             <Bell className="h-5 w-5" />
           </button>
 
@@ -170,12 +166,11 @@ export const DashNavbar = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Mobile Menu Toggle */}
           <div className="md:hidden">
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
               className="text-indigo-800"
             >
@@ -185,7 +180,6 @@ export const DashNavbar = () => {
         </div>
       </nav>
 
-      {/* Mobile Menu Drawer */}
       <div
         className={cn(
           "fixed inset-0 bg-black bg-opacity-25 z-40 transition-opacity duration-300 md:hidden",
@@ -212,7 +206,7 @@ export const DashNavbar = () => {
                 key={item.name}
                 to={item.path}
                 onClick={() => {
-                  setMobileMenuOpen(false);
+                  setIsMobileMenuOpen(false);
                   if (item.onClick) item.onClick();
                 }}
                 className={cn(
@@ -220,10 +214,9 @@ export const DashNavbar = () => {
                   item.name === 'Log out'
                     ? "text-red-600 hover:bg-red-50"
                     : location.pathname === item.path
-                    ? "bg-indigo-600 text-white"
-                    : "text-indigo-800 hover:text-indigo-600 hover:bg-indigo-50"
+                    ? "bg-blue-700 text-white"
+                    : "text-indigo-800 hover:bg-indigo-100"
                 )}
-                
               >
                 <span className="mr-2">{item.icon}</span>
                 <span>{item.name}</span>

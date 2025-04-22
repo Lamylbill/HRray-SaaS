@@ -14,16 +14,15 @@ const buttonVariants = cva(
         destructive:
           "bg-red-600 text-white hover:bg-red-700 shadow-sm border border-transparent",
         outline:
-          "border-2 border-hrflow-blue bg-transparent text-hrflow-blue hover:bg-hrflow-blue/10",
+          "border-2 border-[#1d4ED8] bg-transparent text-[#1d4ED8] hover:bg-[#1d4ED8]/10",
         secondary:
           "bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-200",
-        ghost: "hover:bg-gray-100 text-gray-700 hover:text-hrflow-blue",
-        link: "text-hrflow-blue underline-offset-4 hover:underline",
+        ghost: "hover:bg-gray-100 text-gray-700 hover:text-[#1d4ED8]",
+        link: "text-[#1d4ED8] underline-offset-4 hover:underline",
         primary: "bg-[#1d4ED8] text-white hover:bg-[#1d4ED8]/90 shadow-sm border border-transparent",
         success: "bg-green-600 text-white hover:bg-green-700 shadow-sm border border-transparent",
         premium: "bg-gradient-to-r from-blue-600 to-indigo-600 hover:to-indigo-700 text-white font-medium shadow-lg",
-        glass: "backdrop-blur-xl bg-white/30 hover:bg-white/40 border border-white/40 text-white font-medium shadow-md",
-        hrflow: "bg-hrflow-primary text-white hover:bg-hrflow-secondary shadow-sm border border-transparent font-medium",
+        glass: "backdrop-blur-xl bg-white/30 hover:bg-white/40 border border-white/40 text-white font-medium shadow-md"
       },
       size: {
         default: "h-11 px-5 py-2.5",

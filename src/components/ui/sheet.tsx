@@ -38,7 +38,7 @@ const SheetContent = React.forwardRef<
   <SheetPortal>
     <SheetOverlay />
     <SheetPrimitive.Content
-      ref={ref}
+    ref={ref}
       className={cn(
         "fixed z-50 gap-4 bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=closed]:slide-out-to-right-1/2 data-[state=closed]:slide-out-to-bottom-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] data-[state=open]:slide-in-from-right-1/2 data-[state=open]:slide-in-from-bottom-[48%] sm:rounded-lg border",
         side === "top" &&
@@ -49,7 +49,7 @@ const SheetContent = React.forwardRef<
           "inset-y-0 left-0 border-r data-[state=closed]:slide-out-to-left-full data-[state=open]:slide-in-from-left-full",
         side === "right" &&
           "inset-y-0 right-0 border-l data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-right-full",
-        className
+      className
       )}
       {...props}
     >

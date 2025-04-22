@@ -16,9 +16,9 @@ import {
 } from "@/components/ui/popover";
 
 const SELECTED_DAY_CLASS =
-  "bg-indigo-600 text-white font-bold border-none shadow transition-all";
+  "bg-[#1d4ED8] text-white font-bold border-none shadow transition-all";
 const TODAY_CLASS =
-  "text-indigo-600 font-semibold underline underline-offset-2 cursor-pointer px-2 py-1 rounded hover:bg-indigo-100";
+  "text-[#1d4ED8] font-semibold underline underline-offset-2 cursor-pointer px-2 py-1 rounded hover:bg-[#1d4ED8]/10";
 
 interface DatePickerProps {
   date?: Date | null;
@@ -91,7 +91,7 @@ export function DatePicker({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
-        <div className="rounded-xl border border-gray-100 bg-white shadow-md overflow-hidden min-w-[320px] max-w-[360px]">
+        <div className="rounded-xl border border-[#1d4ED8]/30 bg-white/90 shadow-md overflow-hidden min-w-[320px] max-w-[360px]">
           {/* Calendar header with month/year dropdowns */}
           <div className="flex items-center justify-between px-4 py-3 border-b">
             <div className="flex items-center gap-1">
@@ -99,7 +99,7 @@ export function DatePicker({
                 <ChevronUp className="w-4 h-4" />
               </Button>
               <select
-                className="bg-white rounded border border-gray-200 px-2 py-1 text-base font-medium"
+                className="bg-white rounded border border-[#1d4ED8]/30 px-2 py-1 text-base font-medium"
                 value={displayMonth.getMonth()}
                 onChange={(e) => {
                   const newDate = new Date(displayMonth);
@@ -162,10 +162,10 @@ export function DatePicker({
               month: "w-full",
               caption: "hidden",
               head_row: "flex w-full mb-2",
-              head_cell: "text-gray-400 font-medium text-sm w-10 h-10 flex items-center justify-center",
+              head_cell: "text-[#1d4ED8] font-medium text-sm w-10 h-10 flex items-center justify-center",
               row: "flex w-full",
-              cell: "relative w-10 h-10 p-0 text-center text-base cursor-pointer rounded-lg transition-colors hover:bg-gray-100 active:bg-indigo-200",
-              day: "w-full h-full flex items-center justify-center",
+              cell: "relative w-10 h-10 p-0 text-center text-base cursor-pointer rounded-lg transition-colors hover:bg-gray-100",
+              cell: "relative w-10 h-10 p-0 text-center text-base cursor-pointer rounded-lg transition-colors hover:bg-[#1d4ED8]/10",
               day_selected: SELECTED_DAY_CLASS,
             }}
           />

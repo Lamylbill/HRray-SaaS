@@ -8,14 +8,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// These are sample price IDs - replace with your actual Stripe price IDs
-const PLAN_PRICE_IDS = {
-  pro_monthly: "price_1RGp3uQRzDYLKJmR8osAAdlF",
-  pro_yearly: "price_1RGp3uQRzDYLKJmR1gKPd0Hs",
-  plus_monthly: "price_1RGp3uQRzDYLKJmRCLGDRVkf",
-  plus_yearly: "price_1RGp3uQRzDYLKJmR3uv5NJvC"
-};
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -59,72 +51,39 @@ serve(async (req) => {
       );
     }
     
-    console.log(`User authenticated: ${user.email}`);
-
-    // Parse request body
-    const reqBody = await req.json();
-    const { plan, billing } = reqBody; // pro/plus, monthly/yearly
-    console.log(`Plan: ${plan}, Billing: ${billing}`);
+    console.log(`Creating customer portal for: ${user.email}`);
 
     // Initialize Stripe
     const stripe = new Stripe(stripeSecret, { apiVersion: "2023-10-16" });
     
-    let customerId;
-    // Find or create Stripe customer
+    // Find Stripe customer
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
-      console.log(`Existing customer found: ${customerId}`);
-    } else {
-      const customer = await stripe.customers.create({
-        email: user.email,
-        metadata: { supabase_user_id: user.id },
-      });
-      customerId = customer.id;
-      console.log(`New customer created: ${customerId}`);
-    }
-
-    // Determine price ID based on plan and billing
-    let priceId;
-    if (plan === "pro" && billing === "monthly") priceId = PLAN_PRICE_IDS.pro_monthly;
-    else if (plan === "pro" && billing === "yearly") priceId = PLAN_PRICE_IDS.pro_yearly;
-    else if (plan === "plus" && billing === "monthly") priceId = PLAN_PRICE_IDS.plus_monthly;
-    else if (plan === "plus" && billing === "yearly") priceId = PLAN_PRICE_IDS.plus_yearly;
-    else {
-      console.error(`Invalid plan/billing: ${plan}/${billing}`);
+    if (customers.data.length === 0) {
+      console.error("No Stripe customer found");
       return new Response(
-        JSON.stringify({ error: "Invalid plan/billing" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "No subscription found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    console.log(`Price ID selected: ${priceId}`);
-
-    // Create checkout session
+    
+    const customerId = customers.data[0].id;
+    console.log(`Customer found: ${customerId}`);
+    
+    // Create Customer Portal session
     const origin = req.headers.get("origin") || "http://localhost:8080";
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
+    const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      line_items: [{
-        price: priceId,
-        quantity: 1,
-      }],
-      success_url: `${origin}/settings?checkout=success`,
-      cancel_url: `${origin}/settings?checkout=cancel`,
-      metadata: {
-        plan,
-        supabase_user_id: user.id,
-      }
+      return_url: `${origin}/settings`,
     });
-
-    console.log(`Checkout session created: ${session.id}`);
+    
+    console.log(`Portal session created: ${session.id}`);
     return new Response(
       JSON.stringify({ url: session.url }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
     
   } catch (error) {
-    console.error("Error creating checkout session:", error);
+    console.error("Error creating customer portal:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

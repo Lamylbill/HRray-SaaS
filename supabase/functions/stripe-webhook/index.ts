@@ -9,108 +9,168 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY");
-  const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
-  if (!stripeSecret || !webhookSecret) {
-    return new Response(
-      JSON.stringify({ error: "Stripe secrets not configured" }),
-      { status: 500, headers: corsHeaders }
-    );
-  }
-
-  // Get the raw body and stripe-signature header
-  const sig = req.headers.get("stripe-signature");
-  const body = await req.text();
-
-  const stripe = new Stripe(stripeSecret, { apiVersion: "2023-10-16" });
-
-  let event;
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      sig as string,
-      webhookSecret
+    // Get the signature from the headers
+    const signature = req.headers.get("stripe-signature");
+    if (!signature) {
+      console.error("No Stripe signature in request");
+      return new Response(
+        JSON.stringify({ error: "No Stripe signature found" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    
+    if (!webhookSecret || !stripeSecretKey) {
+      console.error("Stripe secrets not configured");
+      return new Response(
+        JSON.stringify({ error: "Stripe secrets not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get the body as text for signature verification
+    const body = await req.text();
+    
+    // Initialize Stripe
+    const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
+    
+    let event;
+    try {
+      // Verify and construct the webhook event
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      console.log(`✅ Webhook event verified: ${event.type}`);
+    } catch (err) {
+      console.error(`⚠️ Webhook signature verification failed:`, err);
+      return new Response(
+        JSON.stringify({ error: `Webhook Error: ${err instanceof Error ? err.message : 'Unknown error'}` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Connect to Supabase using service role key to bypass RLS
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } }
     );
-  } catch (err) {
+
+    // Handle different event types
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object;
+        console.log("✅ Checkout completed:", session.id);
+        
+        // Get customer information and update subscribers table
+        const customerId = session.customer;
+        const userEmail = session.customer_details?.email;
+        const subscriptionId = session.subscription;
+        
+        if (customerId && userEmail && subscriptionId) {
+          // Update subscriber record
+          await supabase.from("subscribers").upsert({
+            email: userEmail,
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscriptionId,
+            subscribed: true,
+            plan: session.metadata?.plan || "pro", // Default to "pro" if not specified
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'email' });
+          
+          console.log(`✅ Updated subscription for ${userEmail}`);
+        }
+        break;
+      }
+      
+      case "customer.subscription.updated": {
+        const subscription = event.data.object;
+        const customerId = subscription.customer;
+        
+        // Get current end date
+        const currentPeriodEnd = subscription.current_period_end 
+          ? new Date(subscription.current_period_end * 1000).toISOString()
+          : null;
+        
+        // Get customer email
+        const { data: customerData } = await stripe.customers.retrieve(
+          customerId as string
+        );
+        
+        // Check for deleted customers
+        if (customerData && "deleted" in customerData && customerData.deleted) {
+          console.log(`Customer ${customerId} has been deleted`);
+          break;
+        }
+        
+        const email = "email" in customerData ? customerData.email : null;
+        
+        if (email) {
+          await supabase.from("subscribers").upsert({
+            email: email,
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscription.id,
+            subscribed: subscription.status === "active",
+            plan: subscription.status === "active" ? (subscription.metadata?.plan || "pro") : "free",
+            plan_expiry: currentPeriodEnd,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'email' });
+          
+          console.log(`✅ Updated subscription status for ${email} to ${subscription.status}`);
+        }
+        break;
+      }
+      
+      case "customer.subscription.deleted": {
+        const subscription = event.data.object;
+        const customerId = subscription.customer;
+        
+        // Get customer email
+        const { data: customerData } = await stripe.customers.retrieve(
+          customerId as string
+        );
+        
+        // Check for deleted customers
+        if (customerData && "deleted" in customerData && customerData.deleted) {
+          console.log(`Customer ${customerId} has been deleted`);
+          break;
+        }
+        
+        const email = "email" in customerData ? customerData.email : null;
+        
+        if (email) {
+          await supabase.from("subscribers").update({
+            subscribed: false,
+            plan: "free",
+            plan_expiry: null,
+            updated_at: new Date().toISOString(),
+          }).eq("email", email);
+          
+          console.log(`✅ Marked subscription as cancelled for ${email}`);
+        }
+        break;
+      }
+      
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+    }
+
+    return new Response(JSON.stringify({ received: true }), { 
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200
+    });
+    
+  } catch (error) {
+    console.error("Error processing webhook:", error);
     return new Response(
-      JSON.stringify({ error: `Webhook Error: ${err.message}` }),
-      { status: 400, headers: corsHeaders }
+      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-
-  // Connect to Supabase as service role
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    { auth: { persistSession: false } }
-  );
-
-  // Subscription events to handle: checkout.session.completed, customer.subscription.updated, customer.subscription.deleted
-  if (
-    event.type === "checkout.session.completed" ||
-    event.type === "customer.subscription.updated" ||
-    event.type === "customer.subscription.created"
-  ) {
-    const session = event.data.object;
-    const customerId = session.customer ?? session.customer_id;
-    let userEmail, subscriptionId, plan, planExpiry;
-    if (event.type === "checkout.session.completed") {
-      userEmail = session.customer_email;
-      subscriptionId = session.subscription;
-      plan = session.metadata?.plan;
-    } else {
-      // For customer.subscription.updated/created
-      subscriptionId = session.id;
-      customerId = session.customer;
-      userEmail = session.customer_email || (session.customer && session.customer.email);
-      plan = session.items?.data?.[0]?.price?.nickname?.toLowerCase();
-    }
-    // Determine expiry
-    if (session.current_period_end) {
-      planExpiry = new Date(session.current_period_end * 1000).toISOString();
-    } else if (session.expires_at) {
-      planExpiry = new Date(session.expires_at * 1000).toISOString();
-    }
-
-    // Determine our plan from price/metadata, require mapping if needed
-    let newPlan = "pro";
-    if (
-      session.metadata?.plan === "plus" ||
-      session.items?.data?.[0]?.price.nickname?.toLowerCase().includes("plus")
-    ) {
-      newPlan = "plus";
-    }
-
-    if (userEmail && customerId && subscriptionId) {
-      // Upsert to public.subscribers table
-      await supabase.from("subscribers").upsert({
-        email: userEmail,
-        stripe_customer_id: customerId,
-        stripe_subscription_id: subscriptionId,
-        plan: newPlan,
-        plan_expiry: planExpiry,
-        subscribed: true,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'email' });
-    }
-  }
-
-  if (event.type === "customer.subscription.deleted") {
-    const sub = event.data.object;
-    const customerId = sub.customer;
-    // Set back to free plan
-    await supabase.from("subscribers").update({
-      plan: "free",
-      plan_expiry: null,
-      stripe_subscription_id: null,
-      subscribed: false,
-      updated_at: new Date().toISOString()
-    }).eq("stripe_customer_id", customerId);
-  }
-
-  return new Response(JSON.stringify({ received: true }), { headers: corsHeaders });
 });

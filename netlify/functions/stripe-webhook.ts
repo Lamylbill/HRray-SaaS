@@ -36,6 +36,13 @@ export const handler: Handler = async (event) => {
   switch (stripeEvent.type) {
     case 'checkout.session.completed':
       console.log('✅ Payment successful!');
+      // You could call your Supabase function here to update the database
+      try {
+        // This is where you'd make a call to your Supabase function if needed
+        console.log('Session details:', stripeEvent.data.object);
+      } catch (error) {
+        console.error('Error updating subscription status:', error);
+      }
       break;
     case 'invoice.payment_succeeded':
       console.log('✅ Invoice paid.');

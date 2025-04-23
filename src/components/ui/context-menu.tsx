@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as ContextMenuPrimitive from "@radix-ui/react-context-menu"
 import { Check, ChevronRight, Circle } from "lucide-react"
@@ -158,7 +159,7 @@ const ContextMenuSeparator = React.forwardRef<
   <ContextMenuPrimitive.Separator
     ref={ref}
     className={cn("-mx-1 my-1 h-px bg-border", className)}
-    {...props} bg-[#1d4ED8]/30
+    {...props}
   />
 ))
 ContextMenuSeparator.displayName = ContextMenuPrimitive.Separator.displayName

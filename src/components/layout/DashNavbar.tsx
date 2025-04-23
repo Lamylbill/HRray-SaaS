@@ -207,7 +207,7 @@ export const DashNavbar = () => {
                 to={item.path}
                 onClick={() => {
                   setIsMobileMenuOpen(false);
-                  if (item.onClick) item.onClick();
+                  if ('onClick' in item) item.onClick();
                 }}
                 className={cn(
                   "flex items-center px-4 py-2 rounded-md text-sm font-medium",

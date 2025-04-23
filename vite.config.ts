@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
   ].filter(Boolean),
   build: {
     rollupOptions: {
-      external: ['canvas'], // Skip canvas from build (Netlify safe)
+      external: ['canvas', 'stripe', 'micro'], // Add stripe and micro to external
     },
   },
   server: {

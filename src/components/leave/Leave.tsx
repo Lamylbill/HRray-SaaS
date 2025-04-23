@@ -1,13 +1,8 @@
+
 import React from 'react';
-import MonthCalendarView from './MonthCalendarView';
-import {
-  CalendarViewButton,
-  LeaveRecordsButton,
-  GenerateBotLinkButton,
-  RefreshButton,
-  ExportButton,
-  AddLeaveButton,
-} from './LeaveActionButtons';
+import LeaveCalendar from '../leave-calendar/LeaveCalendar';
+import { Button } from '@/components/ui-custom/Button';
+import { RefreshCw, Upload, Plus, Calendar, FileText, Link as LinkIcon } from 'lucide-react';
 
 const Leave = () => {
   return (
@@ -23,22 +18,40 @@ const Leave = () => {
             </p>
           </div>
           <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
-            <RefreshButton />
-            <ExportButton />
-            <AddLeaveButton />
+            <Button variant="outline" size="sm">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+            <Button variant="outline" size="sm">
+              <Upload className="mr-2 h-4 w-4" />
+              Export
+            </Button>
+            <Button variant="default" size="sm">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Leave
+            </Button>
           </div>
         </div>
 
         {/* Navigation Buttons */}
         <div className="flex flex-wrap gap-3 mb-4">
-          <CalendarViewButton />
-          <LeaveRecordsButton />
-          <GenerateBotLinkButton />
+          <Button variant="outline" size="sm">
+            <Calendar className="mr-2 h-4 w-4" />
+            Calendar View
+          </Button>
+          <Button variant="outline" size="sm">
+            <FileText className="mr-2 h-4 w-4" />
+            Leave Records
+          </Button>
+          <Button variant="outline" size="sm">
+            <LinkIcon className="mr-2 h-4 w-4" />
+            Generate Bot Link
+          </Button>
         </div>
 
         {/* Calendar */}
         <div className="flex-grow flex flex-col overflow-hidden">
-          <MonthCalendarView />
+          <LeaveCalendar />
         </div>
       </div>
     </div>

@@ -50,5 +50,8 @@ enabled = true
 serve_port = 54325
 invoke_port = 54326
 
+[functions.stripe-webhook]
+verify_jwt = false
+
 [functions.fetch-public-holidays]
 verify_jwt = true

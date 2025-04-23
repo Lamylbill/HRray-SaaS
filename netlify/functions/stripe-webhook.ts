@@ -1,0 +1,62 @@
+
+import { Handler } from '@netlify/functions';
+import Stripe from 'stripe';
+
+// Secret keys stored in Netlify's environment settings
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: '2023-10-16', // Updated to a newer API version
+});
+
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
+
+export const handler: Handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      body: 'Method Not Allowed',
+    };
+  }
+
+  let stripeEvent;
+
+  try {
+    const sig = event.headers['stripe-signature'] as string;
+    const body = event.body || '';
+
+    stripeEvent = stripe.webhooks.constructEvent(body, sig, endpointSecret);
+  } catch (err) {
+    console.error('⚠️  Webhook signature verification failed:', err);
+    return {
+      statusCode: 400,
+      body: `Webhook Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+    };
+  }
+
+  // Handle the event
+  switch (stripeEvent.type) {
+    case 'checkout.session.completed':
+      console.log('✅ Payment successful!');
+      // You could call your Supabase function here to update the database
+      try {
+        // This is where you'd make a call to your Supabase function if needed
+        console.log('Session details:', stripeEvent.data.object);
+      } catch (error) {
+        console.error('Error updating subscription status:', error);
+      }
+      break;
+    case 'invoice.payment_succeeded':
+      console.log('✅ Invoice paid.');
+      break;
+    case 'invoice.payment_failed':
+      console.log('❌ Invoice payment failed.');
+      break;
+    // Add more cases as needed
+    default:
+      console.log(`Unhandled event type ${stripeEvent.type}`);
+  }
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ received: true }),
+  };
+};

@@ -79,7 +79,7 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
     let sectionId;
 
     if (id === '/#pricing' || id === '#pricing' || id === 'pricing') {
-      sectionId = 'pricing-comparison'; // Redirect to pricing comparison section
+      sectionId = 'pricing'; // Redirect to pricing section
     } else if (id.startsWith('/#')) {
       sectionId = id.substring(2);
     } else if (id.startsWith('#')) {
@@ -100,15 +100,14 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
     const element = document.getElementById(sectionId);
     if (element) {
       window.scrollTo({ top: element.offsetTop - 100, behavior: 'smooth' });
-      setActiveSection(sectionId === 'pricing-comparison' ? 'pricing' : sectionId);
+      setActiveSection(sectionId);
       setIsMobileMenuOpen(false);
     } else if (location.pathname !== '/') {
       navigate('/');
       setTimeout(() => {
         const targetElement = document.getElementById(sectionId);
         if (targetElement) {
-          window.scrollTo({ top: targetElement.offsetTop - 100, behavior: 'smooth' });
-          setActiveSection(sectionId === 'pricing-comparison' ? 'pricing' : sectionId);
+          window.scrollTo({ top: targetElement.offsetTop - 100, behavior: 'smooth' });          setActiveSection(sectionId);
         }
       }, 100);
     }

@@ -1,21 +1,22 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
+// Set the CORS headers to allow cross-origin requests
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Define the serve function that handles incoming requests
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Handle CORS preflight requests (OPTIONS method)
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get secrets
+    // Get the Stripe secret key from environment variables
     const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeSecret) {
       console.error("Stripe secret not configured");
@@ -25,7 +26,7 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase clients - we need both anon for authentication and service role for writing
+    // Create Supabase clients - one for regular access and one with admin privileges
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!
@@ -34,10 +35,10 @@ serve(async (req) => {
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { auth: { persistSession: false } }
+      { auth: { persistSession: false } } // Disable session persistence for admin client
     );
 
-    // Authenticate user
+    // Authenticate the user using the Authorization header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       console.error("No auth header provided");
@@ -60,22 +61,26 @@ serve(async (req) => {
     
     console.log(`Checking subscription for: ${user.email}`);
 
-    // Initialize Stripe
+    // Initialize Stripe with the secret key
     const stripe = new Stripe(stripeSecret, { apiVersion: "2023-10-16" });
     
-    // Find Stripe customer
+    // Find the Stripe customer associated with the user's email
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     if (customers.data.length === 0) {
       console.log("No Stripe customer found");
       
-      // Update subscription status in database
-      await supabaseAdmin.from("subscribers").upsert({
+      // Update subscription status in database to free
+      const {error} = await supabaseAdmin.from("subscribers").upsert({
         email: user.email,
         user_id: user.id,
         subscribed: false,
         plan: "free",
         updated_at: new Date().toISOString(),
       }, { onConflict: "email" });
+
+      if (error) {
+        console.error("Error creating subscriber:", error);
+      }
       
       return new Response(
         JSON.stringify({ 
@@ -90,7 +95,7 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     console.log(`Customer found: ${customerId}`);
     
-    // Get active subscriptions
+    // Get the user's active subscriptions from Stripe
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: 'active',
@@ -105,10 +110,10 @@ serve(async (req) => {
       const subscription = subscriptions.data[0];
       subscribed = true;
       
-      // Determine plan from subscription metadata or price
+      // Determine the user's plan from the subscription metadata or set it to pro
       plan = subscription.metadata?.plan || "pro";
       
-      // Set expiry date
+      // Set the plan expiry date
       planExpiry = subscription.current_period_end 
         ? new Date(subscription.current_period_end * 1000).toISOString()
         : null;
@@ -118,8 +123,8 @@ serve(async (req) => {
       console.log("No active subscription found");
     }
     
-    // Update subscription status in database
-    await supabaseAdmin.from("subscribers").upsert({
+    // Update the subscription status in the database
+    const {error} = await supabaseAdmin.from("subscribers").upsert({
       email: user.email,
       user_id: user.id,
       stripe_customer_id: customerId,
@@ -128,7 +133,12 @@ serve(async (req) => {
       plan_expiry: planExpiry,
       updated_at: new Date().toISOString(),
     }, { onConflict: "email" });
+
+    if (error) {
+      console.error("Error creating subscriber:", error);
+    }
     
+    // Return the user's subscription status
     return new Response(
       JSON.stringify({ 
         subscribed,
@@ -139,6 +149,7 @@ serve(async (req) => {
     );
     
   } catch (error) {
+    // Handle errors
     console.error("Error checking subscription:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),

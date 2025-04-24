@@ -4,6 +4,8 @@
   packages = [
     pkgs.nodejs_20
     pkgs.nodePackages.npm
+    pkgs.supabase-cli
+    pkgs.docker
   ];
   idx.extensions = [
     "svelte.svelte-vscode"

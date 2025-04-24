@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronRight, Menu, X, LogOut, Settings } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
@@ -54,14 +54,23 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
 
       const sections = ['home', 'features', 'pricing', 'contact', 'about'];
       const scrollPos = window.scrollY + 120;
-      for (const section of sections) {
-        const el = document.getElementById(section);
-        if (el) {
-          const top = el.offsetTop;
-          const bottom = top + el.offsetHeight;
-          if (scrollPos >= top && scrollPos < bottom) {
-            setActiveSection(section);
-            break;
+      
+      const pricingTableEl = document.getElementById('pricing-table');
+      const pricingEl = document.getElementById('pricing');
+      
+      if ((pricingTableEl && scrollPos >= pricingTableEl.offsetTop && scrollPos < pricingTableEl.offsetTop + pricingTableEl.offsetHeight) || 
+          (pricingEl && scrollPos >= pricingEl.offsetTop && scrollPos < pricingEl.offsetTop + pricingEl.offsetHeight)) {
+        setActiveSection('pricing');
+      } else {
+        for (const section of sections) {
+          const el = document.getElementById(section);
+          if (el) {
+            const top = el.offsetTop;
+            const bottom = top + el.offsetHeight;
+            if (scrollPos >= top && scrollPos < bottom) {
+              setActiveSection(section);
+              break;
+            }
           }
         }
       }
@@ -78,8 +87,10 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
     e.preventDefault();
     let sectionId;
 
-    if (id === '/#pricing' || id === '#pricing' || id === 'pricing') {
-      sectionId = 'pricing'; // Redirect to pricing section
+    if (id === "/#pricing-table" || id === "#pricing-table" || id === "pricing-table") {
+      sectionId = "pricing-table";
+    } else if (id === '/#pricing' || id === '#pricing' || id === 'pricing') {
+      sectionId = 'pricing-comparison'; 
     } else if (id.startsWith('/#')) {
       sectionId = id.substring(2);
     } else if (id.startsWith('#')) {
@@ -107,7 +118,8 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
       setTimeout(() => {
         const targetElement = document.getElementById(sectionId);
         if (targetElement) {
-          window.scrollTo({ top: targetElement.offsetTop - 100, behavior: 'smooth' });          setActiveSection(sectionId);
+          window.scrollTo({ top: targetElement.offsetTop - 100, behavior: 'smooth' });
+          setActiveSection(sectionId);
         }
       }, 100);
     }
@@ -123,7 +135,7 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
 
   const isSectionActive = (section: string) => {
     if (section.toLowerCase() === 'pricing') {
-      return activeSection === 'pricing'; // Highlight 'Pricing' nav when comparison is reached
+      return activeSection === 'pricing' || activeSection === 'pricing-table';
     }
     return activeSection === section.toLowerCase();
   };

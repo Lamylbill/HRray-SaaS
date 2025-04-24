@@ -23,7 +23,7 @@ export const getNavItems = () => {
     },
     {
       name: 'Pricing',
-      href: '/#pricing',
+      href: '/#pricing-table',
       icon: <DollarSign className="h-5 w-5" />,
     },
     {

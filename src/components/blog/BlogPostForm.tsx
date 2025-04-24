@@ -155,7 +155,7 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
     const updatedFormData = {
       ...formData,
       is_published: publishAction === 'publish',
-      publish_at: publishAction === 'schedule' ? formData.publish_at : null
+      publish_at: publishAction === 'schedule' && formData.publish_at ? new Date(formData.publish_at.getFullYear(), formData.publish_at.getMonth(), formData.publish_at.getDate(), 0, 0, 0) : null
     };
     
     setIsSubmitting(true);

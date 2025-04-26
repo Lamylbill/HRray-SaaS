@@ -346,27 +346,39 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
           </div>
           
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="is_published"
-                checked={formData.is_published}
-                onCheckedChange={handleSwitchChange}
-              />
-              <Label htmlFor="is_published">Publish immediately</Label>
-            </div>
+  <div className="flex items-center gap-3">
+    <Switch
+      id="is_published"
+      checked={formData.is_published}
+      onCheckedChange={handleSwitchChange}
+    />
+    <div className="flex flex-col">
+      <Label htmlFor="is_published">Publish immediately</Label>
+      {formData.is_published && formData.publish_at && (
+        <span className="text-xs text-muted-foreground">
+          Post will be published immediately
+        </span>
+      )}
+    </div>
+  </div>
 
-            {!formData.is_published && (
-              <div className="space-y-2">
-                <Label htmlFor="publish_at">Schedule publication</Label>
-                <DatePicker 
-                  date={formData.publish_at || undefined}
-                  onDateChange={handlePublishAtChange}
-                  placeholder="Select date for publication"
-                  fromDate={new Date()}
-                />
-              </div>
-            )}
-          </div>
+  {!formData.is_published && (
+    <div className="flex items-center gap-3">
+      <div className="flex items-center justify-center w-[42px] h-[20px]">
+        <div className="w-[1px] h-full bg-gray-300 mx-auto" />
+      </div>
+      <div className="flex-1 flex items-center gap-3">
+        <Label htmlFor="publish_at">Schedule publication</Label>
+        <DatePicker 
+          date={formData.publish_at || undefined}
+          onDateChange={handlePublishAtChange}
+          placeholder="Select date for publication"
+          fromDate={new Date()}
+        />
+      </div>
+    </div>
+  )}
+</div>
           
           <CardFooter className="px-0 pb-0 pt-4 flex gap-3 flex-wrap">
             <Button

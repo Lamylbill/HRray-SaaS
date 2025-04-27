@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, forwardRef } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,6 +13,8 @@ import { DocumentsTab } from './tabs/DocumentsTab';
 import { employeeFormSchema } from '@/utils/employeeFieldUtils';
 import { EmployeeFormData } from '@/types/employee';
 import { TabNav } from './tabs/TabNav';
+import { getAuthorizedClient } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 export interface EmployeeTabbedFormProps {
   employee?: any;
@@ -44,40 +45,71 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
   formRef,
   hideControls = false
 }, ref) => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [showAdvancedFields, setShowAdvancedFields] = useState(false);
-  
+
   const methods = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeFormSchema),
-    defaultValues: initialData || employee ? {
-      employee: employee || initialData?.employee || {
-        id: '',
-        full_name: '',
-        email: '',
-        // Add other default values here
-      }
-    } : {
+    defaultValues: initialData || {
       employee: {
         id: '',
         full_name: '',
         email: '',
+        contact_number: '',
+        gender: '',
+        nationality: '',
+        date_of_birth: '',
       }
     }
   });
 
-  const handleSubmit = (data: EmployeeFormData) => {
-    if (onSubmit) onSubmit(data);
-    if (onSuccess) onSuccess(data);
+  const handleSubmit = async (data: EmployeeFormData) => {
+    const supabase = getAuthorizedClient();
+  
+    try {
+      console.log('Data to submit:', data.employee);
+  
+      const payload = {
+        full_name: data.employee.full_name || '',
+        email: data.employee.email || '',
+        contact_number: data.employee.contact_number || '',
+        gender: data.employee.gender || '',
+        nationality: data.employee.nationality || '',
+        date_of_birth: data.employee.date_of_birth || null, // ✅ Fix here
+        user_id: user?.id || null,
+        employment_status: 'Active',
+      };
+  
+      if (mode === 'create') {
+        const { error } = await supabase.from('employees').insert([payload]);
+  
+        if (error) throw error;
+  
+        toast.success('Employee created successfully');
+      } else if (mode === 'edit' && data.employee.id) {
+        const { error } = await supabase.from('employees')
+          .update(payload)
+          .eq('id', data.employee.id);
+  
+        if (error) throw error;
+  
+        toast.success('Employee updated successfully');
+      }
+  
+      if (onSuccess) onSuccess(data);
+    } catch (error: any) {
+      console.error('Error saving employee:', error);
+      toast.error('Failed to save employee. Please check required fields.');
+    }
   };
+  
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
   };
 
-  // Fix the type comparison issue - convert string to boolean when necessary
-  const isDocumentsTab = (tabKey: string) => {
-    return tabKey === 'documents';
-  };
+  const isDocumentsTab = (tabKey: string) => tabKey === 'documents';
 
   return (
     <FormProvider {...methods}>
@@ -91,7 +123,7 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
           onChange={handleTabChange} 
           className="mb-6"
         />
-        
+
         <div className="flex-1 overflow-y-auto pb-6">
           {activeTab === 'personal-info' && (
             <PersonalInfoTab 
@@ -100,7 +132,7 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
               onToggleAdvanced={setShowAdvancedFields}
             />
           )}
-          
+
           {activeTab === 'employment-info' && (
             <EmploymentInfoTab 
               isViewOnly={isViewOnly || isReadOnly} 
@@ -108,7 +140,7 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
               onToggleAdvanced={setShowAdvancedFields}
             />
           )}
-          
+
           {activeTab === 'contract-lifecycle' && (
             <ContractLifecycleTab 
               isViewOnly={isViewOnly || isReadOnly} 
@@ -116,7 +148,7 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
               onToggleAdvanced={setShowAdvancedFields}
             />
           )}
-          
+
           {activeTab === 'compensation-benefits' && (
             <CompensationBenefitsTab 
               isViewOnly={isViewOnly || isReadOnly} 
@@ -124,7 +156,7 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
               onToggleAdvanced={setShowAdvancedFields}
             />
           )}
-          
+
           {activeTab === 'compliance' && (
             <ComplianceTab 
               isViewOnly={isViewOnly || isReadOnly} 
@@ -132,7 +164,7 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
               onToggleAdvanced={setShowAdvancedFields}
             />
           )}
-          
+
           {isDocumentsTab(activeTab) && initialData?.employee?.id && (
             <DocumentsTab 
               employeeId={initialData.employee.id} 
@@ -140,7 +172,7 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
             />
           )}
         </div>
-        
+
         {!(isViewOnly || isReadOnly) && !hideControls && (
           <div className="border-t py-4 px-4 sm:px-6 md:px-8 flex justify-end">
             {onCancel && (
@@ -149,7 +181,7 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
               </Button>
             )}
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : mode === 'create' ? 'Create Employee' : 'Save Employee'}
+              {isSubmitting ? 'Saving...' : mode === 'create' ? 'Create Employee' : 'Save Changes'}
             </Button>
           </div>
         )}
@@ -159,3 +191,5 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
 });
 
 EmployeeTabbedForm.displayName = 'EmployeeTabbedForm';
+
+export default EmployeeTabbedForm;

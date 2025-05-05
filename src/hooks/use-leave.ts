@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,30 +35,7 @@ export const useLeave = () => {
   });
 
   const fetchLeaveQuota = async (employeeId: string, leaveTypeId: string) => {
-    // First check if this is a paid leave type
-    const { data: leaveType, error: leaveTypeError } = await supabase
-      .from('leave_types')
-      .select('is_paid')
-      .eq('id', leaveTypeId)
-      .single();
-
-    if (leaveTypeError) throw leaveTypeError;
-    
-    // For unpaid leave types, return unlimited quota
-    if (!leaveType.is_paid) {
-      return {
-        id: 'unlimited',
-        employee_id: employeeId,
-        leave_type_id: leaveTypeId,
-        quota_days: Number.MAX_SAFE_INTEGER,
-        taken_days: 0,
-        adjustment_days: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      } as LeaveQuota;
-    }
-    
-    // For paid leave types, get the quota and also fetch all leave requests (both approved and pending)
+    // Simply fetch the existing quota that should have been created by our trigger
     const { data: quotaData, error: quotaError } = await supabase
       .from('leave_quotas')
       .select('*')
@@ -67,25 +43,48 @@ export const useLeave = () => {
       .eq('leave_type_id', leaveTypeId)
       .single();
     
-    if (quotaError && quotaError.code !== 'PGRST116') {
+    if (quotaError) {
+      if (quotaError.code === 'PGRST116') {
+        // If somehow the quota doesn't exist (which should be rare now), 
+        // check if this is an unpaid leave type
+        const { data: leaveType, error: leaveTypeError } = await supabase
+          .from('leave_types')
+          .select('is_paid')
+          .eq('id', leaveTypeId)
+          .single();
+
+        if (leaveTypeError) throw leaveTypeError;
+        
+        // For unpaid leave types, return unlimited quota
+        if (!leaveType.is_paid) {
+          return {
+            id: 'unlimited',
+            employee_id: employeeId,
+            leave_type_id: leaveTypeId,
+            quota_days: Number.MAX_SAFE_INTEGER,
+            taken_days: 0,
+            adjustment_days: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          } as LeaveQuota;
+        }
+
+        // Otherwise return a default object (which should be rare since we now auto-create quotas)
+        return {
+          id: 'new',
+          employee_id: employeeId,
+          leave_type_id: leaveTypeId,
+          quota_days: 0,
+          taken_days: 0,
+          adjustment_days: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        } as LeaveQuota;
+      }
       throw quotaError;
     }
     
-    // If no quota found, return default values
-    if (!quotaData) {
-      return {
-        id: 'new',
-        employee_id: employeeId,
-        leave_type_id: leaveTypeId,
-        quota_days: 0,
-        taken_days: 0,
-        adjustment_days: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      } as LeaveQuota;
-    }
-    
-    // Get all relevant leave requests (both approved and pending)
+    // Now fetch all relevant leave requests (both approved and pending)
     const { data: leaveRequests, error: requestsError } = await supabase
       .from('leave_requests')
       .select('start_date, end_date, half_day, status')

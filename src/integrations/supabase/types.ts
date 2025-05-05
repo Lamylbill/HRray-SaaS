@@ -695,7 +695,7 @@ export type Database = {
           tax_file_no: string | null
           tax_identification_number: string | null
           tax_residency: string | null
-          telegram_user_id: string | null
+          telegram_user_id: number | null
           telephone_no: string | null
           thirteenth_month_entitlement: boolean | null
           title: string | null
@@ -886,7 +886,7 @@ export type Database = {
           tax_file_no?: string | null
           tax_identification_number?: string | null
           tax_residency?: string | null
-          telegram_user_id?: string | null
+          telegram_user_id?: number | null
           telephone_no?: string | null
           thirteenth_month_entitlement?: boolean | null
           title?: string | null
@@ -1077,7 +1077,7 @@ export type Database = {
           tax_file_no?: string | null
           tax_identification_number?: string | null
           tax_residency?: string | null
-          telegram_user_id?: string | null
+          telegram_user_id?: number | null
           telephone_no?: string | null
           thirteenth_month_entitlement?: boolean | null
           title?: string | null
@@ -1345,6 +1345,24 @@ export type Database = {
         }
         Relationships: []
       }
+      public_employee_basic_view: {
+        Row: {
+          full_name: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          full_name: string
+          id: string
+          user_id: string
+        }
+        Update: {
+          full_name?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       public_holidays: {
         Row: {
           country: string
@@ -1504,36 +1522,238 @@ export type Database = {
         }
         Relationships: []
       }
+      telegram_user_sessions: {
+        Row: {
+          current_state: string | null
+          state_data: Json | null
+          telegram_id: number
+          updated_at: string | null
+        }
+        Insert: {
+          current_state?: string | null
+          state_data?: Json | null
+          telegram_id: number
+          updated_at?: string | null
+        }
+        Update: {
+          current_state?: string | null
+          state_data?: Json | null
+          telegram_id?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       employees_with_documents: {
         Row: {
+          address_line_2: string | null
+          address_type: string | null
+          all_work_day: boolean | null
+          allocation_account: string | null
+          allocation_amount: number | null
+          allocation_run: string | null
+          allocation_type: string | null
+          allowances: number | null
+          annual_bonus_eligible: string | null
+          assignment_date_start: string | null
+          attendance_calendar: string | null
+          badge_no: string | null
+          bank_account: string | null
+          bank_account_number: string | null
+          bank_currency: string | null
+          bank_name: string | null
+          basic_salary: number | null
+          beneficiary_name: string | null
+          benefits_enrolled: string[] | null
+          benefits_tier: string | null
+          bonus_eligible: string | null
           category: string | null
+          city: string | null
+          clock_area_codes: string[] | null
+          clock_codes: string[] | null
+          company: string | null
+          confirmation_date: string | null
+          contact_number: string | null
+          contract_adjustment: number | null
+          contract_date_start: string | null
+          contract_end: string | null
+          contract_nature: string | null
+          contract_signed: boolean | null
+          contract_start: string | null
+          contract_type: string | null
+          cost_center: string | null
+          country_region: string | null
+          cpf_account: string | null
+          cpf_account_number: string | null
+          cpf_contribution: boolean | null
+          cpf_status: string | null
+          cpf_submission_number: string | null
+          created_at: string | null
+          date_of_birth: string | null
+          date_of_exit: string | null
           date_of_hire: string | null
           department: string | null
-          document_created_at: string | null
-          document_employee_id: string | null
+          disciplinary_flags: boolean | null
           document_id: string | null
+          document_name: string | null
+          document_type: string | null
           email: string | null
+          emergency_relationship: string | null
+          employee_code: string | null
+          employment_info_open_2: string | null
+          employment_info_open_3: string | null
           employment_status: string | null
-          file_name: string | null
+          employment_type: string | null
+          exit_interview_date: string | null
+          exit_reason: string | null
+          extension_no: string | null
           file_path: string | null
+          first_name: string | null
+          freeze_payment: boolean | null
           full_name: string | null
+          funds: string | null
+          gender: string | null
+          gross_salary: number | null
+          group_hospital_surgical_plan: string | null
+          group_personal_accident_plan: string | null
+          has_dependants: string | null
+          hr_rpt_division_category: string | null
+          hr_rpt_job_category: string | null
           id: string | null
+          identity_no: string | null
+          imei_uuid_no: string | null
+          initial_join_date: string | null
+          ir8a_required: string | null
+          job_grade: string | null
           job_title: string | null
+          join_date_for_leave: string | null
+          last_name: string | null
+          last_performance_review: string | null
+          last_working_date: string | null
+          last_working_day: string | null
+          leave_balance: number | null
+          leave_category: string | null
+          leave_entitlement: number | null
+          leave_grade: string | null
+          local_name: string | null
+          manager: string | null
+          marital_status: string | null
+          medical_entitlement: number | null
+          membership_no: string | null
+          middle_name: string | null
+          mobile_no: string | null
+          mom_bc_employee_group: string | null
+          mom_bc_employee_type: string | null
+          mom_bc_employment_type: string | null
+          mom_bc_occupation_group: string | null
+          mom_employee_type: string | null
+          mom_occupation_group: string | null
+          mom_status: string | null
+          mso_scheme: string | null
+          must_clock: boolean | null
+          mvc_percentage: number | null
+          nationality: string | null
+          new_graduate: boolean | null
+          no_of_children: number | null
+          no_of_contracts: number | null
+          no_of_contracts_total: number | null
+          notes: string | null
+          notice_period: number | null
+          nric: string | null
+          ns_group: string | null
+          ns_status: string | null
+          ot_eligible: string | null
+          ot_group: string | null
+          other_medical_benefit: string | null
+          outpatient_medical_plan: string | null
+          overtime_payment_period: string | null
+          overtime_rate_of_pay: number | null
+          paid_medical_examination_fee: boolean | null
+          pay_group: string | null
+          pay_mode: string | null
+          payroll_cycle: string | null
+          performance_score: number | null
+          personal_email: string | null
+          personal_info_open_1: string | null
+          personal_mobile_no: string | null
+          phone_number: string | null
+          postal_code: string | null
+          pr_issue_date: string | null
+          pr_renounce_date: string | null
+          previous_employee_code: string | null
+          previous_work_experience: number | null
+          probation_due: string | null
+          probation_end: string | null
+          probation_period: number | null
+          probation_period_type: string | null
+          profile_photo: string | null
+          profile_picture: string | null
+          qualification: string | null
+          race: string | null
+          recruitment_type: string | null
+          rehire: boolean | null
+          rehire_eligibility: string | null
+          religion: string | null
+          renewal: string | null
+          reporting_manager: string | null
+          residency_status: string | null
+          resignation_date: string | null
+          rest_day_per_week: string | null
+          retire_age: number | null
+          salary: number | null
+          salary_arrears: number | null
+          salary_currency: string | null
+          salary_date_start: string | null
+          salary_fixed: number | null
+          salary_grade: string | null
+          salary_gross: number | null
+          service_length_adjustment: number | null
+          service_length_total: number | null
+          shorted_period: number | null
+          shorted_period_type: string | null
+          skill_set: string[] | null
+          skillsfuture_eligible: string | null
+          status_change_reason: string | null
+          statutory_date_end: string | null
+          statutory_date_start: string | null
+          supervisor: string | null
+          tax_file_no: string | null
+          tax_identification_number: string | null
+          tax_residency: string | null
+          telegram_user_id: number | null
+          telephone_no: string | null
+          thirteenth_month_entitlement: boolean | null
+          title: string | null
+          union_membership: string | null
+          updated_at: string | null
+          uploaded_at: string | null
           user_id: string | null
+          vaccination_status: string | null
+          web_role: string | null
+          work_days_per_week: number | null
+          work_days_per_year: number | null
+          work_experience_to_date: number | null
+          work_hours: number | null
+          work_hours_per_day: number | null
+          work_hours_per_year: number | null
+          work_pass_expiry: string | null
+          work_pass_expiry_date: string | null
+          work_pass_number: string | null
+          work_pass_type: string | null
+          work_permit_number: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "employee_documents_employee_id_fkey"
-            columns: ["document_employee_id"]
+            foreignKeyName: "employees_reporting_manager_fkey"
+            columns: ["reporting_manager"]
             isOneToOne: false
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "employee_documents_employee_id_fkey"
-            columns: ["document_employee_id"]
+            foreignKeyName: "employees_reporting_manager_fkey"
+            columns: ["reporting_manager"]
             isOneToOne: false
             referencedRelation: "employees_with_documents"
             referencedColumns: ["id"]
@@ -1542,6 +1762,10 @@ export type Database = {
       }
     }
     Functions: {
+      bytea_to_text: {
+        Args: { data: string }
+        Returns: string
+      }
       check_employee_access: {
         Args: { employee_id: string; user_id: string }
         Returns: boolean
@@ -1554,16 +1778,91 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: string
       }
+      http: {
+        Args: { request: Database["public"]["CompositeTypes"]["http_request"] }
+        Returns: unknown
+      }
+      http_delete: {
+        Args:
+          | { uri: string }
+          | { uri: string; content: string; content_type: string }
+        Returns: unknown
+      }
+      http_get: {
+        Args: { uri: string } | { uri: string; data: Json }
+        Returns: unknown
+      }
+      http_head: {
+        Args: { uri: string }
+        Returns: unknown
+      }
+      http_header: {
+        Args: { field: string; value: string }
+        Returns: Database["public"]["CompositeTypes"]["http_header"]
+      }
+      http_list_curlopt: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          curlopt: string
+          value: string
+        }[]
+      }
+      http_patch: {
+        Args: { uri: string; content: string; content_type: string }
+        Returns: unknown
+      }
+      http_post: {
+        Args:
+          | { uri: string; content: string; content_type: string }
+          | { uri: string; data: Json }
+        Returns: unknown
+      }
+      http_put: {
+        Args: { uri: string; content: string; content_type: string }
+        Returns: unknown
+      }
+      http_reset_curlopt: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      http_set_curlopt: {
+        Args: { curlopt: string; value: string }
+        Returns: boolean
+      }
       sync_employee_schema: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      text_to_bytea: {
+        Args: { data: string }
+        Returns: string
+      }
+      urlencode: {
+        Args: { data: Json } | { string: string } | { string: string }
+        Returns: string
       }
     }
     Enums: {
       [_ in never]: never
     }
     CompositeTypes: {
-      [_ in never]: never
+      http_header: {
+        field: string | null
+        value: string | null
+      }
+      http_request: {
+        method: unknown | null
+        uri: string | null
+        headers: Database["public"]["CompositeTypes"]["http_header"][] | null
+        content_type: string | null
+        content: string | null
+      }
+      http_response: {
+        status: number | null
+        content_type: string | null
+        headers: Database["public"]["CompositeTypes"]["http_header"][] | null
+        content: string | null
+      }
     }
   }
 }

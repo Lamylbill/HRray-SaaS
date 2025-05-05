@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import {
@@ -81,6 +82,19 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
     setFiles(prev => prev.filter(file => file.id !== id));
   };
 
+  const createBucketIfNeeded = async (): Promise<boolean> => {
+    try {
+      const created = await ensureStorageBucket(STORAGE_BUCKET);
+      if (!created) {
+        throw new Error(`Failed to ensure storage bucket "${STORAGE_BUCKET}" exists.`);
+      }
+      return true;
+    } catch (error) {
+      console.error("Error creating bucket:", error);
+      throw new Error(`Storage bucket "${STORAGE_BUCKET}" setup failed. Please try again later.`);
+    }
+  };
+
   const uploadFiles = async () => {
     if (!user) {
       toast({
@@ -126,11 +140,7 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
 
     try {
       // Check if bucket exists before proceeding
-      const bucketExists = await ensureStorageBucket(STORAGE_BUCKET);
-      
-      if (!bucketExists) {
-        throw new Error(`Storage bucket "${STORAGE_BUCKET}" is not accessible. Please contact an administrator.`);
-      }
+      await createBucketIfNeeded();
       
       let successCount = 0;
       const authorizedClient = getAuthorizedClient();
@@ -162,6 +172,10 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
             });
 
           if (uploadError) throw uploadError;
+
+          setFiles(prev => prev.map(f =>
+            f.id === fileItem.id ? { ...f, progress: 60 } : f
+          ));
 
           const { error: dbError } = await authorizedClient
             .from('employee_documents')

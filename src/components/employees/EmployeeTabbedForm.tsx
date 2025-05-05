@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, forwardRef } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -48,6 +49,7 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [showAdvancedFields, setShowAdvancedFields] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const methods = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeFormSchema),
@@ -65,6 +67,8 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
   });
 
   const handleSubmit = async (data: EmployeeFormData) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
     const supabase = getAuthorizedClient();
   
     try {
@@ -76,23 +80,36 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
         contact_number: data.employee.contact_number || '',
         gender: data.employee.gender || '',
         nationality: data.employee.nationality || '',
-        date_of_birth: data.employee.date_of_birth || null, // ✅ Fix here
+        date_of_birth: data.employee.date_of_birth || null,
         user_id: user?.id || null,
         employment_status: 'Active',
       };
   
+      let result;
+      
       if (mode === 'create') {
-        const { error } = await supabase.from('employees').insert([payload]);
+        result = await supabase
+          .from('employees')
+          .insert(payload)
+          .select('id')
+          .single();
   
-        if (error) throw error;
+        if (result.error) throw result.error;
+        
+        // Update the employee ID in the form data
+        if (result.data) {
+          data.employee.id = result.data.id;
+        }
   
         toast.success('Employee created successfully');
       } else if (mode === 'edit' && data.employee.id) {
-        const { error } = await supabase.from('employees')
+        result = await supabase
+          .from('employees')
           .update(payload)
-          .eq('id', data.employee.id);
+          .eq('id', data.employee.id)
+          .select();
   
-        if (error) throw error;
+        if (result.error) throw result.error;
   
         toast.success('Employee updated successfully');
       }
@@ -100,7 +117,9 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
       if (onSuccess) onSuccess(data);
     } catch (error: any) {
       console.error('Error saving employee:', error);
-      toast.error('Failed to save employee. Please check required fields.');
+      toast.error(`Failed to save employee: ${error.message || 'Please check required fields'}`);
+    } finally {
+      setIsProcessing(false);
     }
   };
   
@@ -180,8 +199,8 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
                 Cancel
               </Button>
             )}
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : mode === 'create' ? 'Create Employee' : 'Save Changes'}
+            <Button type="submit" disabled={isSubmitting || isProcessing}>
+              {isSubmitting || isProcessing ? 'Saving...' : mode === 'create' ? 'Create Employee' : 'Save Changes'}
             </Button>
           </div>
         )}

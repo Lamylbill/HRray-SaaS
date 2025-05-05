@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   PlusCircle, Filter, Download, Trash, Edit, Eye, FileText,
@@ -68,17 +69,25 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [bucketError, setBucketError] = useState<string | null>(null);
+  const [bucketReady, setBucketReady] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
   useEffect(() => {
     const checkBucket = async () => {
       setBucketError(null);
-      const bucketReady = await ensureStorageBucket(STORAGE_BUCKET);
-      if (!bucketReady) {
-        setBucketError('Document storage is not properly configured. Please contact an administrator.');
+      try {
+        const bucketExists = await ensureStorageBucket(STORAGE_BUCKET);
+        setBucketReady(bucketExists);
+        if (!bucketExists) {
+          setBucketError('Document storage setup issue. Please try refreshing the page.');
+        }
+      } catch (error) {
+        console.error('Error checking storage bucket:', error);
+        setBucketError('Failed to configure document storage. Please contact an administrator.');
       }
     };
+    
     checkBucket();
   }, []);
 
@@ -99,24 +108,48 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
 
       if (fetchError) throw fetchError;
 
-      const docs: Document[] = await Promise.all(
-        (dbDocuments || []).map(async (doc: DbDocument) => {
-          const { data: urlData } = supabase.storage
-            .from(STORAGE_BUCKET)
-            .getPublicUrl(doc.file_path);
+      if (!dbDocuments || dbDocuments.length === 0) {
+        setDocuments([]);
+        setFilteredDocuments([]);
+        setIsLoading(false);
+        return;
+      }
 
-          return {
-            id: doc.id,
-            employee_id: doc.employee_id,
-            file_name: doc.file_name,
-            file_type: doc.file_type,
-            file_size: doc.file_size,
-            file_url: urlData.publicUrl,
-            upload_date: doc.uploaded_at,
-            document_category: doc.category,
-            document_type: doc.document_type,
-            notes: doc.notes
-          };
+      const docs: Document[] = await Promise.all(
+        dbDocuments.map(async (doc: DbDocument) => {
+          try {
+            const { data: urlData } = supabase.storage
+              .from(STORAGE_BUCKET)
+              .getPublicUrl(doc.file_path);
+
+            return {
+              id: doc.id,
+              employee_id: doc.employee_id,
+              file_name: doc.file_name,
+              file_type: doc.file_type,
+              file_size: doc.file_size,
+              file_url: urlData.publicUrl,
+              upload_date: doc.uploaded_at,
+              document_category: doc.category,
+              document_type: doc.document_type,
+              notes: doc.notes
+            };
+          } catch (err) {
+            console.error('Error getting URL for document:', err);
+            // Return with a placeholder URL
+            return {
+              id: doc.id,
+              employee_id: doc.employee_id,
+              file_name: doc.file_name,
+              file_type: doc.file_type,
+              file_size: doc.file_size,
+              file_url: '#',
+              upload_date: doc.uploaded_at,
+              document_category: doc.category,
+              document_type: doc.document_type,
+              notes: doc.notes
+            };
+          }
         })
       );
 
@@ -136,10 +169,10 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
   };
 
   useEffect(() => {
-    if (!bucketError) {
+    if (bucketReady) {
       fetchDocuments();
     }
-  }, [employeeId, refreshTrigger, user, bucketError]);
+  }, [employeeId, refreshTrigger, user, bucketReady]);
 
   useEffect(() => {
     applyFilters(documents, searchTerm, selectedCategory);
@@ -229,13 +262,33 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
     });
     return counts;
   }, [documents]);
+  
+  const refreshBucket = async () => {
+    setBucketError(null);
+    try {
+      const created = await ensureStorageBucket(STORAGE_BUCKET);
+      setBucketReady(created);
+      if (created) {
+        toast({
+          title: 'Success',
+          description: 'Document storage configured successfully.'
+        });
+        fetchDocuments();
+      } else {
+        setBucketError('Failed to set up document storage. Please try again or contact an administrator.');
+      }
+    } catch (err) {
+      console.error('Error refreshing storage bucket:', err);
+      setBucketError('Error configuring document storage. Please contact an administrator.');
+    }
+  };
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">Documents</h2>
         {!isReadOnly && (
-          <Button onClick={() => setIsUploadDialogOpen(true)} disabled={!!bucketError} size="sm">
+          <Button onClick={() => setIsUploadDialogOpen(true)} disabled={!bucketReady} size="sm">
             <Upload className="w-4 h-4 mr-2" />
             Upload Documents
           </Button>
@@ -286,7 +339,13 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
       </div>
 
       {bucketError && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-md border">{bucketError}</div>
+        <div className="bg-red-50 text-red-600 p-4 rounded-md border flex justify-between items-center">
+          <div>{bucketError}</div>
+          <Button variant="outline" size="sm" onClick={refreshBucket}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Retry Setup
+          </Button>
+        </div>
       )}
 
       {isLoading ? (
@@ -333,6 +392,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
                       variant="ghost"
                       onClick={() => window.open(doc.file_url, '_blank')}
                       title="View"
+                      disabled={doc.file_url === '#'}
                     >
                       <Eye className="w-4 h-4" />
                     </Button>

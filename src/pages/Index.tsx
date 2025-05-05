@@ -253,7 +253,7 @@ const Index = () => {
         </section>
 
         {/* Why Choose Section - Completely Redesigned */}
-        <section id="pricing" id="pricing-comparison" className="py-28 px-6 bg-white relative">
+        <section id="pricing-comparison" className="py-28 px-6 bg-white relative">
           <div className="container mx-auto max-w-7xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
               <AnimatedSection>

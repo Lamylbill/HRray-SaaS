@@ -1,7 +1,7 @@
-tsx
+
 import React, { useEffect, useState, useContext } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
-import { AuthContext } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -13,7 +13,7 @@ interface UpgradeButtonProps {
 
 const UpgradeButton: React.FC<UpgradeButtonProps> = ({ priceId, children }) => {
   const [loading, setLoading] = useState(false);
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
 
   const handleClick = async () => {
     if (!user) {

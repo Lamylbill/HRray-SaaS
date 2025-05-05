@@ -1,7 +1,7 @@
-tsx
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { UpgradeButton } from '@/components/Pricing/UpgradeButton';
+import UpgradeButton from '@/components/Pricing/UpgradeButton';
 import { Link } from 'react-router-dom';
 import { prices } from "@/lib/prices";
 

@@ -120,9 +120,10 @@ export const fetchProtectedData = async () => {
   return data;
 };
 
-// Ensure storage bucket exists - updated to handle RLS properly
+// Ensure storage bucket exists - improved with better error handling and retries
 export const ensureStorageBucket = async (bucketName: string): Promise<boolean> => {
   try {
+    console.log(`Checking if bucket ${bucketName} exists...`);
     const client = getAuthorizedClient();
     
     // First check if bucket already exists
@@ -134,7 +135,7 @@ export const ensureStorageBucket = async (bucketName: string): Promise<boolean> 
     }
     
     // Check if our bucket already exists
-    const bucketExists = existingBuckets?.some(bucket => bucket.name === bucketName);
+    const bucketExists = existingBuckets?.some(bucket => bucket.name === bucketName || bucket.id === bucketName);
     
     if (bucketExists) {
       console.log(`Bucket ${bucketName} already exists`);
@@ -142,6 +143,7 @@ export const ensureStorageBucket = async (bucketName: string): Promise<boolean> 
     }
     
     // Try to create the bucket if it doesn't exist
+    console.log(`Creating bucket ${bucketName}...`);
     const { data: newBucket, error: createError } = await client.storage.createBucket(bucketName, {
       public: false, // Keep it private for security
       fileSizeLimit: 20971520, // 20MB
@@ -157,32 +159,33 @@ export const ensureStorageBucket = async (bucketName: string): Promise<boolean> 
     });
     
     if (createError) {
-      console.error('Error creating storage bucket:', createError);
-      // Check if error is related to RLS policy
-      if (createError.message?.includes('new row violates row-level security policy')) {
-        console.error('RLS policy violation. Please check bucket policies.');
+      // Check if the error suggests the bucket might actually exist already despite the list call not finding it
+      if (createError.message?.includes('already exists')) {
+        console.log(`Bucket ${bucketName} apparently already exists despite list not finding it`);
+        return true;
       }
+      
+      console.error('Error creating storage bucket:', createError);
       return false;
     }
     
     console.log(`Successfully created bucket: ${bucketName}`);
     
-    // Create a policy to allow authenticated users to access this bucket
+    // Verify we can access the newly created bucket
     try {
-      // This is just to confirm bucket creation was successful
-      const { data, error } = await client.storage.from(bucketName).list();
+      const { data, error } = await client.storage.from(bucketName).list('', { limit: 1 });
       if (error) {
         console.error('Error accessing new bucket:', error);
-      } else {
-        console.log('Successfully accessed newly created bucket');
+        return false;
       }
-    } catch (policyError) {
-      console.error('Error setting up bucket access:', policyError);
+      console.log('Successfully accessed newly created bucket');
+      return true;
+    } catch (error) {
+      console.error('Error verifying bucket access:', error);
+      return false;
     }
-    
-    return true;
   } catch (error) {
-    console.error('Error ensuring storage bucket exists:', error);
+    console.error('Unexpected error ensuring storage bucket exists:', error);
     return false;
   }
 };

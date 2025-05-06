@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   PlusCircle, Filter, Download, Trash, Edit, Eye, FileText,
@@ -53,13 +52,15 @@ interface DocumentManagerProps {
   refreshTrigger?: number;
   isTabbed?: boolean;
   isReadOnly?: boolean;
+  bucketReady?: boolean; // Add the bucketReady prop to the interface
 }
 
 export const DocumentManager: React.FC<DocumentManagerProps> = ({
   employeeId,
   refreshTrigger = 0,
   isTabbed = false,
-  isReadOnly = false 
+  isReadOnly = false,
+  bucketReady = false // Set default value to false
 }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
@@ -69,27 +70,35 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [bucketError, setBucketError] = useState<string | null>(null);
-  const [bucketReady, setBucketReady] = useState(false);
+  const [isBucketReady, setBucketReady] = useState(bucketReady); // Initialize with the prop value
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Only run the bucket check if bucketReady is false
   useEffect(() => {
-    const checkBucket = async () => {
-      setBucketError(null);
-      try {
-        const bucketExists = await ensureStorageBucket(STORAGE_BUCKET);
-        setBucketReady(bucketExists);
-        if (!bucketExists) {
-          setBucketError('Document storage setup issue. Please try refreshing the page.');
+    if (!bucketReady) {
+      const checkBucket = async () => {
+        setBucketError(null);
+        try {
+          const bucketExists = await ensureStorageBucket(STORAGE_BUCKET);
+          setBucketReady(bucketExists);
+          if (!bucketExists) {
+            setBucketError('Document storage setup issue. Please try refreshing the page.');
+          }
+        } catch (error) {
+          console.error('Error checking storage bucket:', error);
+          setBucketError('Failed to configure document storage. Please contact an administrator.');
         }
-      } catch (error) {
-        console.error('Error checking storage bucket:', error);
-        setBucketError('Failed to configure document storage. Please contact an administrator.');
-      }
-    };
-    
-    checkBucket();
-  }, []);
+      };
+      
+      checkBucket();
+    }
+  }, [bucketReady]);
+
+  // Update internal state when prop changes
+  useEffect(() => {
+    setBucketReady(bucketReady);
+  }, [bucketReady]);
 
   const fetchDocuments = async () => {
     if (!employeeId || !user) return;
@@ -169,10 +178,10 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
   };
 
   useEffect(() => {
-    if (bucketReady) {
+    if (isBucketReady) {
       fetchDocuments();
     }
-  }, [employeeId, refreshTrigger, user, bucketReady]);
+  }, [employeeId, refreshTrigger, user, isBucketReady]);
 
   useEffect(() => {
     applyFilters(documents, searchTerm, selectedCategory);
@@ -288,7 +297,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">Documents</h2>
         {!isReadOnly && (
-          <Button onClick={() => setIsUploadDialogOpen(true)} disabled={!bucketReady} size="sm">
+          <Button onClick={() => setIsUploadDialogOpen(true)} disabled={!isBucketReady} size="sm">
             <Upload className="w-4 h-4 mr-2" />
             Upload Documents
           </Button>

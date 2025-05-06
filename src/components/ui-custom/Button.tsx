@@ -19,10 +19,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
     ...props
   }, ref) => {
     // Map size xl to lg for the Shadcn button
-    const sizeMapping: Record<string, string | undefined> = {};
+    const sizeMapping: Record<string, string | undefined> = {
+      'xl': 'lg'
+    };
 
     const mappedSize = sizeMapping[size as string] || size;
-
 
     return (
       <ShadcnButton
@@ -37,3 +38,5 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
       </ShadcnButton>
     );
   });
+
+Button.displayName = 'Button';

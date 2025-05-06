@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -10,16 +11,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-[#1d4ED8] text-white hover:bg-[#1d4ED8]/90 shadow-sm border border-transparent",
+        default: "bg-blue-700 text-white hover:bg-blue-800 shadow-sm border border-transparent",
         destructive:
           "bg-red-600 text-white hover:bg-red-700 shadow-sm border border-transparent",
         outline:
-          "border-2 border-[#1d4ED8] bg-transparent text-[#1d4ED8] hover:bg-[#1d4ED8]/10",
+          "border-2 border-blue-700 bg-transparent text-blue-700 hover:bg-blue-700/10",
         secondary:
           "bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-200",
-        ghost: "hover:bg-gray-100 text-gray-700 hover:text-[#1d4ED8]",
-        link: "text-[#1d4ED8] underline-offset-4 hover:underline",
-        primary: "bg-[#1d4ED8] text-white hover:bg-[#1d4ED8]/90 shadow-sm border border-transparent",
+        ghost: "hover:bg-gray-100 text-gray-700 hover:text-blue-700",
+        link: "text-blue-700 underline-offset-4 hover:underline",
+        primary: "bg-blue-700 text-white hover:bg-blue-800 shadow-sm border border-transparent",
         success: "bg-green-600 text-white hover:bg-green-700 shadow-sm border border-transparent",
         premium: "bg-gradient-to-r from-blue-600 to-indigo-600 hover:to-indigo-700 text-white font-medium shadow-lg",
         glass: "backdrop-blur-xl bg-white/30 hover:bg-white/40 border border-white/40 text-white font-medium shadow-md"

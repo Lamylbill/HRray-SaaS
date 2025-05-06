@@ -1,11 +1,12 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
 	darkMode: ["class"],
 
 	safelist: [
-		'data-[state=checked]:bg-hrflow-blue',
-		'data-[state=checked]:border-hrflow-blue',
+		'data-[state=checked]:bg-blue-700',
+		'data-[state=checked]:border-blue-700',
 		'data-[state=checked]:text-white',
 		'data-[state=checked]:bg-white',
 		'data-[state=checked]:bg-blue-600',
@@ -81,11 +82,11 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				// Completely new color scheme
+				// Updated color scheme to standardize on blue-700
 				hrflow: {
-					'primary': '#6C63FF',
-					'secondary': '#9D94FF',
-					'blue': '#6C63FF',
+					'primary': '#1d4ED8', // Updated to blue-700
+					'secondary': '#3b82f6', // blue-500
+					'blue': '#1d4ED8', // Same as primary
 					'accent': '#FF64DA',
 					'dark': '#2D2B55',
 					'light': '#F8F7FF',
@@ -163,9 +164,9 @@ export default {
 			},
 			backgroundImage: {
 				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-				'hero-pattern': 'linear-gradient(to right bottom, rgba(255, 255, 255, 0.9), rgba(108, 99, 255, 0.05))',
+				'hero-pattern': 'linear-gradient(to right bottom, rgba(255, 255, 255, 0.9), rgba(29, 78, 216, 0.05))',
 				'card-pattern': 'linear-gradient(to right bottom, rgba(255, 255, 255, 1), rgba(248, 247, 255, 1))',
-				'cta-pattern': 'linear-gradient(to right, #6C63FF, #9D94FF, #FF64DA)',
+				'cta-pattern': 'linear-gradient(to right, #1d4ED8, #3b82f6, #93C5FD)',
 			}
 		}
 	},

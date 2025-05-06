@@ -15,7 +15,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 265 30% 20%;
 
-    --primary: 248 100% 69%;
+    --primary: 221 83% 53%; /* Updated to blue-700 */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 252 80% 80%;
@@ -32,7 +32,7 @@
 
     --border: 252 33% 90%;
     --input: 252 33% 90%;
-    --ring: 248 100% 69%;
+    --ring: 221 83% 53%; /* Updated to blue-700 */
 
     --radius: 1.5rem;
   }
@@ -47,7 +47,7 @@
     --popover: 265 30% 12%;
     --popover-foreground: 251 100% 98%;
 
-    --primary: 248 100% 69%;
+    --primary: 221 83% 53%; /* Updated to blue-700 */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 252 18% 25%;
@@ -64,7 +64,7 @@
 
     --border: 252 18% 25%;
     --input: 252 18% 25%;
-    --ring: 248 100% 69%;
+    --ring: 221 83% 53%; /* Updated to blue-700 */
   }
 }
 
@@ -134,7 +134,7 @@
   }
 
   .form-input {
-    @apply w-full px-5 py-3 border border-hrflow-primary/20 bg-white rounded-xl focus:ring-4 focus:ring-hrflow-primary/20 focus:border-hrflow-primary transition-all duration-200 shadow-sm;
+    @apply w-full px-5 py-3 border border-blue-700/20 bg-white rounded-xl focus:ring-4 focus:ring-blue-700/20 focus:border-blue-700 transition-all duration-200 shadow-sm;
   }
 
   /* Card and section styling */
@@ -152,19 +152,19 @@
   }
 
   .table-modern th {
-    @apply bg-hrflow-primary/10 text-left text-sm font-semibold text-hrflow-dark py-4 px-5;
+    @apply bg-blue-700/10 text-left text-sm font-semibold text-hrflow-dark py-4 px-5;
   }
 
   .table-modern td {
-    @apply border-t border-hrflow-primary/10 py-4 px-5;
+    @apply border-t border-blue-700/10 py-4 px-5;
   }
 
   .table-modern tr:nth-child(even) {
-    @apply bg-hrflow-primary/5;
+    @apply bg-blue-700/5;
   }
 
   .table-modern tr:hover {
-    @apply bg-hrflow-primary/10;
+    @apply bg-blue-700/10;
   }
   
   /* Button variants */
@@ -173,19 +173,19 @@
   }
   
   .btn-primary {
-    @apply bg-gradient-to-r from-hrflow-primary to-hrflow-secondary text-white hover:shadow-lg hover:translate-y-[-2px];
+    @apply bg-gradient-to-r from-blue-700 to-blue-500 text-white hover:shadow-lg hover:translate-y-[-2px];
   }
   
   .btn-secondary {
-    @apply bg-white text-hrflow-primary border border-hrflow-primary/20 hover:bg-hrflow-primary/5;
+    @apply bg-white text-blue-700 border border-blue-700/20 hover:bg-blue-700/5;
   }
   
   .btn-outline {
-    @apply border-2 border-hrflow-primary text-hrflow-primary hover:bg-hrflow-primary/5;
+    @apply border-2 border-blue-700 text-blue-700 hover:bg-blue-700/5;
   }
   
   .btn-ghost {
-    @apply text-hrflow-primary hover:bg-hrflow-primary/5;
+    @apply text-blue-700 hover:bg-blue-700/5;
   }
   
   .btn-success {
@@ -202,7 +202,7 @@
   }
   
   .modal-header {
-    @apply p-6 border-b border-hrflow-primary/10;
+    @apply p-6 border-b border-blue-700/10;
   }
   
   .modal-body {
@@ -210,12 +210,12 @@
   }
   
   .modal-footer {
-    @apply p-6 border-t border-hrflow-primary/10 flex justify-end gap-3;
+    @apply p-6 border-t border-blue-700/10 flex justify-end gap-3;
   }
 
   /* New elements */
   .gradient-text {
-    @apply text-transparent bg-clip-text bg-gradient-to-r from-hrflow-primary to-hrflow-accent;
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-accent;
   }
   
   .floating-element {
@@ -227,7 +227,7 @@
   }
   
   .glow-effect::after {
-    @apply content-[''] absolute inset-0 rounded-3xl blur-xl bg-hrflow-primary/20 -z-10 opacity-0 transition-opacity duration-300;
+    @apply content-[''] absolute inset-0 rounded-3xl blur-xl bg-blue-700/20 -z-10 opacity-0 transition-opacity duration-300;
   }
   
   .glow-effect:hover::after {
@@ -258,7 +258,7 @@
   }
   
   .hover-glow {
-    @apply transition-all duration-300 hover:shadow-[0_0_15px_rgba(108,99,255,0.5)];
+    @apply transition-all duration-300 hover:shadow-[0_0_15px_rgba(29,78,216,0.5)];
   }
 }
 
@@ -324,29 +324,29 @@
 
 /* Modern gradient backgrounds */
 .bg-gradient-purple {
-  @apply bg-gradient-to-br from-hrflow-primary/10 via-hrflow-secondary/10 to-hrflow-accent/10;
+  @apply bg-gradient-to-br from-blue-700/10 via-blue-500/10 to-blue-300/10;
 }
 
 .bg-gradient-primary {
-  @apply bg-gradient-to-r from-hrflow-primary to-hrflow-secondary;
+  @apply bg-gradient-to-r from-blue-700 to-blue-500;
 }
 
 .bg-gradient-card {
-  @apply bg-gradient-to-br from-white via-hrflow-primary/5 to-white;
+  @apply bg-gradient-to-br from-white via-blue-700/5 to-white;
 }
 
 /* Custom shadow styles */
 .shadow-card {
-  box-shadow: 0px 16px 30px rgba(108, 99, 255, 0.1);
+  box-shadow: 0px 16px 30px rgba(29, 78, 216, 0.1);
 }
 
 .shadow-button {
-  box-shadow: 0px 8px 15px rgba(108, 99, 255, 0.2);
+  box-shadow: 0px 8px 15px rgba(29, 78, 216, 0.2);
 }
 
 /* Custom patterns and decorators */
 .dot-pattern {
-  background-image: radial-gradient(hrflow-primary 1px, transparent 1px);
+  background-image: radial-gradient(blue-700 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
@@ -355,9 +355,9 @@
 }
 
 .circle-decorator-1 {
-  @apply bg-hrflow-primary top-20 -left-20;
+  @apply bg-blue-700 top-20 -left-20;
 }
 
 .circle-decorator-2 {
-  @apply bg-hrflow-accent bottom-20 -right-20;
+  @apply bg-accent bottom-20 -right-20;
 }

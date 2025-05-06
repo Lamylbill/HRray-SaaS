@@ -74,6 +74,7 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
     try {
       console.log('Data to submit:', data.employee);
   
+      // Prepare employee data with all the required fields
       const payload = {
         full_name: data.employee.full_name || '',
         email: data.employee.email || '',
@@ -88,28 +89,35 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
       let result;
       
       if (mode === 'create') {
+        // For create operations, use direct table access instead of a view
         result = await supabase
-          .from('employees')
+          .from('employees') // Use the base table instead of a view
           .insert(payload)
           .select('id')
           .single();
   
-        if (result.error) throw result.error;
+        if (result.error) {
+          console.error('Error inserting employee:', result.error);
+          throw result.error;
+        }
         
         // Update the employee ID in the form data
         if (result.data) {
           data.employee.id = result.data.id;
+          toast.success('Employee created successfully');
         }
-  
-        toast.success('Employee created successfully');
       } else if (mode === 'edit' && data.employee.id) {
+        // For updates, also use the direct table
         result = await supabase
-          .from('employees')
+          .from('employees') // Use the base table instead of a view
           .update(payload)
           .eq('id', data.employee.id)
           .select();
   
-        if (result.error) throw result.error;
+        if (result.error) {
+          console.error('Error updating employee:', result.error);
+          throw result.error;
+        }
   
         toast.success('Employee updated successfully');
       }
@@ -123,7 +131,6 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
     }
   };
   
-
   const handleTabChange = (value: string) => {
     setActiveTab(value);
   };

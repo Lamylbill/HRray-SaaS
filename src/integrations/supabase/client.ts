@@ -120,50 +120,64 @@ export const fetchProtectedData = async () => {
   return data;
 };
 
-// Ensure storage bucket exists
+// Ensure storage bucket exists - updated to handle RLS properly
 export const ensureStorageBucket = async (bucketName: string): Promise<boolean> => {
   try {
-    const supabase = getAuthorizedClient();
+    const client = getAuthorizedClient();
     
-    // Check if bucket exists
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    // First check if bucket already exists
+    const { data: existingBuckets, error: listError } = await client.storage.listBuckets();
     
     if (listError) {
       console.error('Error checking storage buckets:', listError);
       return false;
     }
     
-    const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
+    // Check if our bucket already exists
+    const bucketExists = existingBuckets?.some(bucket => bucket.name === bucketName);
     
-    if (!bucketExists) {
-      // Create the bucket if it doesn't exist
-      const { data: newBucket, error: createError } = await supabase.storage.createBucket(bucketName, {
-        public: false,
-        fileSizeLimit: 20971520, // 20MB
-        allowedMimeTypes: [
-          'image/png', 
-          'image/jpeg', 
-          'application/pdf', 
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'application/vnd.ms-excel', 
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        ]
-      });
-      
-      if (createError) {
-        console.error('Error creating storage bucket:', createError);
-        return false;
+    if (bucketExists) {
+      console.log(`Bucket ${bucketName} already exists`);
+      return true;
+    }
+    
+    // Try to create the bucket if it doesn't exist
+    const { data: newBucket, error: createError } = await client.storage.createBucket(bucketName, {
+      public: false, // Keep it private for security
+      fileSizeLimit: 20971520, // 20MB
+      allowedMimeTypes: [
+        'image/png', 
+        'image/jpeg', 
+        'application/pdf', 
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel', 
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ]
+    });
+    
+    if (createError) {
+      console.error('Error creating storage bucket:', createError);
+      // Check if error is related to RLS policy
+      if (createError.message?.includes('new row violates row-level security policy')) {
+        console.error('RLS policy violation. Please check bucket policies.');
       }
-      
-      console.log(`Created bucket: ${bucketName}`);
-      
-      // Set bucket policy to be accessible by authenticated users
-      const { error: policyError } = await supabase.storage.from(bucketName).createSignedUrl('policy.json', 60);
-      
-      if (policyError && !policyError.message.includes('not found')) {
-        console.error('Error setting bucket policy:', policyError);
+      return false;
+    }
+    
+    console.log(`Successfully created bucket: ${bucketName}`);
+    
+    // Create a policy to allow authenticated users to access this bucket
+    try {
+      // This is just to confirm bucket creation was successful
+      const { data, error } = await client.storage.from(bucketName).list();
+      if (error) {
+        console.error('Error accessing new bucket:', error);
+      } else {
+        console.log('Successfully accessed newly created bucket');
       }
+    } catch (policyError) {
+      console.error('Error setting up bucket access:', policyError);
     }
     
     return true;

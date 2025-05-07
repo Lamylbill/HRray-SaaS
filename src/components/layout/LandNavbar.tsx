@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronRight, Menu, X, LogOut, Settings } from 'lucide-react';
+import { ChevronRight, ChevronDown, Menu, X, LogOut, Settings } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -169,7 +169,7 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
                       'inline-flex items-center px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
                       isSectionActive(item.name)
                         ? 'bg-blue-700 text-white hover:bg-blue-800'
-                        : 'text-indigo-800 hover:bg-indigo-100'
+                        : 'text-blue-800 hover:bg-blue-50 hover:text-blue-800'
                     )}
                     aria-label={item.name}
                   >
@@ -186,19 +186,24 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium text-indigo-800 border-indigo-200 hover:bg-indigo-50">
-                  My Account
-                  <Avatar className="h-7 w-7 border-2 border-indigo-600/20">
+                <button className="flex items-center space-x-2 focus:outline-none">
+                  <Avatar className="h-8 w-8">
                     {getUserAvatar() ? (
                       <AvatarImage src={getUserAvatar()} alt="avatar" />
                     ) : (
-                      <AvatarFallback className="bg-indigo-600 text-white text-sm font-medium">
+                      <AvatarFallback className="bg-blue-100 text-blue-600 font-medium">
                         {getUserInitials()}
                       </AvatarFallback>
                     )}
                   </Avatar>
+                  <div className="hidden md:block text-left">
+                    <span className="block text-sm font-medium text-gray-700">My Account</span>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-gray-500" />
                 </button>
               </DropdownMenuTrigger>
+
+
               <DropdownMenuContent align="end" className="w-56 bg-white shadow-lg border border-gray-200 z-50">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />

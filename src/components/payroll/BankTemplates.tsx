@@ -1,81 +1,40 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui-custom/Button';
-import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
-import { AlertTriangle, FileInput, FileSpreadsheet, FileUp, Trash, Upload } from 'lucide-react';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import * as XLSX from 'xlsx';
-import { BankTemplate } from '@/types/payroll';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useBankTemplates } from '@/hooks/use-payroll';
+import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 import { supabase } from '@/integrations/supabase/client';
+import { Upload, FileText, Trash2, Download, Plus, FileUp } from 'lucide-react';
+import { format } from 'date-fns';
 
 const BankTemplates: React.FC = () => {
-  const { templates, loading, createBankTemplate, deleteBankTemplate } = useBankTemplates();
-  const [isUploading, setIsUploading] = useState(false);
-  const [templateName, setTemplateName] = useState('');
+  const { templates, loading, error, createBankTemplate, deleteBankTemplate } = useBankTemplates();
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [bankName, setBankName] = useState('');
+  const [templateName, setTemplateName] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewData, setPreviewData] = useState<any[] | null>(null);
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
-
-  const banks = [
-    { id: 'dbs', name: 'DBS Bank' },
-    { id: 'ocbc', name: 'OCBC Bank' },
-    { id: 'uob', name: 'UOB Bank' },
-    { id: 'standard_chartered', name: 'Standard Chartered Bank' },
-    { id: 'hsbc', name: 'HSBC Bank' },
-    { id: 'citibank', name: 'Citibank' },
-    { id: 'maybank', name: 'Maybank' },
-    { id: 'posb', name: 'POSB' }
-  ];
-
+  
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) {
-      setSelectedFile(null);
-      setPreviewData(null);
-      return;
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
     }
-
-    const file = e.target.files[0];
-    setSelectedFile(file);
-    
-    // Read and preview the Excel file
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = new Uint8Array(event.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
-        
-        // Limit preview to first 5 rows
-        setPreviewData(jsonData.slice(0, 5));
-      } catch (error) {
-        console.error('Error parsing Excel file:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to parse the Excel file. Please ensure it\'s a valid Excel file.',
-          variant: 'destructive'
-        });
-        setPreviewData(null);
-      }
-    };
-    reader.readAsArrayBuffer(file);
   };
-
-  const handleTemplateUpload = async () => {
-    if (!templateName || !bankName || !selectedFile) {
+  
+  const handleUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!bankName || !templateName || !selectedFile) {
       toast({
         title: 'Missing Information',
-        description: 'Please provide template name, bank, and select a file.',
+        description: 'Please fill in all fields and select a file',
         variant: 'destructive'
       });
       return;
@@ -83,38 +42,36 @@ const BankTemplates: React.FC = () => {
     
     try {
       setIsUploading(true);
-
-      // Upload file to Supabase Storage
+      
+      // Upload file to storage
       const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      const fileName = `${bankName.toLowerCase()}_${Date.now()}.${fileExt}`;
       const filePath = `bank-templates/${fileName}`;
       
       const { error: uploadError } = await supabase.storage
         .from('payroll-files')
-        .upload(filePath, selectedFile);
+        .upload(filePath, selectedFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
       
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      // Create database entry
+      if (uploadError) throw uploadError;
+      
+      // Create template record in database
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      
       await createBankTemplate({
         bank_name: bankName,
         template_name: templateName,
         file_path: filePath,
-        created_by: (await supabase.auth.getUser()).data.user?.id
+        created_by: userId || ''
       });
-
-      // Reset form
-      setTemplateName('');
-      setBankName('');
-      setSelectedFile(null);
-      setPreviewData(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
       
-      setShowAddDialog(false);
+      // Reset form
+      setBankName('');
+      setTemplateName('');
+      setSelectedFile(null);
+      setUploadDialogOpen(false);
       
       toast({
         title: 'Success',
@@ -130,10 +87,19 @@ const BankTemplates: React.FC = () => {
       setIsUploading(false);
     }
   };
-
-  const handleDeleteTemplate = async (templateId: string) => {
+  
+  const handleDelete = async (templateId: string, filePath: string) => {
     try {
+      // Delete file from storage
+      const { error: storageError } = await supabase.storage
+        .from('payroll-files')
+        .remove([filePath]);
+      
+      if (storageError) throw storageError;
+      
+      // Delete template record
       await deleteBankTemplate(templateId);
+      
       toast({
         title: 'Success',
         description: 'Bank template deleted successfully',
@@ -146,217 +112,176 @@ const BankTemplates: React.FC = () => {
       });
     }
   };
+  
+  const handleDownload = async (template: any) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('payroll-files')
+        .download(template.file_path);
+      
+      if (error) throw error;
+      
+      // Create download link
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = template.template_name;
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error: any) {
+      toast({
+        title: 'Error downloading template',
+        description: error.message,
+        variant: 'destructive'
+      });
+    }
+  };
 
+  // Function to get public URL for a file
+  const getFileUrl = useCallback((path: string) => {
+    return `${process.env.SUPABASE_URL || 'https://ezvdmuahwliqotnbocdd.supabase.co'}/storage/v1/object/public/${path}`;
+  }, []);
+  
   if (loading) {
     return <LoadingSpinner size="lg" />;
   }
-
+  
   return (
     <div className="space-y-6">
       <Card className="bg-white shadow-md">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Bank Templates</CardTitle>
-          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+          <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
             <DialogTrigger asChild>
               <Button>
-                <Upload className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 mr-2" />
                 Upload Template
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[550px]">
+            <DialogContent>
               <DialogHeader>
                 <DialogTitle>Upload Bank Template</DialogTitle>
-                <DialogDescription>
-                  Upload an Excel template file for bank payment processing
-                </DialogDescription>
               </DialogHeader>
-              
-              <div className="space-y-4 py-2">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="template-name">Template Name</Label>
-                    <Input 
-                      id="template-name"
-                      placeholder="e.g., Monthly Payroll Template"
-                      value={templateName}
-                      onChange={(e) => setTemplateName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="bank-name">Bank</Label>
-                    <Select value={bankName} onValueChange={setBankName}>
-                      <SelectTrigger id="bank-name">
-                        <SelectValue placeholder="Select a bank" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {banks.map(bank => (
-                          <SelectItem key={bank.id} value={bank.id}>
-                            {bank.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+              <form onSubmit={handleUpload} className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="bank-name" className="text-sm font-medium">Bank Name</label>
+                  <Select value={bankName} onValueChange={setBankName} required>
+                    <SelectTrigger id="bank-name">
+                      <SelectValue placeholder="Select bank" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dbs">DBS</SelectItem>
+                      <SelectItem value="ocbc">OCBC</SelectItem>
+                      <SelectItem value="uob">UOB</SelectItem>
+                      <SelectItem value="standard_chartered">Standard Chartered</SelectItem>
+                      <SelectItem value="hsbc">HSBC</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="file-upload">Template File (Excel)</Label>
-                  <div className="border-2 border-dashed rounded-md border-gray-300 p-6 text-center">
-                    <Input 
-                      id="file-upload"
-                      ref={fileInputRef}
-                      type="file" 
-                      accept=".xlsx,.xls"
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                    <label htmlFor="file-upload" className="cursor-pointer">
-                      <FileSpreadsheet className="h-10 w-10 text-blue-700 mx-auto mb-2" />
-                      <span className="text-sm font-medium block">
-                        {selectedFile ? selectedFile.name : 'Click to upload or drag and drop'}
-                      </span>
-                      <span className="text-xs text-muted-foreground block mt-1">
-                        XLSX or XLS (max. 2MB)
-                      </span>
-                    </label>
-                  </div>
+                  <label htmlFor="template-name" className="text-sm font-medium">Template Name</label>
+                  <Input
+                    id="template-name"
+                    value={templateName}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    placeholder="e.g. DBS Ideal GIRO Format"
+                    required
+                  />
                 </div>
                 
-                {previewData && previewData.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>File Preview (First 5 rows)</Label>
-                    <div className="border rounded-md max-h-40 overflow-auto">
-                      <table className="w-full">
-                        <thead className="bg-blue-700 text-white text-xs sticky top-0">
-                          <tr>
-                            {Object.keys(previewData[0]).map((header, i) => (
-                              <th key={i} className="p-2 text-left">
-                                {header}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="text-xs">
-                          {previewData.map((row, i) => (
-                            <tr key={i} className="border-t">
-                              {Object.values(row).map((cell: any, j) => (
-                                <td key={j} className="p-2">
-                                  {String(cell)}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                <div className="space-y-2">
+                  <label htmlFor="template-file" className="text-sm font-medium">Template File</label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="template-file"
+                      type="file"
+                      accept=".csv,.txt,.xls,.xlsx"
+                      onChange={handleFileChange}
+                      className="flex-1"
+                      required
+                    />
                   </div>
-                )}
-              </div>
-              
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="outline">Cancel</Button>
-                </DialogClose>
-                <Button 
-                  onClick={handleTemplateUpload} 
-                  disabled={isUploading || !selectedFile || !templateName || !bankName}
-                  isLoading={isUploading}
-                >
-                  Upload Template
-                </Button>
-              </DialogFooter>
+                  {selectedFile && (
+                    <p className="text-xs text-muted-foreground">
+                      Selected: {selectedFile.name} ({Math.round(selectedFile.size / 1024)} KB)
+                    </p>
+                  )}
+                </div>
+                
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setUploadDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    isLoading={isUploading}
+                    disabled={isUploading || !bankName || !templateName || !selectedFile}
+                  >
+                    {!isUploading && <FileUp className="h-4 w-4 mr-2" />}
+                    Upload Template
+                  </Button>
+                </div>
+              </form>
             </DialogContent>
           </Dialog>
         </CardHeader>
         <CardContent>
           {templates.length > 0 ? (
-            <div className="rounded-md border overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-blue-700 text-white">
-                  <tr>
-                    <th className="py-3 px-4 text-left">Template Name</th>
-                    <th className="py-3 px-4 text-left">Bank</th>
-                    <th className="py-3 px-4 text-right">Uploaded On</th>
-                    <th className="py-3 px-4 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {templates.map((template) => (
-                    <tr key={template.id} className="border-t">
-                      <td className="py-3 px-4 font-medium">{template.template_name}</td>
-                      <td className="py-3 px-4">
-                        {banks.find(b => b.id === template.bank_name)?.name || template.bank_name}
-                      </td>
-                      <td className="py-3 px-4 text-right text-muted-foreground">
-                        {new Date(template.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <div className="flex justify-center space-x-2">
-                          <Button variant="outline" size="sm" asChild>
-                            <a href={`${supabase.storageUrl}/object/public/payroll-files/${template.file_path}`} target="_blank" rel="noopener noreferrer">
-                              <FileSpreadsheet className="h-4 w-4 mr-1" />
-                              View
-                            </a>
-                          </Button>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm">
-                                <Trash className="h-4 w-4 mr-1 text-red-500" />
-                                Delete
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Confirm Deletion</DialogTitle>
-                                <DialogDescription>
-                                  Are you sure you want to delete this template? This action cannot be undone.
-                                </DialogDescription>
-                              </DialogHeader>
-                              <DialogFooter>
-                                <DialogClose asChild>
-                                  <Button variant="outline">Cancel</Button>
-                                </DialogClose>
-                                <Button 
-                                  variant="destructive"
-                                  onClick={() => handleDeleteTemplate(template.id)}
-                                >
-                                  Delete
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Template Name</TableHead>
+                  <TableHead>Bank</TableHead>
+                  <TableHead>Created At</TableHead>
+                  <TableHead className="w-[100px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {templates.map((template) => (
+                  <TableRow key={template.id}>
+                    <TableCell className="font-medium">{template.template_name}</TableCell>
+                    <TableCell>{template.bank_name.toUpperCase()}</TableCell>
+                    <TableCell>{format(new Date(template.created_at), 'dd MMM yyyy')}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownload(template)}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => handleDelete(template.id, template.file_path)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           ) : (
             <div className="text-center py-10">
-              <FileInput className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
-              <h3 className="text-lg font-medium">No Templates Yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Upload bank templates to generate payment files
+              <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
+              <h3 className="text-lg font-medium">No templates found</h3>
+              <p className="text-muted-foreground">
+                Upload a bank template to get started
               </p>
-              <Button onClick={() => setShowAddDialog(true)}>
-                <Upload className="h-4 w-4 mr-2" />
-                Upload First Template
-              </Button>
             </div>
           )}
-          
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-            <div className="flex gap-3">
-              <AlertTriangle className="h-5 w-5 text-blue-700 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="font-semibold text-sm">Template Guidelines</h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Bank templates should be Excel files containing the expected column structure for your bank's payment file format. Typically, these include employee name, bank account number, amount, and payment reference fields.
-                </p>
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

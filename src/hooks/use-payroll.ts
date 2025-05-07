@@ -30,7 +30,13 @@ export const usePayrollPeriods = () => {
           throw error;
         }
 
-        setPeriods(data || []);
+        // Convert database response to match our type definitions
+        const typedData = data?.map(item => ({
+          ...item,
+          status: item.status as PayrollPeriod['status']
+        })) || [];
+        
+        setPeriods(typedData);
       } catch (error: any) {
         setError(error.message);
         toast({
@@ -58,13 +64,19 @@ export const usePayrollPeriods = () => {
         throw error;
       }
 
-      setPeriods(prev => [data as PayrollPeriod, ...prev]);
+      // Convert to match our type definition
+      const typedData = {
+        ...data,
+        status: data.status as PayrollPeriod['status']
+      };
+
+      setPeriods(prev => [typedData, ...prev]);
       toast({
         title: 'Success',
         description: 'Payroll period created successfully',
       });
 
-      return data;
+      return typedData;
     } catch (error: any) {
       toast({
         title: 'Error creating payroll period',
@@ -88,9 +100,15 @@ export const usePayrollPeriods = () => {
         throw error;
       }
 
+      // Convert to match our type definition
+      const typedData = {
+        ...data,
+        status: data.status as PayrollPeriod['status']
+      };
+
       setPeriods(prev => 
         prev.map(period => 
-          period.id === id ? { ...period, ...data } as PayrollPeriod : period
+          period.id === id ? typedData : period
         )
       );
 
@@ -99,7 +117,7 @@ export const usePayrollPeriods = () => {
         description: 'Payroll period updated successfully',
       });
 
-      return data;
+      return typedData;
     } catch (error: any) {
       toast({
         title: 'Error updating payroll period',
@@ -142,7 +160,13 @@ export const usePayrollItems = (payrollPeriodId?: string) => {
           throw error;
         }
 
-        setItems(data || []);
+        // Convert database response to match our type definitions
+        const typedData = data?.map(item => ({
+          ...item,
+          status: item.status as PayrollItem['status']
+        })) || [];
+
+        setItems(typedData);
       } catch (error: any) {
         setError(error.message);
         toast({
@@ -173,13 +197,19 @@ export const usePayrollItems = (payrollPeriodId?: string) => {
         throw error;
       }
 
-      setItems(prev => [data as unknown as PayrollItem, ...prev]);
+      // Convert to match our type definition
+      const typedData = {
+        ...data,
+        status: data.status as PayrollItem['status']
+      };
+
+      setItems(prev => [typedData as unknown as PayrollItem, ...prev]);
       toast({
         title: 'Success',
         description: 'Payroll item created successfully',
       });
 
-      return data;
+      return typedData;
     } catch (error: any) {
       toast({
         title: 'Error creating payroll item',
@@ -206,9 +236,15 @@ export const usePayrollItems = (payrollPeriodId?: string) => {
         throw error;
       }
 
+      // Convert to match our type definition
+      const typedData = {
+        ...data,
+        status: data.status as PayrollItem['status']
+      };
+
       setItems(prev => 
         prev.map(item => 
-          item.id === id ? { ...item, ...data } as unknown as PayrollItem : item
+          item.id === id ? typedData as unknown as PayrollItem : item
         )
       );
 
@@ -217,7 +253,7 @@ export const usePayrollItems = (payrollPeriodId?: string) => {
         description: 'Payroll item updated successfully',
       });
 
-      return data;
+      return typedData;
     } catch (error: any) {
       toast({
         title: 'Error updating payroll item',

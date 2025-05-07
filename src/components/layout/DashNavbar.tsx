@@ -15,12 +15,12 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui-custom/Button';
-import { DateTimeBar } from '@/components/ui-custom/DateTimeBar';
+import DateTimeBar from '@/components/ui-custom/DateTimeBar';
 import { NotificationBell } from '@/components/ui-custom/NotificationBell';
 import DashboardSidebar from './DashboardSidebar';
 
 export const DashNavbar = () => {
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -46,7 +46,7 @@ export const DashNavbar = () => {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await logout();
       navigate('/login');
     } catch (error) {
       console.error('Error signing out:', error);
@@ -122,7 +122,7 @@ export const DashNavbar = () => {
                   className="flex items-center text-white space-x-2 focus:outline-none focus:ring-2 focus:ring-white/50 rounded-md p-1"
                 >
                   <Avatar className="h-8 w-8 bg-blue-600">
-                    <AvatarImage src={user?.avatar_url || undefined} />
+                    <AvatarImage src={user?.user_metadata?.avatar_url} />
                     <AvatarFallback className="bg-blue-600 text-white">
                       {(user?.full_name || user?.email || 'U')[0].toUpperCase()}
                     </AvatarFallback>

@@ -66,9 +66,7 @@ export const DashNavbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Left side - Logo */}
           <div className="flex items-center">
-            <Link to="/dashboard" className="flex items-center">
-              <span className="text-blue-600 text-2xl font-bold">HR<span className="text-blue-400">ray</span></span>
-            </Link>
+            <Link to="/" className="flex items-center"><span className="text-blue-600 text-[30px] font-bold">HR<span className="text-orange-500">ray</span></span></Link>
           </div>
 
           {/* Center - Navigation */}

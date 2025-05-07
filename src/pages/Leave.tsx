@@ -1,8 +1,7 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Added useCallback
 import { useNavigate } from 'react-router-dom';
 import { ListFilter, RefreshCw, Upload, Link as LinkIcon, Plus } from 'lucide-react';
-import { Button } from '@/components/ui-custom/Button';
+import { Button } from '@/components/ui-custom/Button'; // Assuming this is your custom button
 import { AnimatedSection } from '@/components/ui-custom/AnimatedSection';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -27,24 +26,19 @@ const Leave = () => {
     if (!isLoading && !isAuthenticated) navigate('/login');
   }, [isAuthenticated, isLoading, navigate]);
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
       const authorizedClient = getAuthorizedClient();
       
+      // These Supabase calls seem intended to refresh data sources.
+      // Their effectiveness depends on how child components consume this data
+      // (e.g., via realtime subscriptions or data fetching hooks that react to cache changes).
       await Promise.all([
-        authorizedClient
-          .from('leave_requests')
-          .select('*'),
-        authorizedClient
-          .from('public_holidays')
-          .select('*'),
-        authorizedClient
-          .from('leave_quotas')
-          .select('*'),
-        authorizedClient
-          .from('shifts')
-          .select('*')
+        authorizedClient.from('leave_requests').select('*'),
+        authorizedClient.from('public_holidays').select('*'),
+        authorizedClient.from('leave_quotas').select('*'),
+        authorizedClient.from('shifts').select('*')
       ]);
 
       toast({
@@ -63,28 +57,28 @@ const Leave = () => {
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, [toast]); // getAuthorizedClient is an import, setIsRefreshing is stable
 
-  const handleExport = () => {
+  const handleExport = useCallback(() => { // Wrapped in useCallback, though not strictly necessary if not a dependency/prop
     toast({
       title: "Export Started",
       description: `Exporting ${activeTab === 'calendar' ? 'calendar' : 'leave records'} data`,
       duration: 3000,
     });
-  };
+  }, [activeTab, toast]);
 
-  const handleLeaveTypeFilter = (types: string[]) => {
+  const handleLeaveTypeFilter = useCallback((types: string[]) => {
     setSelectedLeaveTypes(types);
-  };
+  }, []); // setSelectedLeaveTypes is stable
 
-  const handleGenerateBotLink = () => {
+  const handleGenerateBotLink = useCallback(() => {
     if (user) {
       const botUsername = 'hrray_leave_bot';
-      const generatedLink = `https://t.me/${botUsername}?start=${user.id}`;
+      // Ensure user.id is URL-safe if it can contain special characters, though usually not an issue for IDs.
+      const generatedLink = `https://t.me/${botUsername}?start=${encodeURIComponent(user.id)}`;
 
       setBotLink(generatedLink);
       setBotLinkDialogOpen(true);
-
       console.log('Generated bot link with user ID:', user.id);
     } else {
       toast({
@@ -94,36 +88,46 @@ const Leave = () => {
         duration: 3000,
       });
     }
-  };
+  }, [user, toast]); // setBotLink, setBotLinkDialogOpen are stable
 
-  const copyToClipboard = () => {
+  const copyToClipboard = useCallback(() => {
+    if (!botLink) return;
     navigator.clipboard.writeText(botLink).then(() => {
       toast({
         title: "Copied",
         description: "Bot link copied to clipboard",
         duration: 3000,
       });
-      setBotLinkDialogOpen(false);
+      setBotLinkDialogOpen(false); // Close dialog on successful copy
     }).catch(err => {
       console.error('Failed to copy: ', err);
       toast({
         title: "Error",
-        description: "Failed to copy to clipboard",
+        description: "Failed to copy to clipboard. Ensure you are in a secure context (HTTPS).",
         variant: "destructive",
         duration: 3000,
       });
     });
-  };
+  }, [botLink, toast]); // setBotLinkDialogOpen is stable
 
-  const handleAddLeaveSuccess = () => {
+  const handleAddLeaveSuccess = useCallback(() => {
     setAddLeaveDialogOpen(false);
-    handleRefresh();
+    handleRefresh(); // Refresh data after successful leave submission
     toast({
       title: "Leave Request Submitted",
       description: "Your leave request has been submitted successfully",
       duration: 3000,
     });
-  };
+  }, [handleRefresh, toast]); // setAddLeaveDialogOpen is stable
+
+  const handleCancelAddLeave = useCallback(() => {
+    setAddLeaveDialogOpen(false);
+  }, []); // setAddLeaveDialogOpen is stable
+
+  if (isLoading) {
+    // Optional: Add a loading spinner for the whole page if auth is loading
+    return <div className="min-h-screen flex items-center justify-center">Loading authentication...</div>;
+  }
 
   return (
     <div className="min-h-screen pt-20 pb-12 bg-gray-50">
@@ -153,9 +157,9 @@ const Leave = () => {
                 <Upload className="mr-2 h-4 w-4" /> Export
               </Button>
               <Button
-                variant="default"
+                variant="default" // Assuming this is a primary button style
                 size="sm"
-                className="bg-indigo-600 text-white hover:bg-indigo-700"
+                className="bg-blue-700 text-white hover:bg-blue-800" // Example primary button styling
                 onClick={() => setAddLeaveDialogOpen(true)}
               > 
                 <Plus className="mr-2 h-4 w-4" />
@@ -166,13 +170,14 @@ const Leave = () => {
 
           <div className="mb-6">
             <div className="flex flex-col sm:flex-row gap-2">
+              {/* Consider making these tab buttons part of a reusable Tab component */}
               <Button
                 variant={activeTab === 'calendar' ? 'secondary' : 'outline'}
                 size="sm"
                 onClick={() => setActiveTab('calendar')}
-                className="flex items-center"
+                className="flex items-center" // Ensure consistent styling/behavior
               >
-                <ListFilter className="mr-2 h-4 w-4" />
+                <ListFilter className="mr-2 h-4 w-4" /> {/* Icon could change based on view */}
                 Calendar View
               </Button>
               <Button
@@ -197,19 +202,22 @@ const Leave = () => {
           </div>
 
           <div className="flex-1 flex flex-col">
+            {/* Conditional rendering of views based on activeTab */}
             {activeTab === 'calendar' && (
-              <LeaveCalendar />
+              <LeaveCalendar /> // Ensure LeaveCalendar fetches/refreshes data as needed
             )}
             {activeTab === 'records' && (
               <LeaveRecordsView 
                 selectedLeaveTypes={selectedLeaveTypes} 
-                onLeaveTypeFilter={handleLeaveTypeFilter} 
+                onLeaveTypeFilter={handleLeaveTypeFilter} // Passed memoized handler
+                // Ensure LeaveRecordsView also handles data fetching/refreshing
               />
             )}
           </div>
         </AnimatedSection>
       </div>
 
+      {/* Bot Link Dialog */}
       <Dialog open={botLinkDialogOpen} onOpenChange={setBotLinkDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -228,14 +236,17 @@ const Leave = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Add Leave Dialog */}
       <Dialog open={addLeaveDialogOpen} onOpenChange={setAddLeaveDialogOpen}>
-        <DialogContent className="sm:max-w-3xl w-full" description="Add a new leave request">
+        <DialogContent className="sm:max-w-3xl w-full" aria-describedby="add-leave-dialog-description"> {/* Added aria-describedby */}
           <DialogHeader>
             <DialogTitle>Add Leave Request</DialogTitle>
+            {/* Optional: <DialogDescription id="add-leave-dialog-description">Fill in the details to submit a new leave request.</DialogDescription> */}
           </DialogHeader>
           <AddLeaveForm 
-            onSuccess={handleAddLeaveSuccess} 
-            onCancel={() => setAddLeaveDialogOpen(false)} 
+            onSuccess={handleAddLeaveSuccess}     // Passed memoized handler
+            onCancel={handleCancelAddLeave}     // Passed memoized handler
+            // If AddLeaveForm needs an initialDate, you can pass it here, e.g. initialDate={new Date()}
           />
         </DialogContent>
       </Dialog>

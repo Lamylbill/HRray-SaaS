@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { LeaveType, LeaveQuota } from '@/components/leave-calendar/interfaces';
 
 export const useLeave = () => {
   const { toast } = useToast();
+  const supabase = getAuthorizedClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: leaveTypes, isLoading: isLoadingLeaveTypes } = useQuery({
@@ -35,7 +36,6 @@ export const useLeave = () => {
   });
 
   const fetchLeaveQuota = async (employeeId: string, leaveTypeId: string) => {
-    // Simply fetch the existing quota that should have been created by our trigger
     const { data: quotaData, error: quotaError } = await supabase
       .from('leave_quotas')
       .select('*')
@@ -45,8 +45,6 @@ export const useLeave = () => {
     
     if (quotaError) {
       if (quotaError.code === 'PGRST116') {
-        // If somehow the quota doesn't exist (which should be rare now), 
-        // check if this is an unpaid leave type
         const { data: leaveType, error: leaveTypeError } = await supabase
           .from('leave_types')
           .select('is_paid')
@@ -55,7 +53,6 @@ export const useLeave = () => {
 
         if (leaveTypeError) throw leaveTypeError;
         
-        // For unpaid leave types, return unlimited quota
         if (!leaveType.is_paid) {
           return {
             id: 'unlimited',
@@ -69,7 +66,6 @@ export const useLeave = () => {
           } as LeaveQuota;
         }
 
-        // Otherwise return a default object (which should be rare since we now auto-create quotas)
         return {
           id: 'new',
           employee_id: employeeId,
@@ -84,7 +80,6 @@ export const useLeave = () => {
       throw quotaError;
     }
     
-    // Now fetch all relevant leave requests (both approved and pending)
     const { data: leaveRequests, error: requestsError } = await supabase
       .from('leave_requests')
       .select('start_date, end_date, half_day, status')
@@ -94,7 +89,6 @@ export const useLeave = () => {
     
     if (requestsError) throw requestsError;
     
-    // Calculate days from both approved and pending requests
     let approvedDays = 0;
     let pendingDays = 0;
     
@@ -113,7 +107,6 @@ export const useLeave = () => {
       });
     }
     
-    // Return quota with both approved and pending days included in taken_days
     return {
       ...quotaData,
       taken_days: approvedDays + pendingDays
@@ -131,6 +124,9 @@ export const useLeave = () => {
   }) => {
     setIsSubmitting(true);
     try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user?.id) throw new Error('Auth user not found');
+
       const { data, error } = await supabase
         .from('leave_requests')
         .insert([
@@ -142,7 +138,8 @@ export const useLeave = () => {
             notes: values.notes,
             half_day: values.isHalfDay,
             half_day_type: values.isHalfDay ? values.halfDayType : null,
-            status: 'Pending'
+            status: 'Pending',
+            user_id: userData.user.id, // ✅ Required by your RLS
           }
         ])
         .select()

@@ -2,14 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  MenuIcon,
+  LayoutDashboard,
   Users,
-  Home,
   Calendar,
   Settings,
   ChevronDown,
   Bell,
-  DollarSign
+  DollarSign,
+  ShieldCheck
 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
@@ -17,11 +17,9 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui-custom/Button';
 import DateTimeBar from '@/components/ui-custom/DateTimeBar';
 import { NotificationBell } from '@/components/ui-custom/NotificationBell';
-import DashboardSidebar from './DashboardSidebar';
 
 export const DashNavbar = () => {
   const { user, logout } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   
@@ -53,22 +51,9 @@ export const DashNavbar = () => {
     }
   };
 
-  // Navigation items for the dashboard
-  const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: <Home className="h-5 w-5" /> },
-    { path: '/employees', label: 'Employees', icon: <Users className="h-5 w-5" /> },
-    { path: '/leave', label: 'Leave', icon: <Calendar className="h-5 w-5" /> },
-    { path: '/payroll', label: 'Payroll', icon: <DollarSign className="h-5 w-5" /> },
-    { path: '/settings', label: 'Settings', icon: <Settings className="h-5 w-5" /> },
-  ];
-
   // Check if the current path matches a nav item
   const isActive = (path: string) => {
     return location.pathname === path;
-  };
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
   };
 
   const toggleDropdown = () => {
@@ -76,89 +61,126 @@ export const DashNavbar = () => {
   };
 
   return (
-    <>
-      <div className={`fixed top-0 w-full z-40 bg-blue-700 shadow-md transition-all ${scrolled ? 'shadow-lg' : ''}`}>
-        <div className="container mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
-            {/* Left side - Logo and toggle button */}
-            <div className="flex items-center space-x-4">
-              <button 
-                onClick={toggleSidebar}
-                className="text-white focus:outline-none focus:ring-2 focus:ring-white/50 rounded-md p-1"
+    <header className={`fixed top-0 w-full z-40 bg-white border-b ${scrolled ? 'shadow-sm' : ''}`}>
+      <div className="container mx-auto px-4 lg:px-6">
+        <div className="flex items-center justify-between h-16">
+          {/* Left side - Logo */}
+          <div className="flex items-center">
+            <Link to="/dashboard" className="flex items-center">
+              <span className="text-blue-600 text-2xl font-bold">HR<span className="text-blue-400">ray</span></span>
+            </Link>
+          </div>
+
+          {/* Center - Navigation */}
+          <div className="hidden md:flex items-center space-x-1">
+            <Link
+              to="/dashboard"
+              className={`px-4 py-2 rounded-full text-sm font-medium flex items-center transition-colors ${
+                isActive('/dashboard')
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+              }`}
+            >
+              <LayoutDashboard className="mr-2 h-5 w-5" />
+              Dashboard
+            </Link>
+            <Link
+              to="/employees"
+              className={`px-4 py-2 rounded-full text-sm font-medium flex items-center transition-colors ${
+                isActive('/employees')
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+              }`}
+            >
+              <Users className="mr-2 h-5 w-5" />
+              Employees
+            </Link>
+            <Link
+              to="/payroll"
+              className={`px-4 py-2 rounded-full text-sm font-medium flex items-center transition-colors ${
+                isActive('/payroll')
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+              }`}
+            >
+              <DollarSign className="mr-2 h-5 w-5" />
+              Payroll
+            </Link>
+            <Link
+              to="/leave"
+              className={`px-4 py-2 rounded-full text-sm font-medium flex items-center transition-colors ${
+                isActive('/leave')
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+              }`}
+            >
+              <Calendar className="mr-2 h-5 w-5" />
+              Leave
+            </Link>
+            <Link
+              to="/compliance"
+              className={`px-4 py-2 rounded-full text-sm font-medium flex items-center transition-colors ${
+                isActive('/compliance')
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+              }`}
+            >
+              <ShieldCheck className="mr-2 h-5 w-5" />
+              Compliance
+            </Link>
+          </div>
+
+          {/* Right side - User controls */}
+          <div className="flex items-center space-x-4">
+            <NotificationBell />
+            
+            <div className="relative">
+              <button
+                onClick={toggleDropdown}
+                className="flex items-center space-x-2 focus:outline-none"
               >
-                <MenuIcon className="h-6 w-6" />
-              </button>
-              <Link to="/dashboard" className="flex items-center">
-                <span className="text-white text-lg font-bold">HRFlow</span>
-              </Link>
-            </div>
-
-            {/* Center - Navigation */}
-            <div className="hidden md:flex items-center space-x-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${
-                    isActive(item.path)
-                      ? 'bg-white/20 text-white'
-                      : 'text-white/80 hover:bg-white/10 hover:text-white'
-                  }`}
-                >
-                  <span className="mr-2">{item.icon}</span>
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-
-            {/* Right side - User controls */}
-            <div className="flex items-center space-x-4">
-              <DateTimeBar className="hidden md:block" />
-              <NotificationBell />
-              
-              <div className="relative">
-                <button
-                  onClick={toggleDropdown}
-                  className="flex items-center text-white space-x-2 focus:outline-none focus:ring-2 focus:ring-white/50 rounded-md p-1"
-                >
-                  <Avatar className="h-8 w-8 bg-blue-600">
-                    <AvatarImage src={user?.user_metadata?.avatar_url} />
-                    <AvatarFallback className="bg-blue-600 text-white">
-                      {(user?.email || 'U')[0].toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="hidden md:block text-sm font-medium">
-                    {user?.user_metadata?.full_name || user?.email || 'User'}
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user?.user_metadata?.avatar_url} />
+                  <AvatarFallback className="bg-blue-100 text-blue-600 font-medium">
+                    {(user?.user_metadata?.full_name || user?.email || 'U')[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="hidden md:block text-left">
+                  <span className="block text-sm font-medium text-gray-700">
+                    My Account
                   </span>
-                  <ChevronDown className="h-4 w-4" />
-                </button>
+                </div>
+                <ChevronDown className="h-4 w-4 text-gray-500" />
+              </button>
 
-                {/* Dropdown menu */}
-                {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
-                    <Link
-                      to="/settings"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      Settings
-                    </Link>
-                    <button
-                      onClick={handleSignOut}
-                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                    >
-                      Sign out
-                    </button>
+              {/* Dropdown menu */}
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border">
+                  <div className="px-4 py-2 border-b">
+                    <p className="text-sm font-medium text-gray-900">
+                      {user?.user_metadata?.full_name || 'User'}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                   </div>
-                )}
-              </div>
+                  <Link
+                    to="/settings"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    Settings
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
-
-      {/* Sidebar for mobile */}
-      <DashboardSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-    </>
+    </header>
   );
 };

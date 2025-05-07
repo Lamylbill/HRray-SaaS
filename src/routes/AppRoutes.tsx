@@ -9,6 +9,7 @@ import SignUp from "@/pages/SignUp";
 import Dashboard from "@/pages/Dashboard";
 import EmployeesPage from "@/pages/EmployeesPage";
 import Leave from "@/pages/Leave";
+import PayrollPage from "@/pages/PayrollPage";
 import Settings from "@/pages/Settings";
 import NotFound from "@/pages/NotFound";
 import BlogPage from "@/pages/BlogPage";
@@ -147,8 +148,7 @@ const AppRoutes = () => {
       <Route path="/payroll" element={
         <ProtectedRoute>
           <DashboardLayout>
-            <h1 className="text-3xl font-bold mb-6">Payroll</h1>
-            <p>Manage employee compensation and payments.</p>
+            <PayrollPage />
           </DashboardLayout>
         </ProtectedRoute>
       } />

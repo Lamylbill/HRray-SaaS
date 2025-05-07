@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui-custom/Button';
@@ -10,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { PayrollPeriod, PayrollItem } from '@/types/payroll';
 import { Download, FileText, Mail, Printer } from 'lucide-react';
+import { Label } from '@/components/ui/label';
 
 const PayslipGenerator: React.FC = () => {
   const [payrollPeriods, setPayrollPeriods] = useState<PayrollPeriod[]>([]);
@@ -73,7 +75,38 @@ const PayslipGenerator: React.FC = () => {
 
       if (error) throw error;
 
-      setPayrollItems(data || []);
+      // Create complete PayrollItem objects with all required fields
+      const typedData = (data || []).map(item => {
+        // Extract the employees nested object to use separately
+        const { employees, ...rest } = item;
+        
+        // Create a properly typed PayrollItem with default values for missing fields
+        const payrollItem: PayrollItem = {
+          id: rest.id,
+          payroll_period_id: periodId,
+          employee_id: rest.employee_id,
+          basic_salary: rest.basic_salary,
+          allowances: rest.allowances,
+          deductions: rest.deductions,
+          employee_cpf: 0, // Default value
+          employer_cpf: 0, // Default value
+          sdl: 0, // Default value
+          sinda: 0, // Default value
+          cdac: 0, // Default value
+          mbmf: 0, // Default value
+          gross_pay: 0, // Default value
+          net_pay: rest.net_pay,
+          status: 'Calculated', // Default value
+          created_at: new Date().toISOString(), // Default value
+          updated_at: new Date().toISOString(), // Default value
+          // Store employee info to use for display
+          employees: employees as { full_name: string; email: string }
+        };
+        
+        return payrollItem;
+      });
+
+      setPayrollItems(typedData);
       setSelectAll(false);
       setSelectedEmployees([]);
     } catch (error: any) {
@@ -111,7 +144,7 @@ const PayslipGenerator: React.FC = () => {
       toast({
         title: 'Warning',
         description: 'Please select at least one employee to generate payslips.',
-        variant: 'warning',
+        variant: 'default',
       });
       return;
     }

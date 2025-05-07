@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { blogService } from '@/services/blog.service';
@@ -109,12 +110,15 @@ const BlogPostPage = () => {
 
     setIsSubmittingComment(true);
     try {
+      const userName = user ? (user as any).full_name || 'Anonymous' : 'Anonymous';
+      const userEmail = user ? user.email || '' : '';
+      
       const newComment = {
         post_id: post.id,
         content: commentContent,
         user_id: user?.id || null,
-        name: user?.full_name || 'Anonymous',
-        email: user?.email || '',
+        name: userName,
+        email: userEmail,
         is_approved: true
       };
       await blogService.addComment(post.id, newComment);
@@ -124,8 +128,8 @@ const BlogPostPage = () => {
         post_id: post.id,
         content: commentContent,
         user_id: user?.id || null,
-        name: user?.full_name || 'Anonymous',
-        email: user?.email || '',
+        name: userName,
+        email: userEmail,
         is_approved: true
       }]);
       setCommentContent('');

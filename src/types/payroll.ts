@@ -31,6 +31,10 @@ export interface PayrollItem {
   status: PayrollItemStatus;
   created_at: string;
   updated_at: string;
+  employees?: {
+    full_name: string;
+    email: string;
+  };
 }
 
 export type PayrollItemStatus = 'Draft' | 'Calculated' | 'Approved' | 'Paid';

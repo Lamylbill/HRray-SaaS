@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui-custom/Button';
@@ -9,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 import { CheckCircle, Download, FileText, FileType, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { PayrollPeriod } from '@/types/payroll';
+import { PayrollPeriod, PayrollPeriodStatus } from '@/types/payroll';
 import { format, parseISO } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -26,37 +25,43 @@ const CpfSubmissionFileExport: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchPayrollPeriods();
-  }, []);
+    const fetchCompletedPayrollPeriods = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('payroll_periods')
+          .select('*')
+          .in('status', ['Completed', 'Verified'])
+          .order('end_date', { ascending: false });
+        
+        if (error) throw error;
+
+        // Convert database response to match our type definitions
+        const typedPeriodsData = data?.map(item => ({
+          ...item,
+          status: item.status as PayrollPeriodStatus
+        })) || [];
+        
+        setPayrollPeriods(typedPeriodsData);
+      } catch (error: any) {
+        toast({
+          title: 'Error',
+          description: error.message,
+          variant: 'destructive'
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCompletedPayrollPeriods();
+  }, [toast]);
 
   useEffect(() => {
     if (selectedPeriodId) {
       fetchPayrollSummary(selectedPeriodId);
     }
   }, [selectedPeriodId]);
-
-  const fetchPayrollPeriods = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('payroll_periods')
-        .select('*')
-        .eq('status', 'Completed')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      setPayrollPeriods(data || []);
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchPayrollSummary = async (periodId: string) => {
     try {

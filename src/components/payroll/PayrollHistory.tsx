@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -9,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 import { Eye, FileText, Search } from 'lucide-react';
-import { PayrollPeriod } from '@/types/payroll';
+import { PayrollPeriod, PayrollPeriodStatus } from '@/types/payroll';
 
 const PayrollHistory: React.FC = () => {
   const [payrollPeriods, setPayrollPeriods] = useState<PayrollPeriod[]>([]);
@@ -21,32 +20,36 @@ const PayrollHistory: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchPayrollPeriods();
-  }, []);
+    const fetchPayrollPeriods = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('payroll_periods')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-  const fetchPayrollPeriods = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('payroll_periods')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        throw error;
+        if (error) throw error;
+
+        // Convert database response to match our type definitions
+        const typedPeriodsData = data?.map(item => ({
+          ...item,
+          status: item.status as PayrollPeriodStatus
+        })) || [];
+        
+        setPayrollPeriods(typedPeriodsData);
+      } catch (error: any) {
+        toast({
+          title: 'Error',
+          description: error.message,
+          variant: 'destructive'
+        });
+      } finally {
+        setLoading(false);
       }
-      
-      setPayrollPeriods(data || []);
-    } catch (error: any) {
-      toast({
-        title: 'Error fetching payroll periods',
-        description: error.message,
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchPayrollPeriods();
+  }, [toast]);
 
   const fetchPayrollItems = async (periodId: string) => {
     try {

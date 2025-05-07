@@ -116,10 +116,10 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ isOpen, onClose }) 
           <div className="px-4 py-4 border-b">
             <div className="flex items-center space-x-3">
               <div className="bg-blue-700 text-white h-10 w-10 rounded-full flex items-center justify-center font-semibold">
-                {(user?.full_name || user?.email || 'U')[0].toUpperCase()}
+                {(user?.email || 'U')[0].toUpperCase()}
               </div>
               <div className="space-y-0.5">
-                <div className="font-medium">{user?.full_name || 'User'}</div>
+                <div className="font-medium">{user?.user_metadata?.full_name || 'User'}</div>
                 <div className="text-sm text-gray-500 truncate max-w-[180px]">{user?.email}</div>
               </div>
             </div>

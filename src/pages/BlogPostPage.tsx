@@ -187,6 +187,35 @@ const BlogPostPage = () => {
 
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
 
+  const renderAuthorInfo = () => {
+    if (post?.author) {
+      return (
+        <div className="flex items-center space-x-3">
+          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+            {post.author.avatar_url ? (
+              <img 
+                src={post.author.avatar_url} 
+                alt={post.author.full_name || 'Author'} 
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="font-medium text-gray-600">
+                {(post.author.full_name || post.author.id || 'A')[0].toUpperCase()}
+              </span>
+            )}
+          </div>
+          <div>
+            <p className="font-medium">{post.author.full_name || 'Anonymous'}</p>
+            <p className="text-sm text-gray-500">
+              {publishedDate && `Published on ${formatDate(publishedDate)}`}
+            </p>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   if (isLoadingPost) {
     return (
       <div className="min-h-screen pt-24 pb-12 bg-gray-50 flex justify-center items-start">
@@ -255,11 +284,7 @@ const BlogPostPage = () => {
                     <span>{formatDate(post.published_at || post.publish_at || post.created_at)}</span>
                   </div>
 
-                  {post.author && (
-                    <div className="flex items-center">
-                      <span className="font-medium">By {post.author.full_name || 'Admin'}</span>
-                    </div>
-                  )}
+                  {renderAuthorInfo()}
                 </div>
 
                 <div className="prose prose-blue max-w-none mb-8" dangerouslySetInnerHTML={{ __html: post.content }} />

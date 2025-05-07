@@ -49,18 +49,22 @@ const SignUp = () => {
     
     try {
       setIsSubmitting(true);
-      const { error } = await signup(email, password, fullName);
+      const result = await signup(email, password, { full_name: fullName });
       
-      if (error) {
+      if (result?.error) {
         toast({
           title: "Sign up failed",
-          description: error.message,
+          description: result.error.message,
           variant: "destructive",
         });
       } else {
         // Success message already shown in signup function
+        toast({
+          title: "Account created",
+          description: "Your account has been created successfully!",
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sign up error:', error);
       toast({
         title: "Sign up failed",

@@ -1,193 +1,169 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui-custom/Button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui-custom/Button';
 import { useToast } from '@/hooks/use-toast';
-import { usePayrollPeriods, calculateCpfContributions } from '@/hooks/use-payroll';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { calculateCpfContributions } from '@/hooks/use-payroll';
 import { supabase } from '@/integrations/supabase/client';
-import { PayrollItem } from '@/types/payroll';
+import { PayrollPeriod, PayrollItem, Employee, PayrollItemStatus } from '@/types/payroll';
 import { format } from 'date-fns';
+import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 
 const PayrollCalculator: React.FC = () => {
-  const [periodName, setPeriodName] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [paymentDate, setPaymentDate] = useState('');
-  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
-  const [employees, setEmployees] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [periodCreated, setPeriodCreated] = useState(false);
-  const [currentPeriodId, setCurrentPeriodId] = useState<string | null>(null);
-  const [payrollItems, setPayrollItems] = useState<PayrollItem[]>([]);
-  
+  const [periods, setPeriods] = useState<PayrollPeriod[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [items, setItems] = useState<PayrollItem[]>([]);
+  const [selectedPeriodId, setSelectedPeriodId] = useState('');
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
+  const [basicSalary, setBasicSalary] = useState<number | ''>('');
+  const [allowances, setAllowances] = useState<number | ''>('');
+  const [deductions, setDeductions] = useState<number | ''>('');
+  const [cpfContributions, setCpfContributions] = useState({ employee: 0, employer: 0, total: 0 });
+  const [netPay, setNetPay] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCalculating, setIsCalculating] = useState(false);
   const { toast } = useToast();
-  const { createPayrollPeriod } = usePayrollPeriods();
 
-  // Fetch employees
   useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('employees')
-          .select('id, full_name, email, job_title, department, basic_salary, date_of_birth')
-          .eq('employment_status', 'Active');
-        
-        if (error) {
-          throw error;
-        }
-        
-        setEmployees(data || []);
-      } catch (error: any) {
-        toast({
-          title: 'Error fetching employees',
-          description: error.message,
-          variant: 'destructive'
-        });
-      }
-    };
-    
-    fetchEmployees();
-  }, [toast]);
+    loadPayrollData();
+  }, []);
 
-  const handleCreatePeriod = async () => {
-    if (!periodName || !startDate || !endDate || !paymentDate) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please fill in all required fields',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
+  const loadPayrollData = async () => {
     try {
-      setLoading(true);
-      const periodData = {
-        period_name: periodName,
-        start_date: startDate,
-        end_date: endDate,
-        payment_date: paymentDate,
-        status: 'Draft' as const,
-        created_by: (await supabase.auth.getUser()).data.user?.id
-      };
-      
-      const result = await createPayrollPeriod(periodData);
-      setCurrentPeriodId(result.id);
-      setPeriodCreated(true);
-      
-      toast({
-        title: 'Success',
-        description: 'Payroll period created successfully',
-      });
+      setIsLoading(true);
+
+      // Fetch payroll periods
+      const periodsResult = await supabase
+        .from('payroll_periods')
+        .select('*')
+        .eq('status', 'Draft')
+        .order('payment_date', { ascending: false });
+
+      if (periodsResult.error) throw periodsResult.error;
+      setPeriods(periodsResult.data || []);
+
+      // Fetch employees
+      const employeesResult = await supabase
+        .from('employees')
+        .select('id, full_name, email, basic_salary, allowances')
+        .order('full_name', { ascending: true });
+
+      if (employeesResult.error) throw employeesResult.error;
+      setEmployees(employeesResult.data || []);
     } catch (error: any) {
       toast({
-        title: 'Error creating payroll period',
+        title: 'Error loading data',
         description: error.message,
         variant: 'destructive'
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleEmployeeSelect = (employeeId: string) => {
-    setSelectedEmployees(prev => {
-      if (prev.includes(employeeId)) {
-        return prev.filter(id => id !== employeeId);
-      } else {
-        return [...prev, employeeId];
+  useEffect(() => {
+    loadPayrollItems();
+  }, [selectedPeriodId]);
+
+  const loadPayrollItems = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Fetch employees
+      const employeesResult = await supabase
+        .from('employees')
+        .select('id, full_name, email, basic_salary, allowances')
+        .order('full_name', { ascending: true });
+
+      if (employeesResult.error) throw employeesResult.error;
+      setEmployees(employeesResult.data || []);
+
+      // Fetch payroll items for the selected period
+      const payrollItems = await supabase
+        .from('payroll_items')
+        .select('*')
+        .eq('payroll_period_id', selectedPeriodId);
+      
+      if (payrollItems.data) {
+        // Convert database response to match our type definitions
+        const typedPayrollItems = payrollItems.data.map(item => ({
+          ...item,
+          status: item.status as PayrollItemStatus
+        }));
+        
+        setItems(typedPayrollItems);
       }
-    });
-  };
-
-  const handleSelectAll = () => {
-    if (selectedEmployees.length === employees.length) {
-      setSelectedEmployees([]);
-    } else {
-      setSelectedEmployees(employees.map(emp => emp.id));
+      
+    } catch (error: any) {
+      toast({
+        title: 'Error loading payroll items',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleCalculatePayroll = async () => {
-    if (selectedEmployees.length === 0) {
+  useEffect(() => {
+    calculatePayroll();
+  }, [basicSalary, allowances, deductions]);
+
+  const calculatePayroll = () => {
+    const salary = Number(basicSalary);
+    const allowance = Number(allowances);
+    const deduction = Number(deductions);
+
+    const grossPay = salary + allowance - deduction;
+    const cpf = calculateCpfContributions(salary, 30);
+
+    setCpfContributions(cpf);
+    setNetPay(grossPay - cpf.employee);
+  };
+
+  const handleCalculate = async () => {
+    if (!selectedPeriodId || !selectedEmployeeId || !basicSalary || !allowances || !deductions) {
       toast({
-        title: 'No Employees Selected',
-        description: 'Please select at least one employee to calculate payroll',
+        title: 'Missing Information',
+        description: 'Please fill in all fields',
         variant: 'destructive'
       });
       return;
     }
 
     try {
-      setLoading(true);
-      
-      const calculatedItems = await Promise.all(
-        selectedEmployees.map(async (employeeId) => {
-          const employee = employees.find(emp => emp.id === employeeId);
-          
-          // Calculate age for CPF contribution
-          const birthDate = employee.date_of_birth ? new Date(employee.date_of_birth) : new Date();
-          const today = new Date();
-          let age = today.getFullYear() - birthDate.getFullYear();
-          const m = today.getMonth() - birthDate.getMonth();
-          if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-            age--;
-          }
-          
-          // Basic salary defaulting to 0 if not set
-          const basicSalary = employee.basic_salary || 0;
-          
-          // In a real app, you'd fetch allowances and deductions from the database
-          const allowances = 0;
-          const deductions = 0;
-          
-          // Calculate CPF contributions
-          const cpf = calculateCpfContributions(basicSalary, age);
-          
-          const grossPay = basicSalary + allowances;
-          const netPay = grossPay - deductions - cpf.employee;
-          
-          // Create payroll item
-          const payrollItem = {
-            payroll_period_id: currentPeriodId as string,
-            employee_id: employeeId,
-            basic_salary: basicSalary,
-            allowances: allowances,
-            deductions: deductions,
-            employee_cpf: cpf.employee,
-            employer_cpf: cpf.employer,
-            sdl: Math.min(basicSalary * 0.0025, 11.25), // 0.25% capped at $11.25
-            sinda: 0, // These would be based on employee's race/religion
-            cdac: 0, 
-            mbmf: 0,
-            gross_pay: grossPay,
-            net_pay: netPay,
-            status: 'Calculated' as const
-          };
-          
-          // Insert into database
-          const { data, error } = await supabase
-            .from('payroll_items')
-            .insert(payrollItem)
-            .select()
-            .single();
-            
-          if (error) {
-            throw error;
-          }
-          
-          return data;
-        })
-      );
-      
-      setPayrollItems(calculatedItems);
-      
+      setIsCalculating(true);
+
+      const newItem: Omit<PayrollItem, 'id' | 'created_at' | 'updated_at'> = {
+        payroll_period_id: selectedPeriodId,
+        employee_id: selectedEmployeeId,
+        basic_salary: Number(basicSalary),
+        allowances: Number(allowances),
+        deductions: Number(deductions),
+        employee_cpf: cpfContributions.employee,
+        employer_cpf: cpfContributions.employer,
+        sdl: 0,
+        sinda: 0,
+        cdac: 0,
+        mbmf: 0,
+        gross_pay: Number(basicSalary) + Number(allowances) - Number(deductions),
+        net_pay: netPay,
+        status: 'Calculated',
+      };
+
+      const { data, error } = await supabase
+        .from('payroll_items')
+        .insert(newItem)
+        .select();
+
+      if (error) throw error;
+
       toast({
-        title: 'Payroll Calculated',
-        description: `Successfully calculated payroll for ${calculatedItems.length} employees`,
+        title: 'Success',
+        description: 'Payroll calculated and saved successfully',
       });
     } catch (error: any) {
       toast({
@@ -196,258 +172,127 @@ const PayrollCalculator: React.FC = () => {
         variant: 'destructive'
       });
     } finally {
-      setLoading(false);
+      setIsCalculating(false);
     }
   };
 
-  const handleFinalize = async () => {
-    try {
-      setLoading(true);
-      
-      // Update payroll period status
-      const { error } = await supabase
-        .from('payroll_periods')
-        .update({ status: 'Completed' })
-        .eq('id', currentPeriodId);
-        
-      if (error) {
-        throw error;
-      }
-      
-      toast({
-        title: 'Payroll Finalized',
-        description: 'Payroll has been successfully finalized',
-      });
-      
-      // Reset form for new payroll
-      setPeriodName('');
-      setStartDate('');
-      setEndDate('');
-      setPaymentDate('');
-      setSelectedEmployees([]);
-      setPayrollItems([]);
-      setPeriodCreated(false);
-      setCurrentPeriodId(null);
-      
-    } catch (error: any) {
-      toast({
-        title: 'Error finalizing payroll',
-        description: error.message,
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (isLoading) {
+    return <LoadingSpinner size="lg" />;
+  }
 
   return (
     <div className="space-y-6">
       <Card className="bg-white shadow-md">
         <CardHeader>
-          <CardTitle>Calculate Payroll</CardTitle>
+          <CardTitle>Payroll Calculator</CardTitle>
         </CardHeader>
         <CardContent>
-          <Accordion type="single" collapsible defaultValue="period-details" className="w-full">
-            <AccordionItem value="period-details">
-              <AccordionTrigger>Payroll Period Details</AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="period-name">Period Name</Label>
-                      <Input 
-                        id="period-name" 
-                        placeholder="e.g., July 2024 Payroll"
-                        value={periodName}
-                        onChange={(e) => setPeriodName(e.target.value)}
-                        disabled={periodCreated}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="payment-date">Payment Date</Label>
-                      <Input 
-                        id="payment-date" 
-                        type="date"
-                        value={paymentDate}
-                        onChange={(e) => setPaymentDate(e.target.value)}
-                        disabled={periodCreated}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="start-date">Start Date</Label>
-                      <Input 
-                        id="start-date" 
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        disabled={periodCreated}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="end-date">End Date</Label>
-                      <Input 
-                        id="end-date" 
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        disabled={periodCreated}
-                      />
-                    </div>
-                  </div>
-                  {!periodCreated && (
-                    <Button 
-                      onClick={handleCreatePeriod} 
-                      disabled={loading}
-                      isLoading={loading}
-                    >
-                      Create Payroll Period
-                    </Button>
-                  )}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="payroll-period">Payroll Period</Label>
+              <Select value={selectedPeriodId} onValueChange={setSelectedPeriodId}>
+                <SelectTrigger id="payroll-period">
+                  <SelectValue placeholder="Select payroll period" />
+                </SelectTrigger>
+                <SelectContent>
+                  {periods.map((period) => (
+                    <SelectItem key={period.id} value={period.id}>
+                      {period.period_name} ({format(new Date(period.payment_date), 'dd MMM yyyy')})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            {periodCreated && (
-              <AccordionItem value="employee-selection">
-                <AccordionTrigger>Select Employees</AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-sm font-medium">Select employees for payroll calculation</h3>
-                      <Button variant="outline" onClick={handleSelectAll}>
-                        {selectedEmployees.length === employees.length ? 'Deselect All' : 'Select All'}
-                      </Button>
-                    </div>
-                    
-                    <div className="border rounded-md overflow-hidden">
-                      <table className="w-full">
-                        <thead className="bg-blue-700 text-white">
-                          <tr>
-                            <th className="py-2 px-4 text-left w-8">Select</th>
-                            <th className="py-2 px-4 text-left">Name</th>
-                            <th className="py-2 px-4 text-left">Job Title</th>
-                            <th className="py-2 px-4 text-left">Department</th>
-                            <th className="py-2 px-4 text-right">Basic Salary</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {employees.map(employee => (
-                            <tr key={employee.id} className="border-t">
-                              <td className="py-2 px-4">
-                                <input 
-                                  type="checkbox"
-                                  checked={selectedEmployees.includes(employee.id)}
-                                  onChange={() => handleEmployeeSelect(employee.id)}
-                                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                />
-                              </td>
-                              <td className="py-2 px-4">{employee.full_name}</td>
-                              <td className="py-2 px-4">{employee.job_title || 'Not set'}</td>
-                              <td className="py-2 px-4">{employee.department || 'Not set'}</td>
-                              <td className="py-2 px-4 text-right">${employee.basic_salary?.toLocaleString() || '0.00'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    
-                    <Button 
-                      onClick={handleCalculatePayroll} 
-                      disabled={selectedEmployees.length === 0 || loading}
-                      isLoading={loading}
-                    >
-                      Calculate Payroll for Selected
-                    </Button>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="employee">Employee</Label>
+              <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
+                <SelectTrigger id="employee">
+                  <SelectValue placeholder="Select employee" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.map((employee) => (
+                    <SelectItem key={employee.id} value={employee.id}>
+                      {employee.full_name} ({employee.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            {payrollItems.length > 0 && (
-              <AccordionItem value="calculation-results">
-                <AccordionTrigger>Payroll Calculation Results</AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-4">
-                    <div className="border rounded-md overflow-x-auto">
-                      <table className="w-full">
-                        <thead className="bg-blue-700 text-white">
-                          <tr>
-                            <th className="py-2 px-2 text-left">Employee</th>
-                            <th className="py-2 px-2 text-right">Basic Salary</th>
-                            <th className="py-2 px-2 text-right">Allowances</th>
-                            <th className="py-2 px-2 text-right">Deductions</th>
-                            <th className="py-2 px-2 text-right">CPF (Employee)</th>
-                            <th className="py-2 px-2 text-right">CPF (Employer)</th>
-                            <th className="py-2 px-2 text-right">Gross Pay</th>
-                            <th className="py-2 px-2 text-right">Net Pay</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {payrollItems.map((item) => {
-                            const employee = employees.find(e => e.id === item.employee_id);
-                            return (
-                              <tr key={item.id} className="border-t">
-                                <td className="py-2 px-2">{employee?.full_name || 'Unknown'}</td>
-                                <td className="py-2 px-2 text-right">${item.basic_salary.toFixed(2)}</td>
-                                <td className="py-2 px-2 text-right">${item.allowances.toFixed(2)}</td>
-                                <td className="py-2 px-2 text-right">${item.deductions.toFixed(2)}</td>
-                                <td className="py-2 px-2 text-right">${item.employee_cpf.toFixed(2)}</td>
-                                <td className="py-2 px-2 text-right">${item.employer_cpf.toFixed(2)}</td>
-                                <td className="py-2 px-2 text-right">${item.gross_pay.toFixed(2)}</td>
-                                <td className="py-2 px-2 text-right">${item.net_pay.toFixed(2)}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                        <tfoot className="bg-gray-100 font-medium">
-                          <tr>
-                            <td className="py-2 px-2">Total</td>
-                            <td className="py-2 px-2 text-right">
-                              ${payrollItems.reduce((sum, item) => sum + item.basic_salary, 0).toFixed(2)}
-                            </td>
-                            <td className="py-2 px-2 text-right">
-                              ${payrollItems.reduce((sum, item) => sum + item.allowances, 0).toFixed(2)}
-                            </td>
-                            <td className="py-2 px-2 text-right">
-                              ${payrollItems.reduce((sum, item) => sum + item.deductions, 0).toFixed(2)}
-                            </td>
-                            <td className="py-2 px-2 text-right">
-                              ${payrollItems.reduce((sum, item) => sum + item.employee_cpf, 0).toFixed(2)}
-                            </td>
-                            <td className="py-2 px-2 text-right">
-                              ${payrollItems.reduce((sum, item) => sum + item.employer_cpf, 0).toFixed(2)}
-                            </td>
-                            <td className="py-2 px-2 text-right">
-                              ${payrollItems.reduce((sum, item) => sum + item.gross_pay, 0).toFixed(2)}
-                            </td>
-                            <td className="py-2 px-2 text-right">
-                              ${payrollItems.reduce((sum, item) => sum + item.net_pay, 0).toFixed(2)}
-                            </td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-                    
-                    <div className="flex justify-between">
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setPayrollItems([])}
-                      >
-                        Reset Calculations
-                      </Button>
-                      <Button 
-                        onClick={handleFinalize}
-                        disabled={loading}
-                        isLoading={loading}
-                      >
-                        Finalize Payroll
-                      </Button>
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            )}
-          </Accordion>
+            <div className="space-y-2">
+              <Label htmlFor="basic-salary">Basic Salary</Label>
+              <Input
+                id="basic-salary"
+                type="number"
+                placeholder="Enter basic salary"
+                value={basicSalary}
+                onChange={(e) => setBasicSalary(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="allowances">Allowances</Label>
+              <Input
+                id="allowances"
+                type="number"
+                placeholder="Enter allowances"
+                value={allowances}
+                onChange={(e) => setAllowances(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="deductions">Deductions</Label>
+              <Input
+                id="deductions"
+                type="number"
+                placeholder="Enter deductions"
+                value={deductions}
+                onChange={(e) => setDeductions(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <h3 className="text-xl font-semibold mb-4">Payroll Summary</h3>
+            <Table>
+              <TableCaption>Summary of calculated payroll values.</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[200px]">Label</TableHead>
+                  <TableHead>Value</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">Gross Pay</TableCell>
+                  <TableCell>{Number(basicSalary) + Number(allowances) - Number(deductions)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Employee CPF</TableCell>
+                  <TableCell>{cpfContributions.employee}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Employer CPF</TableCell>
+                  <TableCell>{cpfContributions.employer}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Net Pay</TableCell>
+                  <TableCell>{netPay}</TableCell>
+                </TableRow>
+              </TableBody>
+              <TableFooter>
+                <TableRow>
+                  <TableCell colSpan={2}>
+                    <Button onClick={handleCalculate} disabled={isCalculating} isLoading={isCalculating}>
+                      {isCalculating ? 'Calculating...' : 'Calculate Payroll'}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              </TableFooter>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

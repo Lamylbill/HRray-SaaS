@@ -57,7 +57,13 @@ const BankPaymentFileGenerator: React.FC = () => {
       
       if (templatesError) throw templatesError;
       
-      setPayrollPeriods(periodsData || []);
+      // Convert database response to match our type definitions
+      const typedPeriodsData = periodsData?.map(item => ({
+        ...item,
+        status: item.status as PayrollPeriodStatus
+      })) || [];
+      
+      setPayrollPeriods(typedPeriodsData);
       setBankTemplates(templatesData || []);
     } catch (error: any) {
       toast({

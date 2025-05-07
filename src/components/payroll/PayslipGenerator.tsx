@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui-custom/Button';
@@ -33,8 +32,37 @@ const PayslipGenerator: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    const fetchPayrollPeriods = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('payroll_periods')
+          .select('*')
+          .in('status', ['Completed', 'Verified'])
+          .order('payment_date', { ascending: false });
+
+        if (error) throw error;
+
+        // Convert database response to match our type definitions
+        const typedPeriodsData = data?.map(item => ({
+          ...item,
+          status: item.status as PayrollPeriodStatus
+        })) || [];
+        
+        setPayrollPeriods(typedPeriodsData);
+      } catch (error: any) {
+        toast({
+          title: 'Error',
+          description: error.message,
+          variant: 'destructive'
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchPayrollPeriods();
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     if (selectedPeriod) {
@@ -43,31 +71,6 @@ const PayslipGenerator: React.FC = () => {
       setPayrollItems([]);
     }
   }, [selectedPeriod]);
-
-  const fetchPayrollPeriods = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('payroll_periods')
-        .select('*')
-        .eq('status', 'Completed') // Only get completed payrolls
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        throw error;
-      }
-      
-      setPayrollPeriods(data || []);
-    } catch (error: any) {
-      toast({
-        title: 'Error fetching payroll periods',
-        description: error.message,
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchPayrollItems = async (periodId: string) => {
     try {

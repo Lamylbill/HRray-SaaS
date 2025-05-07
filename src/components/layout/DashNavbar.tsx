@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -124,11 +123,11 @@ export const DashNavbar = () => {
                   <Avatar className="h-8 w-8 bg-blue-600">
                     <AvatarImage src={user?.user_metadata?.avatar_url} />
                     <AvatarFallback className="bg-blue-600 text-white">
-                      {(user?.full_name || user?.email || 'U')[0].toUpperCase()}
+                      {(user?.email || 'U')[0].toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <span className="hidden md:block text-sm font-medium">
-                    {user?.full_name || user?.email || 'User'}
+                    {user?.user_metadata?.full_name || user?.email || 'User'}
                   </span>
                   <ChevronDown className="h-4 w-4" />
                 </button>

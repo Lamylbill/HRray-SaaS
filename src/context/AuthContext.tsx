@@ -6,12 +6,13 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, metadata: any) => Promise<void>;
+  login: (email: string, password: string) => Promise<{ error?: { message: string } }>;
+  signup: (email: string, password: string, metadata: any) => Promise<{ error?: { message: string } }>;
   logout: () => Promise<void>;
   signOut: () => Promise<void>; // Adding this alias for compatibility
   resetPassword: (email: string) => Promise<void>;
   updateUserProfile: (updates: any) => Promise<void>;
+  isBlogEditor?: boolean; // Added for blog editor verification
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,6 +25,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isBlogEditor, setIsBlogEditor] = useState(false);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -34,14 +36,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (data && data.user) {
           setUser(data.user);
           setIsAuthenticated(true);
+          
+          // Check if user has blog editor role (simplified check for now)
+          // In a real implementation, this would check roles from a database
+          if (data.user.email?.includes('admin') || data.user.email?.includes('editor')) {
+            setIsBlogEditor(true);
+          }
         } else {
           setUser(null);
           setIsAuthenticated(false);
+          setIsBlogEditor(false);
         }
       } catch (error) {
         console.error('Error checking authentication:', error);
         setUser(null);
         setIsAuthenticated(false);
+        setIsBlogEditor(false);
       } finally {
         setIsLoading(false);
       }
@@ -54,9 +64,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (event === 'SIGNED_IN' && session?.user) {
           setUser(session.user);
           setIsAuthenticated(true);
+          
+          // Check if user has blog editor role
+          if (session.user.email?.includes('admin') || session.user.email?.includes('editor')) {
+            setIsBlogEditor(true);
+          }
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setIsAuthenticated(false);
+          setIsBlogEditor(false);
         }
       }
     );
@@ -76,16 +92,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       if (error) {
-        throw error;
+        return { error };
       }
 
       if (data && data.user) {
         setUser(data.user);
         setIsAuthenticated(true);
+        
+        // Check if user has blog editor role
+        if (data.user.email?.includes('admin') || data.user.email?.includes('editor')) {
+          setIsBlogEditor(true);
+        }
       }
-    } catch (error) {
+      
+      return {};
+    } catch (error: any) {
       console.error('Error logging in:', error);
-      throw error;
+      return { error: { message: error.message || 'An error occurred during login' } };
     }
   };
 
@@ -100,16 +123,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       if (error) {
-        throw error;
+        return { error };
       }
 
       if (data && data.user) {
         setUser(data.user);
         setIsAuthenticated(true);
       }
-    } catch (error) {
+      
+      return {};
+    } catch (error: any) {
       console.error('Error signing up:', error);
-      throw error;
+      return { error: { message: error.message || 'An error occurred during sign up' } };
     }
   };
 
@@ -178,6 +203,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signOut,
     resetPassword,
     updateUserProfile,
+    isBlogEditor,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

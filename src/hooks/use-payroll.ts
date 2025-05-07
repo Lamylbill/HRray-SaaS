@@ -8,7 +8,9 @@ import {
   PayrollAllowanceItem,
   PayrollDeductionItem,
   BankTemplate,
-  CpfContribution
+  CpfContribution,
+  PayrollPeriodStatus,
+  PayrollItemStatus
 } from '@/types/payroll';
 
 export const usePayrollPeriods = () => {
@@ -33,7 +35,7 @@ export const usePayrollPeriods = () => {
         // Convert database response to match our type definitions
         const typedData = data?.map(item => ({
           ...item,
-          status: item.status as PayrollPeriod['status']
+          status: item.status as PayrollPeriodStatus
         })) || [];
         
         setPeriods(typedData);
@@ -163,10 +165,10 @@ export const usePayrollItems = (payrollPeriodId?: string) => {
         // Convert database response to match our type definitions
         const typedData = data?.map(item => ({
           ...item,
-          status: item.status as PayrollItem['status']
+          status: item.status as PayrollItemStatus
         })) || [];
 
-        setItems(typedData);
+        setItems(typedData as unknown as PayrollItem[]);
       } catch (error: any) {
         setError(error.message);
         toast({

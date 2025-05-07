@@ -1,20 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import React from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { blogService } from '@/services/blog.service';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 import { BlogPost, BlogCategory } from '@/integrations/supabase/blog-types';
-import { useAuth } from '@/context/AuthContext';
+import { blogService } from '@/services/blog.service';
+import { useToast } from '@/hooks/use-toast';
 import { Search, Calendar, Tag, User } from 'lucide-react';
 
 const POSTS_PER_PAGE = 6;
 
 const BlogPage = () => {
   const { toast } = useToast();
-  const { isBlogEditor } = useAuth();
+  const { isAuthenticated, isBlogEditor } = useAuth();
   
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [categories, setCategories] = useState<BlogCategory[]>([]);
@@ -86,7 +87,31 @@ const BlogPage = () => {
   const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
   
   return (
-    <div className="min-h-screen py-24 bg-gray-50">
+    <div>
+      <Helmet>
+        <title>Blog - HRFlow</title>
+      </Helmet>
+      
+      {/* Blog header */}
+      <div className="py-6 md:py-10">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold">Blog</h1>
+            <p className="text-gray-500 mt-1">Latest articles and updates</p>
+          </div>
+          
+          {isAuthenticated && isBlogEditor && (
+            <div className="mt-4 md:mt-0">
+              <Link to="/manage-blog">
+                <Button>
+                  Manage Blog
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+      
       <div className="container px-4 mx-auto">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}

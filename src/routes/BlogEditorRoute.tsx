@@ -5,14 +5,18 @@ import { useAuth } from '@/context/AuthContext';
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 
 const BlogEditorRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isBlogEditor, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isBlogEditor } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && !isBlogEditor) {
-      navigate('/');
+    if (!isLoading) {
+      if (!isAuthenticated) {
+        navigate('/login');
+      } else if (!isBlogEditor) {
+        navigate('/dashboard');
+      }
     }
-  }, [isLoading, isBlogEditor, navigate]);
+  }, [isLoading, isAuthenticated, isBlogEditor, navigate]);
 
   if (isLoading) {
     return (
@@ -22,7 +26,7 @@ const BlogEditorRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  return isBlogEditor ? <>{children}</> : null;
+  return (isAuthenticated && isBlogEditor) ? <>{children}</> : null;
 };
 
 export default BlogEditorRoute;

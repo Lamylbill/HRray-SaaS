@@ -1,4 +1,3 @@
-
 export interface PayrollPeriod {
   id: string;
   period_name: string;

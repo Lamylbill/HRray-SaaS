@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui-custom/Button';
@@ -43,7 +44,14 @@ const PayrollCalculator: React.FC = () => {
         .order('payment_date', { ascending: false });
 
       if (periodsResult.error) throw periodsResult.error;
-      setPeriods(periodsResult.data || []);
+      
+      // Convert database response to match our type definitions
+      const typedPeriodsData = periodsResult.data?.map(item => ({
+        ...item,
+        status: item.status as PayrollPeriod['status']
+      })) || [];
+      
+      setPeriods(typedPeriodsData);
 
       // Fetch employees
       const employeesResult = await supabase
@@ -227,7 +235,7 @@ const PayrollCalculator: React.FC = () => {
                 type="number"
                 placeholder="Enter basic salary"
                 value={basicSalary}
-                onChange={(e) => setBasicSalary(e.target.value)}
+                onChange={(e) => setBasicSalary(e.target.value === '' ? '' : Number(e.target.value))}
               />
             </div>
 
@@ -238,7 +246,7 @@ const PayrollCalculator: React.FC = () => {
                 type="number"
                 placeholder="Enter allowances"
                 value={allowances}
-                onChange={(e) => setAllowances(e.target.value)}
+                onChange={(e) => setAllowances(e.target.value === '' ? '' : Number(e.target.value))}
               />
             </div>
 
@@ -249,7 +257,7 @@ const PayrollCalculator: React.FC = () => {
                 type="number"
                 placeholder="Enter deductions"
                 value={deductions}
-                onChange={(e) => setDeductions(e.target.value)}
+                onChange={(e) => setDeductions(e.target.value === '' ? '' : Number(e.target.value))}
               />
             </div>
           </div>

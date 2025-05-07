@@ -60,7 +60,7 @@ const BankPaymentFileGenerator: React.FC = () => {
       // Convert database response to match our type definitions
       const typedPeriodsData = periodsData?.map(item => ({
         ...item,
-        status: item.status as PayrollPeriodStatus
+        status: item.status as PayrollPeriod['status']
       })) || [];
       
       setPayrollPeriods(typedPeriodsData);

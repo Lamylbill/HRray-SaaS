@@ -5,6 +5,7 @@ import { Employee } from '@/types/employee';
 import { standardizeEmployee } from '@/utils/employeeFieldUtils';
 import LeaveRecordsView from '@/components/leave/LeaveRecordsView';
 import { AnimatedSection } from '@/components/ui-custom/AnimatedSection';
+import { LeaveType } from '@/components/leave/interfaces';
 
 const Dashboard = () => {
   const [employeeCount, setEmployeeCount] = useState<number>(0);
@@ -12,11 +13,11 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const [selectedLeaveTypes, setSelectedLeaveTypes] = useState<string[]>([]); // State for leave type filters
+  const [selectedLeaveTypes, setSelectedLeaveTypes] = useState<string[]>([]);
+  const [availableLeaveTypes, setAvailableLeaveTypes] = useState<LeaveType[]>([]);
 
   useEffect(() => {
     const fetchStats = async () => {
-      // Only fetch if authentication is complete and user is authenticated
       if (authLoading || !isAuthenticated || !user) {
         setIsLoading(false);
         return;
@@ -33,7 +34,6 @@ const Dashboard = () => {
           return;
         }
         
-        // Fetch total employee count
         const { count: totalCount, error: countError } = await authorizedClient
           .from('employees_with_documents')
           .select('*', { count: 'exact', head: true })
@@ -41,7 +41,6 @@ const Dashboard = () => {
 
         if (countError) throw countError;
 
-        // Fetch active employees
         const { data: activeData, error: activeError } = await authorizedClient
           .from('employees_with_documents')
           .select('id')
@@ -62,9 +61,25 @@ const Dashboard = () => {
     };
 
     fetchStats();
+
+    const fetchLeaveTypes = async () => {
+      try {
+        const authorizedClient = getAuthorizedClient();
+        const { data, error } = await authorizedClient
+          .from('leave_types')
+          .select('*')
+          .order('name');
+        
+        if (error) throw error;
+        setAvailableLeaveTypes(data || []);
+      } catch (err: any) {
+        console.error('Error fetching leave types:', err);
+      }
+    };
+    
+    fetchLeaveTypes();
   }, [user, isAuthenticated, authLoading]);
 
-  // Handle leave type filter change
   const handleLeaveTypeFilter = (types: string[]) => {
     setSelectedLeaveTypes(types);
   };
@@ -108,12 +123,12 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Add Leave Records Section */}
             <div className="mt-8">
               <h2 className="text-xl font-bold mb-4">Leave Records</h2>
               <LeaveRecordsView
                 selectedLeaveTypes={selectedLeaveTypes}
                 onLeaveTypeFilter={handleLeaveTypeFilter}
+                availableLeaveTypes={availableLeaveTypes}
               />
             </div>
           </div>

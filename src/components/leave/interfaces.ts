@@ -1,4 +1,3 @@
-
 export interface LeaveEvent {
   id: string;
   title: string;
@@ -33,6 +32,7 @@ export interface LeaveType {
   id: string;
   name: string;
   color: string;
+  is_paid: boolean;
 }
 
 export interface LeaveRequest {
@@ -45,6 +45,7 @@ export interface LeaveRequest {
     id: string;
     name: string;
     color: string;
+    is_paid?: boolean;
   };
   start_date: string;
   end_date: string;
@@ -52,6 +53,7 @@ export interface LeaveRequest {
   half_day: boolean;
   half_day_type: 'AM' | 'PM' | null;
   created_at: string;
+  chargeable_duration?: number;
 }
 
 export type EventStyleProps = React.CSSProperties;
@@ -70,4 +72,5 @@ export interface LeaveCalendarViewProps {
 export interface LeaveRecordsViewProps {
   selectedLeaveTypes: string[];
   onLeaveTypeFilter: (types: string[]) => void;
+  availableLeaveTypes?: LeaveType[];
 }

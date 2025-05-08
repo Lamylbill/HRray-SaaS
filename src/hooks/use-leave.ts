@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAuthorizedClient } from '@/integrations/supabase/client';
@@ -61,19 +60,17 @@ export const useLeave = () => {
 
         if (leaveTypeError) {
             console.error("Error fetching leave type for quota check:", leaveTypeError);
-            // Decide how to handle this error, maybe return null or a default error quota
             return null; 
         }
         
         if (leaveTypeData && !leaveTypeData.is_paid) { // Check if it's an unpaid leave type (!is_paid instead of is_unpaid)
           return {
-            // Using fields consistent with LeaveQuota interface. Ensure these are correct.
             employee_id: employeeId,
             leave_type_id: leaveTypeId,
             quota_days: Number.MAX_SAFE_INTEGER,
-            taken_days: 0, // Unpaid leave doesn't usually consume a quota this way
+            taken_days: 0, 
             adjustment_days: 0,
-          } as LeaveQuota; // Cast carefully, ensure this matches your actual LeaveQuota structure
+          } as LeaveQuota;
         }
 
         // If no specific quota row found and it's not an explicitly unpaid type (handled above),
@@ -84,11 +81,10 @@ export const useLeave = () => {
           quota_days: 0,
           taken_days: 0,
           adjustment_days: 0,
-        } as LeaveQuota; // Cast carefully
+        } as LeaveQuota;
       }
-      // For other errors, or if you don't want to return a default/pseudo quota
       console.error("Error fetching leave quota:", quotaError);
-      throw quotaError; // Or return null, depending on desired error handling
+      throw quotaError; 
     }
     
     // If quotaData is found, proceed to calculate taken_days
@@ -134,7 +130,7 @@ export const useLeave = () => {
 
   }, [supabase]); // Dependency: supabase client instance
 
-  // submitLeaveRequest (memoized)
+  // submitLeaveRequest with corrected parameter type
   const submitLeaveRequest = useCallback(async (values: {
     employee_id: string;
     leave_type_id: string;

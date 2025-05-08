@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react'; // Added useCallback
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ListFilter, RefreshCw, Upload, Link as LinkIcon, Plus } from 'lucide-react';
-import { Button } from '@/components/ui-custom/Button'; // Assuming this is your custom button
+import { Button } from '@/components/ui-custom/Button';
 import { AnimatedSection } from '@/components/ui-custom/AnimatedSection';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -10,6 +10,7 @@ import LeaveCalendar from '@/components/leave-calendar/LeaveCalendar';
 import LeaveRecordsView from '@/components/leave/LeaveRecordsView';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AddLeaveForm } from '@/components/leave/AddLeaveForm';
+import { LeaveType } from '@/components/leave/interfaces';
 
 const Leave = () => {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -18,9 +19,32 @@ const Leave = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('calendar');
   const [selectedLeaveTypes, setSelectedLeaveTypes] = useState<string[]>([]);
+  const [availableLeaveTypes, setAvailableLeaveTypes] = useState<LeaveType[]>([]);
   const [botLinkDialogOpen, setBotLinkDialogOpen] = useState(false);
   const [botLink, setBotLink] = useState('');
   const [addLeaveDialogOpen, setAddLeaveDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) navigate('/login');
+    
+    // Add code to fetch leave types
+    const fetchLeaveTypes = async () => {
+      try {
+        const authorizedClient = getAuthorizedClient();
+        const { data, error } = await authorizedClient
+          .from('leave_types')
+          .select('*')
+          .order('name');
+        
+        if (error) throw error;
+        setAvailableLeaveTypes(data || []);
+      } catch (err) {
+        console.error('Error fetching leave types:', err);
+      }
+    };
+    
+    fetchLeaveTypes();
+  }, [isAuthenticated, isLoading, navigate]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate('/login');
@@ -209,8 +233,8 @@ const Leave = () => {
             {activeTab === 'records' && (
               <LeaveRecordsView 
                 selectedLeaveTypes={selectedLeaveTypes} 
-                onLeaveTypeFilter={handleLeaveTypeFilter} // Passed memoized handler
-                // Ensure LeaveRecordsView also handles data fetching/refreshing
+                onLeaveTypeFilter={handleLeaveTypeFilter}
+                availableLeaveTypes={availableLeaveTypes}
               />
             )}
           </div>

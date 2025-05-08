@@ -23,15 +23,21 @@ const STATUS_OPTIONS = ["Pending", "Approved", "Rejected"] as const;
 type StatusTuple = typeof STATUS_OPTIONS;
 type Status = StatusTuple[number];
 
-// Define Props Interface
+// Define Props Interface - make this match the interface in interfaces.ts
 interface LeaveRecordsViewProps {
+  selectedLeaveTypes: string[]; // Receive leave types as prop from parent
+  onLeaveTypeFilter: (types: string[]) => void;
   availableLeaveTypes: LeaveType[]; // Receive leave types as prop from parent
 }
 
 // Define Sortable Columns type
 type SortableColumn = 'employee.full_name' | 'leave_type.name' | 'start_date' | 'chargeable_duration' | 'status';
 
-const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ availableLeaveTypes }) => {
+const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ 
+  selectedLeaveTypes, 
+  onLeaveTypeFilter, 
+  availableLeaveTypes 
+}) => {
   // State for all fetched records
   const [allLeaveRequests, setAllLeaveRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);

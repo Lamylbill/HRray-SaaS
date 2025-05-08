@@ -84,6 +84,37 @@ export const getFeaturesItems = () => [
   },
 ];
 
+// Get dashboard navigation items
+export const getDashboardNavItems = () => {
+  return [
+    {
+      name: 'Dashboard',
+      href: '/dashboard',
+      icon: <Home className="h-5 w-5" />,
+    },
+    {
+      name: 'Employees',
+      href: '/employees',
+      icon: <Users className="h-5 w-5" />,
+    },
+    {
+      name: 'Leave',
+      href: '/leave',
+      icon: <Calendar className="h-5 w-5" />,
+    },
+    {
+      name: 'Payroll',
+      href: '/payroll',
+      icon: <DollarSign className="h-5 w-5" />,
+    },
+    {
+      name: 'Compliance',
+      href: '/compliance',
+      icon: <ShieldCheck className="h-5 w-5" />,
+    },
+  ];
+};
+
 // Simple navigation item component
 export const NavItem = ({ 
   item, 

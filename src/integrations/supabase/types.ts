@@ -242,6 +242,66 @@ export type Database = {
         }
         Relationships: []
       }
+      compliance_checks: {
+        Row: {
+          check_date: string
+          check_type: string
+          created_at: string
+          details: Json | null
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          check_date?: string
+          check_type: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          check_date?: string
+          check_type?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      compliance_settings: {
+        Row: {
+          created_at: string
+          id: string
+          setting_key: string
+          setting_value: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          setting_key: string
+          setting_value?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          setting_key?: string
+          setting_value?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       employee_allowances: {
         Row: {
           allowance_type: string
@@ -1145,6 +1205,42 @@ export type Database = {
           },
         ]
       }
+      foreign_worker_quota: {
+        Row: {
+          created_at: string
+          foreign_headcount: number
+          id: string
+          industry_sector: string
+          local_headcount: number
+          max_foreign_allowed: number
+          quota_percentage: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          foreign_headcount?: number
+          id?: string
+          industry_sector: string
+          local_headcount?: number
+          max_foreign_allowed?: number
+          quota_percentage: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          foreign_headcount?: number
+          id?: string
+          industry_sector?: string
+          local_headcount?: number
+          max_foreign_allowed?: number
+          quota_percentage?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       leave_quotas: {
         Row: {
           adjustment_days: number
@@ -2033,6 +2129,10 @@ export type Database = {
       bytea_to_text: {
         Args: { data: string }
         Returns: string
+      }
+      calculate_compliance_score: {
+        Args: { p_user_id: string }
+        Returns: number
       }
       check_employee_access: {
         Args: { employee_id: string; user_id: string }

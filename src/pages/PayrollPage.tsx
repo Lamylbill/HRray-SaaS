@@ -7,7 +7,8 @@ import {
   FileText, 
   History, 
   ChevronDown,
-  DollarSign
+  DollarSign,
+  ShieldCheck
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import PayrollDashboard from '@/components/payroll/PayrollDashboard';
@@ -92,6 +93,14 @@ const PayrollPage: React.FC = () => {
               >
                 <Calculator className="mr-2 h-4 w-4" />
                 Calculate Payroll
+              </Button>
+              
+              <Button 
+                onClick={() => navigate('/compliance')}
+                variant="outline"
+              >
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                Compliance
               </Button>
               
               <DropdownMenu>

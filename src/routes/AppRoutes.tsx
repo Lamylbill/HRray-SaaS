@@ -10,6 +10,7 @@ import Dashboard from "@/pages/Dashboard";
 import EmployeesPage from "@/pages/EmployeesPage";
 import Leave from "@/pages/Leave";
 import PayrollPage from "@/pages/PayrollPage";
+import CompliancePage from "@/pages/CompliancePage";
 import Settings from "@/pages/Settings";
 import NotFound from "@/pages/NotFound";
 import BlogPage from "@/pages/BlogPage";
@@ -149,6 +150,13 @@ const AppRoutes = () => {
         <ProtectedRoute>
           <DashboardLayout>
             <PayrollPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/compliance" element={
+        <ProtectedRoute>
+          <DashboardLayout>
+            <CompliancePage />
           </DashboardLayout>
         </ProtectedRoute>
       } />

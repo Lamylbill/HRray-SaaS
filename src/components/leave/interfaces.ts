@@ -1,3 +1,4 @@
+
 export interface LeaveEvent {
   id: string;
   title: string;
@@ -73,4 +74,17 @@ export interface LeaveRecordsViewProps {
   selectedLeaveTypes: string[];
   onLeaveTypeFilter: (types: string[]) => void;
   availableLeaveTypes?: LeaveType[];
+}
+
+export interface LeaveQuota {
+  employee_id: string;
+  leave_type_id: string;
+  quota_days: number;
+  taken_days: number;
+  adjustment_days: number;
+}
+
+export interface Employee {
+  id: string;
+  full_name: string;
 }

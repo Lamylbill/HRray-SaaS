@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';

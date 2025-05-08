@@ -1,8 +1,9 @@
+
 import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { LeaveType, LeaveQuota, Employee } from '@/components/leave-calendar/interfaces';
+import { LeaveType, LeaveQuota, Employee } from '@/components/leave/interfaces';
 
 export const useLeave = () => {
   const { toast } = useToast();
@@ -96,7 +97,7 @@ export const useLeave = () => {
     // If your `leave_requests` table stores `chargeable_duration`, it's better to sum that.
     const { data: leaveRequests, error: requestsError } = await supabase
       .from('leave_requests')
-      .select('chargeable_duration, status') // Select chargeable_duration
+      .select('start_date, end_date, half_day, half_day_type, chargeable_duration, status') // Include all fields needed for calculation
       .eq('employee_id', employeeId)
       .eq('leave_type_id', leaveTypeId)
       .in('status', ['Approved', 'Pending']); // Consider if 'Pending' should count towards 'taken'

@@ -50,12 +50,13 @@ export const useLeave = () => {
       .eq('employee_id', employeeId)
       .eq('leave_type_id', leaveTypeId)
       .single();
-    
+
     if (quotaError) {
       if (quotaError.code === 'PGRST116') { // "No rows found" or "Too many rows found" for .single()
         // Check if the leave type is unpaid to return a pseudo-quota for unlimited
         const { data: leaveTypeData, error: leaveTypeError } = await supabase
           .from('leave_types')
+          .select('is_paid') // Using is_paid now
           .select('is_paid') // Using is_paid property
           .eq('id', leaveTypeId)
           .single();
@@ -105,7 +106,7 @@ export const useLeave = () => {
     // If your `leave_requests` table stores `chargeable_duration`, it's better to sum that.
     const { data: leaveRequests, error: requestsError } = await supabase
       .from('leave_requests')
-      .select('start_date, end_date, half_day, status, chargeable_duration') // Added chargeable_duration
+      .select('chargeable_duration, status') // Select chargeable_duration
       .eq('employee_id', employeeId)
       .eq('leave_type_id', leaveTypeId)
       .in('status', ['Approved', 'Pending']); // Consider if 'Pending' should count towards 'taken'
@@ -114,10 +115,11 @@ export const useLeave = () => {
         console.error("Error fetching leave requests for quota:", requestsError);
         throw requestsError; // Or handle more gracefully
     }
-    
+
     let calculatedTakenDays = 0;
     if (leaveRequests) {
       leaveRequests.forEach(req => {
+        // Sum up the stored chargeable duration
         if (req.chargeable_duration !== null && req.chargeable_duration !== undefined) {
             calculatedTakenDays += req.chargeable_duration;
         } else {
@@ -130,7 +132,7 @@ export const useLeave = () => {
         }
       });
     }
-    
+
     return {
       ...quotaData, // This is the base quota from 'leave_quotas' table
       taken_days: calculatedTakenDays // Override with newly calculated taken_days
@@ -138,7 +140,11 @@ export const useLeave = () => {
 
   }, [supabase]); // Dependency: supabase client instance
 
+  // submitLeaveRequest (memoized)
   const submitLeaveRequest = useCallback(async (values: {
+    employee_id: string; leave_type_id: string; start_date: string; end_date: string;
+    notes?: string; half_day?: boolean; half_day_type?: 'AM' | 'PM';
+    chargeable_duration: number; status: string;
     employee_id: string;
     leave_type_id: string;
     start_date: string;
@@ -202,7 +208,15 @@ export const useLeave = () => {
     }
   }, [supabase, toast]); // setIsSubmitting is stable, so not strictly needed
 
+  // Return all values needed by components
   return {
+    leaveTypes, // The memoized array (defaults to [])
+    employees,  // The memoized array (defaults to [])
+    isLoadingLeaveTypes, // Loading state from useQuery
+    isLoadingEmployees,  // Loading state from useQuery
+    isSubmitting, // Local state for submission status
+    fetchLeaveQuota, // Memoized fetch function
+    submitLeaveRequest, // Memoized submit function
     leaveTypes,
     employees,
     isLoadingLeaveTypes,

@@ -3,15 +3,21 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui-custom/Button';
 import { useToast } from '@/hooks/use-toast';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
-import { supabase } from '@/integrations/supabase/client';
+import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { PayrollPeriod, PayrollItem } from '@/types/payroll';
 import { Download, FileText, Mail, Printer } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const PayslipGenerator: React.FC = () => {
   const [payrollPeriods, setPayrollPeriods] = useState<PayrollPeriod[]>([]);
@@ -22,6 +28,7 @@ const PayslipGenerator: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const { toast } = useToast();
+  const supabase = getAuthorizedClient();
 
   useEffect(() => {
     fetchPayrollPeriods();
@@ -183,11 +190,14 @@ const PayslipGenerator: React.FC = () => {
           <div className="space-y-4">
             <div>
               <Label htmlFor="payroll-period">Payroll Period</Label>
-              <Select value={selectedPeriodId} onValueChange={setSelectedPeriodId}>
-                <SelectTrigger id="payroll-period">
+              <Select 
+                value={selectedPeriodId} 
+                onValueChange={setSelectedPeriodId}
+              >
+                <SelectTrigger id="payroll-period" className="w-full bg-white">
                   <SelectValue placeholder="Select payroll period" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-50 bg-white">
                   {payrollPeriods.map((period) => (
                     <SelectItem key={period.id} value={period.id}>
                       {period.period_name} ({format(new Date(period.payment_date), 'dd MMM yyyy')})

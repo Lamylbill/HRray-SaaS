@@ -101,7 +101,7 @@ const PayrollPage: React.FC = () => {
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-white">
+                <DropdownMenuContent align="end" className="w-56 z-50 bg-white">
                   <DropdownMenuItem onClick={() => handleTabChange('history')}>
                     <History className="mr-2 h-4 w-4" />
                     <span>Payroll History</span>

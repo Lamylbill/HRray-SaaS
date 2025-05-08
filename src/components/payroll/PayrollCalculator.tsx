@@ -5,13 +5,19 @@ import { Button } from '@/components/ui-custom/Button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { calculateCpfContributions } from '@/hooks/use-payroll';
-import { supabase } from '@/integrations/supabase/client';
+import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { PayrollPeriod, PayrollItem, Employee, PayrollItemStatus } from '@/types/payroll';
 import { format } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const PayrollCalculator: React.FC = () => {
   const [periods, setPeriods] = useState<PayrollPeriod[]>([]);
@@ -27,6 +33,7 @@ const PayrollCalculator: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   const { toast } = useToast();
+  const supabase = getAuthorizedClient();
 
   useEffect(() => {
     loadPayrollData();
@@ -77,23 +84,18 @@ const PayrollCalculator: React.FC = () => {
   }, [selectedPeriodId]);
 
   const loadPayrollItems = async () => {
+    if (!selectedPeriodId) return;
+    
     try {
       setIsLoading(true);
       
-      // Fetch employees
-      const employeesResult = await supabase
-        .from('employees')
-        .select('id, full_name, email, basic_salary, allowances')
-        .order('full_name', { ascending: true });
-
-      if (employeesResult.error) throw employeesResult.error;
-      setEmployees(employeesResult.data || []);
-
       // Fetch payroll items for the selected period
       const payrollItems = await supabase
         .from('payroll_items')
         .select('*')
         .eq('payroll_period_id', selectedPeriodId);
+      
+      if (payrollItems.error) throw payrollItems.error;
       
       if (payrollItems.data) {
         // Convert database response to match our type definitions
@@ -116,27 +118,42 @@ const PayrollCalculator: React.FC = () => {
     }
   };
 
+  // Auto-fill data when employee selected
+  useEffect(() => {
+    if (selectedEmployeeId) {
+      const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
+      if (selectedEmployee) {
+        setBasicSalary(selectedEmployee.basic_salary || '');
+        setAllowances(selectedEmployee.allowances || '');
+        setDeductions(0);
+        // Trigger calculation
+        calculatePayroll();
+      }
+    }
+  }, [selectedEmployeeId, employees]);
+
   useEffect(() => {
     calculatePayroll();
   }, [basicSalary, allowances, deductions]);
 
   const calculatePayroll = () => {
-    const salary = Number(basicSalary);
-    const allowance = Number(allowances);
-    const deduction = Number(deductions);
+    const salary = Number(basicSalary) || 0;
+    const allowance = Number(allowances) || 0;
+    const deduction = Number(deductions) || 0;
 
-    const grossPay = salary + allowance - deduction;
+    const grossPay = salary + allowance;
+    const netDeduction = deduction;
     const cpf = calculateCpfContributions(salary, 30);
 
     setCpfContributions(cpf);
-    setNetPay(grossPay - cpf.employee);
+    setNetPay(grossPay - cpf.employee - netDeduction);
   };
 
   const handleCalculate = async () => {
-    if (!selectedPeriodId || !selectedEmployeeId || !basicSalary || !allowances || !deductions) {
+    if (!selectedPeriodId || !selectedEmployeeId) {
       toast({
         title: 'Missing Information',
-        description: 'Please fill in all fields',
+        description: 'Please select a payroll period and employee',
         variant: 'destructive'
       });
       return;
@@ -148,16 +165,16 @@ const PayrollCalculator: React.FC = () => {
       const newItem: Omit<PayrollItem, 'id' | 'created_at' | 'updated_at'> = {
         payroll_period_id: selectedPeriodId,
         employee_id: selectedEmployeeId,
-        basic_salary: Number(basicSalary),
-        allowances: Number(allowances),
-        deductions: Number(deductions),
+        basic_salary: Number(basicSalary) || 0,
+        allowances: Number(allowances) || 0,
+        deductions: Number(deductions) || 0,
         employee_cpf: cpfContributions.employee,
         employer_cpf: cpfContributions.employer,
         sdl: 0,
         sinda: 0,
         cdac: 0,
         mbmf: 0,
-        gross_pay: Number(basicSalary) + Number(allowances) - Number(deductions),
+        gross_pay: (Number(basicSalary) || 0) + (Number(allowances) || 0),
         net_pay: netPay,
         status: 'Calculated',
       };
@@ -173,6 +190,9 @@ const PayrollCalculator: React.FC = () => {
         title: 'Success',
         description: 'Payroll calculated and saved successfully',
       });
+      
+      // Reload items after successful calculation
+      loadPayrollItems();
     } catch (error: any) {
       toast({
         title: 'Error calculating payroll',
@@ -184,7 +204,7 @@ const PayrollCalculator: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !employees.length && !periods.length) {
     return <LoadingSpinner size="lg" />;
   }
 
@@ -198,27 +218,37 @@ const PayrollCalculator: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="payroll-period">Payroll Period</Label>
-              <Select value={selectedPeriodId} onValueChange={setSelectedPeriodId}>
-                <SelectTrigger id="payroll-period">
+              <Select 
+                value={selectedPeriodId} 
+                onValueChange={setSelectedPeriodId}
+              >
+                <SelectTrigger id="payroll-period" className="w-full bg-white">
                   <SelectValue placeholder="Select payroll period" />
                 </SelectTrigger>
-                <SelectContent>
-                  {periods.map((period) => (
-                    <SelectItem key={period.id} value={period.id}>
-                      {period.period_name} ({format(new Date(period.payment_date), 'dd MMM yyyy')})
-                    </SelectItem>
-                  ))}
+                <SelectContent className="z-50 bg-white">
+                  {periods.length > 0 ? (
+                    periods.map((period) => (
+                      <SelectItem key={period.id} value={period.id}>
+                        {period.period_name} ({format(new Date(period.payment_date), 'dd MMM yyyy')})
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-periods" disabled>No payroll periods available</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="employee">Employee</Label>
-              <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
-                <SelectTrigger id="employee">
+              <Select 
+                value={selectedEmployeeId} 
+                onValueChange={setSelectedEmployeeId}
+              >
+                <SelectTrigger id="employee" className="w-full bg-white">
                   <SelectValue placeholder="Select employee" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-50 bg-white">
                   {employees.map((employee) => (
                     <SelectItem key={employee.id} value={employee.id}>
                       {employee.full_name} ({employee.email})
@@ -236,6 +266,7 @@ const PayrollCalculator: React.FC = () => {
                 placeholder="Enter basic salary"
                 value={basicSalary}
                 onChange={(e) => setBasicSalary(e.target.value === '' ? '' : Number(e.target.value))}
+                className="bg-white"
               />
             </div>
 
@@ -247,6 +278,7 @@ const PayrollCalculator: React.FC = () => {
                 placeholder="Enter allowances"
                 value={allowances}
                 onChange={(e) => setAllowances(e.target.value === '' ? '' : Number(e.target.value))}
+                className="bg-white"
               />
             </div>
 
@@ -258,6 +290,7 @@ const PayrollCalculator: React.FC = () => {
                 placeholder="Enter deductions"
                 value={deductions}
                 onChange={(e) => setDeductions(e.target.value === '' ? '' : Number(e.target.value))}
+                className="bg-white"
               />
             </div>
           </div>
@@ -275,7 +308,7 @@ const PayrollCalculator: React.FC = () => {
               <TableBody>
                 <TableRow>
                   <TableCell className="font-medium">Gross Pay</TableCell>
-                  <TableCell>{Number(basicSalary) + Number(allowances) - Number(deductions)}</TableCell>
+                  <TableCell>{(Number(basicSalary) || 0) + (Number(allowances) || 0)}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Employee CPF</TableCell>
@@ -292,7 +325,7 @@ const PayrollCalculator: React.FC = () => {
               </TableBody>
               <TableFooter>
                 <TableRow>
-                  <TableCell colSpan={2}>
+                  <TableCell colSpan={2} className="text-right">
                     <Button onClick={handleCalculate} disabled={isCalculating} isLoading={isCalculating}>
                       {isCalculating ? 'Calculating...' : 'Calculate Payroll'}
                     </Button>

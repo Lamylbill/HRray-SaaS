@@ -1205,6 +1205,7 @@ export type Database = {
       }
       leave_requests: {
         Row: {
+          chargeable_duration: number | null
           created_at: string
           employee_id: string
           end_date: string
@@ -1222,6 +1223,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          chargeable_duration?: number | null
           created_at?: string
           employee_id: string
           end_date: string
@@ -1239,6 +1241,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          chargeable_duration?: number | null
           created_at?: string
           employee_id?: string
           end_date?: string

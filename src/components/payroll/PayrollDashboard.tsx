@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { usePayrollPeriods } from '@/hooks/use-payroll';
-import { Calendar, ClipboardList, CreditCard, DollarSign } from 'lucide-react';
+import { Calendar, ClipboardList, CreditCard, DollarSign, Users, Clock, Check } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -80,13 +80,14 @@ const PayrollDashboard: React.FC = () => {
         <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Active Employees</CardTitle>
-            <ClipboardList className="h-4 w-4 text-blue-700" />
+            <Users className="h-4 w-4 text-blue-700" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.activeEmployees}</div>
             <p className="text-xs text-muted-foreground">Eligible for payroll</p>
           </CardContent>
         </Card>
+        
         <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Paid</CardTitle>
@@ -97,20 +98,22 @@ const PayrollDashboard: React.FC = () => {
             <p className="text-xs text-muted-foreground">All time payroll amount</p>
           </CardContent>
         </Card>
+        
         <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Pending Payrolls</CardTitle>
-            <Calendar className="h-4 w-4 text-blue-700" />
+            <Clock className="h-4 w-4 text-blue-700" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.pendingPayroll}</div>
             <p className="text-xs text-muted-foreground">Awaiting processing</p>
           </CardContent>
         </Card>
+        
         <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Completed Payrolls</CardTitle>
-            <CreditCard className="h-4 w-4 text-blue-700" />
+            <Check className="h-4 w-4 text-blue-700" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.completedPayrolls}</div>
@@ -173,9 +176,10 @@ const PayrollDashboard: React.FC = () => {
                 className="w-full justify-start gap-2"
                 onClick={handleCreatePayroll}
               >
-                <DollarSign className="h-4 w-4" />
+                <Calculator className="h-4 w-4" />
                 Calculate New Payroll
               </Button>
+              
               <Button 
                 variant="outline" 
                 className="w-full justify-start gap-2"
@@ -184,6 +188,7 @@ const PayrollDashboard: React.FC = () => {
                 <ClipboardList className="h-4 w-4" />
                 Generate Payslips
               </Button>
+              
               <Button 
                 variant="outline" 
                 className="w-full justify-start gap-2"
@@ -192,6 +197,7 @@ const PayrollDashboard: React.FC = () => {
                 <CreditCard className="h-4 w-4" />
                 Generate Bank Payment File
               </Button>
+              
               <Button 
                 variant="outline" 
                 className="w-full justify-start gap-2"

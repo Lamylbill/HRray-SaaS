@@ -88,7 +88,6 @@ const PayrollPage: React.FC = () => {
               <Button 
                 onClick={() => handleTabChange('calculate')}
                 variant="default"
-                size="sm"
                 className={activeTab === 'calculate' ? 'bg-blue-800' : ''}
               >
                 <Calculator className="mr-2 h-4 w-4" />
@@ -97,12 +96,12 @@ const PayrollPage: React.FC = () => {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline">
                     More Actions
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-56 bg-white">
                   <DropdownMenuItem onClick={() => handleTabChange('history')}>
                     <History className="mr-2 h-4 w-4" />
                     <span>Payroll History</span>

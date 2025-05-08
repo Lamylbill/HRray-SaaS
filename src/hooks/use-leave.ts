@@ -25,7 +25,6 @@ export const useLeave = () => {
   // Provide a default empty array if data is undefined during initial load or error
   const leaveTypes = leaveTypesData || [];
 
-
   const { data: employeesData, isLoading: isLoadingEmployees } = useQuery<Employee[], Error>({
     queryKey: ['employees'],
     queryFn: async () => {
@@ -56,7 +55,6 @@ export const useLeave = () => {
         // Check if the leave type is unpaid to return a pseudo-quota for unlimited
         const { data: leaveTypeData, error: leaveTypeError } = await supabase
           .from('leave_types')
-          .select('is_paid') // Using is_paid now
           .select('is_paid') // Using is_paid property
           .eq('id', leaveTypeId)
           .single();
@@ -70,21 +68,17 @@ export const useLeave = () => {
         if (leaveTypeData && !leaveTypeData.is_paid) { // Check if it's an unpaid leave type (!is_paid instead of is_unpaid)
           return {
             // Using fields consistent with LeaveQuota interface. Ensure these are correct.
-            // id might not be needed if not part of your DB schema for this pseudo-quota
-            // id: 'unlimited', // This field might not exist on your LeaveQuota type
             employee_id: employeeId,
             leave_type_id: leaveTypeId,
             quota_days: Number.MAX_SAFE_INTEGER,
             taken_days: 0, // Unpaid leave doesn't usually consume a quota this way
             adjustment_days: 0,
-            // created_at and updated_at are likely not relevant for this pseudo-quota object
           } as LeaveQuota; // Cast carefully, ensure this matches your actual LeaveQuota structure
         }
 
         // If no specific quota row found and it's not an explicitly unpaid type (handled above),
         // return a default zero quota.
         return {
-        //   id: 'new_or_zero', // This field might not exist on your LeaveQuota type
           employee_id: employeeId,
           leave_type_id: leaveTypeId,
           quota_days: 0,
@@ -142,9 +136,6 @@ export const useLeave = () => {
 
   // submitLeaveRequest (memoized)
   const submitLeaveRequest = useCallback(async (values: {
-    employee_id: string; leave_type_id: string; start_date: string; end_date: string;
-    notes?: string; half_day?: boolean; half_day_type?: 'AM' | 'PM';
-    chargeable_duration: number; status: string;
     employee_id: string;
     leave_type_id: string;
     start_date: string;
@@ -210,13 +201,6 @@ export const useLeave = () => {
 
   // Return all values needed by components
   return {
-    leaveTypes, // The memoized array (defaults to [])
-    employees,  // The memoized array (defaults to [])
-    isLoadingLeaveTypes, // Loading state from useQuery
-    isLoadingEmployees,  // Loading state from useQuery
-    isSubmitting, // Local state for submission status
-    fetchLeaveQuota, // Memoized fetch function
-    submitLeaveRequest, // Memoized submit function
     leaveTypes,
     employees,
     isLoadingLeaveTypes,

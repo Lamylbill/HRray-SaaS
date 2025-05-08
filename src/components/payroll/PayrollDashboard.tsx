@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { usePayrollPeriods } from '@/hooks/use-payroll';
-import { Calendar, ClipboardList, CreditCard, DollarSign, Users, Clock, Check } from 'lucide-react';
+import { Calendar, ClipboardList, CreditCard, DollarSign, Users, Clock, Check, Calculator } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';

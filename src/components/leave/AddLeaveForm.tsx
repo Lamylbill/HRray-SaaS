@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
@@ -140,7 +141,7 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
     // --- 3. Fetch Quota and Check Insufficiency ---
     const selectedLeaveTypeInfo = leaveTypes?.find(lt => lt.id === leaveTypeId);
 
-    if (selectedLeaveTypeInfo?.is_unpaid) {
+    if (selectedLeaveTypeInfo && !selectedLeaveTypeInfo.is_paid) {
         setIsUnpaidLeave(true);
         setSelectedLeaveTypeBalance(null); 
         setCurrentSelectedLeaveTypeQuota(null);
@@ -212,8 +213,6 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
     startDay, startMonth, startYear, endDay, endMonth, endYear,
     isHalfDay, leaveTypeId, employeeId, publicHolidays, 
     fetchLeaveQuota, leaveTypes, calculateChargeableDaysInternal 
-    // Note: removed calculatedChargeableDays from here to avoid potential loop, 
-    // recalculated it inside the effect where needed for the async check.
   ]);
 
   // --- Handle Submit ---
@@ -239,7 +238,7 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
             }
         } else if (!isQuotaLoading && calculatedChargeableDays > 0) { // Quota object not available, wasn't loading, not unpaid, but requesting days
              const currentSelectedLeaveTypeInfo = leaveTypes?.find(lt => lt.id === leaveTypeId);
-             if (currentSelectedLeaveTypeInfo && !currentSelectedLeaveTypeInfo.is_unpaid) {
+             if (currentSelectedLeaveTypeInfo && currentSelectedLeaveTypeInfo.is_paid) {
                  validationErrorMessage = `Leave quota not defined or couldn't be loaded. Cannot request ${calculatedChargeableDays.toFixed(1)} days.`;
              }
         }
@@ -321,7 +320,7 @@ export const AddLeaveForm: React.FC<AddLeaveFormProps> = ({ onSuccess, onCancel,
               ) : null }
             </SelectValue>
           </SelectTrigger>
-          <SelectContent>{leaveTypes?.map(type => (<SelectItem key={type.id} value={type.id}><div className="flex items-center">{type.color && <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: type.color }} />} {type.name} {type.is_unpaid && <span className="ml-1 text-gray-500 text-xs">(Unpaid)</span>}</div></SelectItem>))}</SelectContent>
+          <SelectContent>{leaveTypes?.map(type => (<SelectItem key={type.id} value={type.id}><div className="flex items-center">{type.color && <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: type.color }} />} {type.name} {!type.is_paid && <span className="ml-1 text-gray-500 text-xs">(Unpaid)</span>}</div></SelectItem>))}</SelectContent>
         </Select>
       </div>
 

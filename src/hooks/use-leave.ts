@@ -1,16 +1,16 @@
-import { useState, useCallback } // Added useCallback
-from 'react';
+
+import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { LeaveType, LeaveQuota, Employee } from '@/components/leave-calendar/interfaces'; // Assuming Employee is also in interfaces
+import { LeaveType, LeaveQuota, Employee } from '@/components/leave-calendar/interfaces';
 
 export const useLeave = () => {
   const { toast } = useToast();
-  const supabase = getAuthorizedClient(); // Assuming getAuthorizedClient() returns a stable client or is cheap to call
+  const supabase = getAuthorizedClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: leaveTypesData, isLoading: isLoadingLeaveTypes } = useQuery<LeaveType[], Error>({ // Added types for useQuery
+  const { data: leaveTypesData, isLoading: isLoadingLeaveTypes } = useQuery<LeaveType[], Error>({
     queryKey: ['leaveTypes'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -26,7 +26,7 @@ export const useLeave = () => {
   const leaveTypes = leaveTypesData || [];
 
 
-  const { data: employeesData, isLoading: isLoadingEmployees } = useQuery<Employee[], Error>({ // Added types for useQuery
+  const { data: employeesData, isLoading: isLoadingEmployees } = useQuery<Employee[], Error>({
     queryKey: ['employees'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -35,7 +35,7 @@ export const useLeave = () => {
         .order('full_name');
       
       if (error) throw error;
-      return data as Employee[]; // Assuming data matches Employee[]
+      return data as Employee[];
     },
   });
   // Provide a default empty array
@@ -56,7 +56,7 @@ export const useLeave = () => {
         // Check if the leave type is unpaid to return a pseudo-quota for unlimited
         const { data: leaveTypeData, error: leaveTypeError } = await supabase
           .from('leave_types')
-          .select('is_unpaid') // Changed from is_paid to is_unpaid to match your previous logic
+          .select('is_paid') // Using is_paid property
           .eq('id', leaveTypeId)
           .single();
 
@@ -66,7 +66,7 @@ export const useLeave = () => {
             return null; 
         }
         
-        if (leaveTypeData && leaveTypeData.is_unpaid) { // Check if it's an unpaid leave type
+        if (leaveTypeData && !leaveTypeData.is_paid) { // Check if it's an unpaid leave type (!is_paid instead of is_unpaid)
           return {
             // Using fields consistent with LeaveQuota interface. Ensure these are correct.
             // id might not be needed if not part of your DB schema for this pseudo-quota
@@ -139,15 +139,15 @@ export const useLeave = () => {
   }, [supabase]); // Dependency: supabase client instance
 
   const submitLeaveRequest = useCallback(async (values: {
-    employee_id: string; // Changed prop names to match AddLeaveForm's submitLeaveRequest call
+    employee_id: string;
     leave_type_id: string;
-    start_date: string; // Expecting formatted date string
-    end_date: string;   // Expecting formatted date string
+    start_date: string;
+    end_date: string;
     notes?: string;
     half_day?: boolean;
     half_day_type?: 'AM' | 'PM';
-    chargeable_duration: number; // Added this from AddLeaveForm
-    status: string; // Added this from AddLeaveForm
+    chargeable_duration: number;
+    status: string;
   }) => {
     setIsSubmitting(true);
     try {
@@ -203,12 +203,12 @@ export const useLeave = () => {
   }, [supabase, toast]); // setIsSubmitting is stable, so not strictly needed
 
   return {
-    leaveTypes, // From useQuery, should be stable
-    employees,  // From useQuery, should be stable
+    leaveTypes,
+    employees,
     isLoadingLeaveTypes,
     isLoadingEmployees,
     isSubmitting,
-    fetchLeaveQuota,    // Now memoized
-    submitLeaveRequest, // Now memoized
+    fetchLeaveQuota,
+    submitLeaveRequest,
   };
 };

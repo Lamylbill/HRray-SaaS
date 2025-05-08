@@ -25,7 +25,7 @@ export interface LeaveType {
   id: string;
   name: string;
   color: string;
-  is_paid?: boolean;
+  is_paid: boolean; // Using is_paid instead of is_unpaid
 }
 
 export interface MonthViewProps {
@@ -37,12 +37,12 @@ export interface MonthViewProps {
 }
 
 export interface LeaveQuota {
-  id: string;
+  id?: string;
   employee_id: string;
   leave_type_id: string;
   quota_days: number;
   taken_days: number;
   adjustment_days: number;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }

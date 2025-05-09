@@ -142,11 +142,13 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
 
   return (
     <header
-      className={cn(
-        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-        isScrolled ? 'bg-white shadow-sm border-b border-gray-200' : 'bg-white'
-      )}
-    >
+    className={cn(
+      'fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white shadow-sm border-b border-gray-200'
+      // The isScrolled logic for these specific styles is removed; they are now always applied.
+      // If you still want other changes on scroll (like different background opacity, etc.), 
+      // you can add conditional classes for those, but for shadow and border, they're now static.
+    )}
+  >
       <nav className="container mx-auto px-6 py-3 flex items-center justify-between" ref={containerRef}>
         <Link to="/" className="flex items-center gap-2 z-50" onClick={handleHomeClick}>
           <Button variant="ghost" className="gap-0 text-inherit text-left normal-case p-0">

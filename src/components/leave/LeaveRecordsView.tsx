@@ -23,21 +23,15 @@ const STATUS_OPTIONS = ["Pending", "Approved", "Rejected"] as const;
 type StatusTuple = typeof STATUS_OPTIONS;
 type Status = StatusTuple[number];
 
-// Define Props Interface - make this match the interface in interfaces.ts
+// Define Props Interface
 interface LeaveRecordsViewProps {
-  selectedLeaveTypes: string[]; // Receive leave types as prop from parent
-  onLeaveTypeFilter: (types: string[]) => void;
   availableLeaveTypes: LeaveType[]; // Receive leave types as prop from parent
 }
 
 // Define Sortable Columns type
 type SortableColumn = 'employee.full_name' | 'leave_type.name' | 'start_date' | 'chargeable_duration' | 'status';
 
-const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ 
-  selectedLeaveTypes, 
-  onLeaveTypeFilter, 
-  availableLeaveTypes 
-}) => {
+const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ availableLeaveTypes }) => {
   // State for all fetched records
   const [allLeaveRequests, setAllLeaveRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -98,40 +92,37 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
         const leaveTypeData = lr.leave_type as any;
         const leaveType = leaveTypeData || { id: '', name: 'Unknown Type', color: '#808080', is_paid: true }; // Default to paid
 
-        // Ensure the structure matches the LeaveRequest interface
         return {
           id: lr.id,
           employee: { id: employee.id, full_name: employee.full_name },
-          // Ensure this matches LeaveType structure in your interface
           leave_type: {
               id: leaveType.id,
               name: leaveType.name,
               color: leaveType.color,
-              is_paid: leaveType.is_paid ?? true, // Use is_paid now
+              is_paid: leaveType.is_paid ?? true,
           },
           start_date: lr.start_date,
           end_date: lr.end_date,
-          status: lr.status as Status, // Cast, ensure DB values match Status type exactly
+          status: lr.status as Status,
           half_day: lr.half_day ?? false,
           half_day_type: lr.half_day_type as "AM" | "PM" | null,
           created_at: lr.created_at,
-          chargeable_duration: lr.chargeable_duration, // This is the value we need
+          chargeable_duration: lr.chargeable_duration,
         };
       });
       setAllLeaveRequests(formattedData);
     } catch (error) {
       console.error('Error fetching or processing leave requests:', error);
-      setAllLeaveRequests([]); // Clear data on error to avoid displaying stale info
+      setAllLeaveRequests([]);
     } finally {
       setIsLoading(false);
     }
-  }, [user]); // Dependency: user
+  }, [user]);
 
   useEffect(() => {
-    fetchAndFormatLeaveRequests(); // Fetch on initial mount and when user changes
+    fetchAndFormatLeaveRequests();
   }, [fetchAndFormatLeaveRequests]);
 
-  // Handler to refresh data when an action (approve/reject) is done in child component
   const handleActionComplete = useCallback(() => {
     fetchAndFormatLeaveRequests();
   }, [fetchAndFormatLeaveRequests]);
@@ -139,7 +130,7 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
 
   // --- Filtering and Sorting Logic ---
   const processedLeaveRequests = useMemo(() => {
-    let filtered = [...allLeaveRequests]; // Start with all fetched requests
+    let filtered = [...allLeaveRequests];
     if (filterLeaveTypeIds.length > 0) {
         filtered = filtered.filter(req => req.leave_type?.id && filterLeaveTypeIds.includes(req.leave_type.id));
     }
@@ -148,35 +139,25 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
     }
 
     const customStatusOrder: Record<Status, number> = { 'Pending': 1, 'Approved': 2, 'Rejected': 3 };
-    let sortedFiltered = [...filtered]; // Create a mutable copy before sorting
+    let sortedFiltered = [...filtered];
     if (sortConfig.key !== null) {
         sortedFiltered.sort((a, b) => {
-            const key = sortConfig.key!; // Not null here
+            const key = sortConfig.key!;
             let aValue: any, bValue: any;
-
             if (key === 'status') { aValue = customStatusOrder[a.status] || 99; bValue = customStatusOrder[b.status] || 99; }
             else if (key === 'employee.full_name') { aValue = a.employee?.full_name?.toLowerCase() || ''; bValue = b.employee?.full_name?.toLowerCase() || ''; }
             else if (key === 'leave_type.name') { aValue = a.leave_type?.name?.toLowerCase() || ''; bValue = b.leave_type?.name?.toLowerCase() || ''; }
             else if (key === 'start_date') { aValue = a.start_date ? new Date(a.start_date).getTime() : 0; bValue = b.start_date ? new Date(b.start_date).getTime() : 0; }
-            else { aValue = a[key]; bValue = b[key]; } // Handles chargeable_duration
-
-            // Comparison logic with null/undefined handling
+            else { aValue = a[key]; bValue = b[key]; }
             const valA = aValue ?? (typeof aValue === 'string' ? '' : (typeof aValue === 'number' ? -Infinity : 0));
             const valB = bValue ?? (typeof bValue === 'string' ? '' : (typeof bValue === 'number' ? -Infinity : 0));
-
             if (valA < valB) return sortConfig.direction === 'ascending' ? -1 : 1;
             if (valA > valB) return sortConfig.direction === 'ascending' ? 1 : -1;
-
-            // Secondary sort by date descending if primary values are equal
-            if (key !== 'start_date') {
-               const dateA = a.start_date ? new Date(a.start_date).getTime() : 0;
-               const dateB = b.start_date ? new Date(b.start_date).getTime() : 0;
-               return dateB - dateA; // Newest first
-            }
+            if (key !== 'start_date') { const dateA = a.start_date ? new Date(a.start_date).getTime() : 0; const dateB = b.start_date ? new Date(b.start_date).getTime() : 0; return dateB - dateA; }
             return 0;
           });
     }
-    return sortedFiltered; // Return sorted/filtered array
+    return sortedFiltered;
   }, [allLeaveRequests, filterLeaveTypeIds, filterStatuses, sortConfig]);
 
 
@@ -187,14 +168,14 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
       direction = 'descending';
     }
     setSortConfig({ key, direction });
-  }, [sortConfig]); // Depends on current sortConfig
+  }, [sortConfig]);
 
   // --- Filter Apply Handler ---
   const handleApplyFilters = useCallback((selectedTypes: string[], selectedStatuses: Status[]) => {
     setFilterLeaveTypeIds(selectedTypes);
     setFilterStatuses(selectedStatuses);
     setIsFilterDialogOpen(false); // Close dialog after applying
-  }, []); // No dependencies needed as it only uses setters
+  }, []);
 
   // --- Formatting Functions ---
   const formatDate = useCallback((dateString: string | null | undefined): string => {
@@ -207,47 +188,30 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
       const defaultStyle = "bg-gray-100 text-gray-800";
       const statusMap: Record<string, string> = { Approved: "bg-green-100 text-green-800", Rejected: "bg-red-100 text-red-800", Pending: "bg-yellow-100 text-yellow-800" };
       const className = status ? (statusMap[status] || defaultStyle) : defaultStyle;
-      // Ensure Badge component can handle null/undefined children if status is unknown
       return <Badge className={className}>{status || 'Unknown'}</Badge>;
   }, []);
 
   // --- Helper to render sortable table headers ---
   const renderSortableHeader = useCallback((label: string, columnKey: SortableColumn, className?: string) => (
-    <TableHead className={`${className} p-2`}> {/* Added p-2 */}
-      <Button
-        variant="ghost"
-        onClick={() => requestSort(columnKey)}
-        className="px-1 py-1 h-auto hover:bg-transparent font-semibold text-left" // Align left, adjusted padding/height
-        title={`Sort by ${label}`}
-      >
+    <TableHead className={`${className} p-2`}>
+      <Button variant="ghost" onClick={() => requestSort(columnKey)} className="px-1 py-1 h-auto hover:bg-transparent font-semibold text-left" title={`Sort by ${label}`}>
         {label}
-        {/* Icon indicates sort status */}
         <ArrowUpDown className={`ml-1 h-3 w-3 inline-block ${sortConfig.key === columnKey ? 'opacity-100' : 'opacity-30 transition-opacity'}`} />
       </Button>
     </TableHead>
-  ), [sortConfig, requestSort]); // Include dependencies
+  ), [sortConfig, requestSort]);
 
 
   // --- Render Component ---
   return (
-    <div className="bg-white rounded-lg shadow p-4 md:p-6"> {/* Slightly reduced padding */}
+    <div className="bg-white rounded-lg shadow p-4 md:p-6">
       {/* Header and Filters Button */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Leave Records</h2>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsFilterDialogOpen(true)} // Open dialog
-            className="flex items-center"
-            title="Filter leave records"
-          >
+          <Button variant="outline" size="sm" onClick={() => setIsFilterDialogOpen(true)} className="flex items-center" title="Filter leave records">
               <Filter className="mr-2 h-4 w-4" /> Filters
-              {(filterLeaveTypeIds.length > 0 || filterStatuses.length > 0) &&
-                <span className="ml-1.5 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
-                  {filterLeaveTypeIds.length + filterStatuses.length}
-                </span>
-              }
+              {(filterLeaveTypeIds.length > 0 || filterStatuses.length > 0) && <span className="ml-1.5 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">{filterLeaveTypeIds.length + filterStatuses.length}</span>}
           </Button>
         </div>
       </div>
@@ -259,17 +223,14 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
        : allLeaveRequests.length === 0 ? ( <div className="py-8 text-center border border-dashed border-gray-200 rounded-md"><p className="text-gray-500">No leave records found.</p></div> )
        : (
          <div className="overflow-x-auto">
-           {/* Layout adjustments for scrolling */}
            <Table className="w-full table-fixed">
              <TableHeader>
                <TableRow>
-                 {/* Adjusted example widths - TUNE THESE AS NEEDED! */}
                  {renderSortableHeader('Employee', 'employee.full_name', "w-[28%]")}
                  {renderSortableHeader('Leave Type', 'leave_type.name', "w-[18%]")}
                  {renderSortableHeader('Period Start', 'start_date', "w-[18%]")}
                  {renderSortableHeader('Duration', 'chargeable_duration', "w-[10%]")}
                  {renderSortableHeader('Status', 'status', "w-[11%]")}
-                 {/* Ensure header padding matches cell padding */}
                  <TableHead className="text-right w-[15%] p-2">Actions</TableHead>
                </TableRow>
              </TableHeader>
@@ -281,10 +242,8 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
                       const durationValue = request.chargeable_duration;
                       const durationDisplay = durationValue !== null && durationValue !== undefined && typeof durationValue === 'number' ? `${durationValue} ${durationValue === 1 ? 'day' : 'days'}` : 'N/A';
                       return (<TableRow key={request.id}>
-                         {/* Added truncate and title, reduced padding */}
                          <TableCell className="p-2 truncate" title={request.employee?.full_name || ''}>{request.employee?.full_name || 'N/A'}</TableCell>
                          <TableCell className="p-2"><div className="flex items-center">{request.leave_type?.color && <div className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: request.leave_type.color }}></div>}{request.leave_type?.name || 'N/A'}</div></TableCell>
-                         {/* Added wrapping and reduced padding */}
                          <TableCell className="p-2 whitespace-normal">{formatDate(request.start_date)}{request.start_date !== request.end_date && ` - ${formatDate(request.end_date)}`}{request.half_day && ` (${request.half_day_type || ''} Half Day)`}</TableCell>
                          <TableCell className="p-2">{durationDisplay}</TableCell>
                          <TableCell className="p-2">{getStatusBadge(request.status)}</TableCell>
@@ -297,10 +256,9 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
          </div>
        )}
 
-      {/* Filter Dialog - Wider */}
+      {/* Filter Dialog */}
       <Dialog open={isFilterDialogOpen} onOpenChange={setIsFilterDialogOpen}>
-        {/* Increased max width */}
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg"> {/* Kept wider dialog */}
           <DialogHeader>
             <DialogTitle>Filter Leave Records</DialogTitle>
             <DialogDescription>Select leave types and statuses to view specific records.</DialogDescription>
@@ -309,7 +267,7 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
             availableLeaveTypes={availableLeaveTypes || []}
             currentTypeIds={filterLeaveTypeIds}
             currentStatuses={filterStatuses}
-            onApplyFilters={handleApplyFilters}
+            onApplyFilters={handleApplyFilters} // This prop applies filters AND closes the dialog
             onCancel={() => setIsFilterDialogOpen(false)}
           />
         </DialogContent>
@@ -331,11 +289,9 @@ interface LeaveFilterFormProps {
 const LeaveFilterForm: React.FC<LeaveFilterFormProps> = ({
     availableLeaveTypes, currentTypeIds, currentStatuses, onApplyFilters, onCancel
 }) => {
-    // Local state for selections within the form before applying
     const [selectedTypes, setSelectedTypes] = useState<string[]>(currentTypeIds);
     const [selectedStatuses, setSelectedStatuses] = useState<Status[]>(currentStatuses);
 
-    // Use useCallback for handlers passed to inputs
     const handleTypeChange = useCallback((typeId: string, checked: boolean | string) => {
         setSelectedTypes(prev =>
             checked === true ? [...prev, typeId] : prev.filter(id => id !== typeId)
@@ -348,15 +304,15 @@ const LeaveFilterForm: React.FC<LeaveFilterFormProps> = ({
         );
     }, []);
 
-    // Apply the locally selected filters to the parent component's state
     const handleApply = () => {
         onApplyFilters(selectedTypes, selectedStatuses);
     };
 
-    // Clear local selections
-    const handleClear = () => {
+    // --- UPDATED: This function now clears local state AND calls onApplyFilters with empty arrays ---
+    const handleClearAndApply = () => {
         setSelectedTypes([]);
         setSelectedStatuses([]);
+        onApplyFilters([], []); // This will update parent state AND close the dialog
     };
 
     return (
@@ -365,19 +321,13 @@ const LeaveFilterForm: React.FC<LeaveFilterFormProps> = ({
             <div>
                 <Label className="font-semibold mb-2 block">Leave Types</Label>
                 <div className="max-h-40 overflow-y-auto space-y-2 pr-2 border rounded-md p-2">
-                    {/* Defensive check */}
                     {Array.isArray(availableLeaveTypes) && availableLeaveTypes.length > 0 ? (
                         availableLeaveTypes.map(type => (
                             <div key={type.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                    id={`dialog-type-${type.id}`} // Ensure unique ID
-                                    checked={selectedTypes.includes(type.id)}
-                                    onCheckedChange={(checked) => handleTypeChange(type.id, checked)}
-                                />
+                                <Checkbox id={`dialog-type-${type.id}`} checked={selectedTypes.includes(type.id)} onCheckedChange={(checked) => handleTypeChange(type.id, checked)} />
                                 <Label htmlFor={`dialog-type-${type.id}`} className="text-sm font-normal cursor-pointer flex items-center flex-1">
                                     {type.color && <span className="w-3 h-3 rounded-full mr-2 inline-block flex-shrink-0" style={{ backgroundColor: type.color }} />}
                                     <span className="flex-grow">{type.name}</span>
-                                    {/* Use !type.is_paid for Unpaid tag */}
                                     {!type.is_paid && <span className="text-xs text-gray-500 ml-1">(Unpaid)</span>}
                                 </Label>
                             </div>
@@ -391,22 +341,17 @@ const LeaveFilterForm: React.FC<LeaveFilterFormProps> = ({
                  <div className="space-y-2 border rounded-md p-2">
                      {STATUS_OPTIONS.map(status => (
                         <div key={status} className="flex items-center space-x-2">
-                            <Checkbox
-                                id={`dialog-status-${status}`} // Ensure unique ID
-                                checked={selectedStatuses.includes(status)}
-                                onCheckedChange={(checked) => handleStatusChange(status, checked)}
-                            />
-                            <Label htmlFor={`dialog-status-${status}`} className="text-sm font-normal cursor-pointer">
-                                {status}
-                            </Label>
+                            <Checkbox id={`dialog-status-${status}`} checked={selectedStatuses.includes(status)} onCheckedChange={(checked) => handleStatusChange(status, checked)} />
+                            <Label htmlFor={`dialog-status-${status}`} className="text-sm font-normal cursor-pointer">{status}</Label>
                         </div>
                      ))}
                  </div>
             </div>
-            {/* Footer with Actions - Cleaned Up Layout */}
-            <DialogFooter className="mt-4 sm:justify-end gap-2"> {/* Default right alignment + gap */}
-                 <Button type="button" variant="ghost" onClick={handleClear} className="mr-auto sm:mr-0">Clear Selections</Button>
-                 <div className="flex gap-2"> {/* Group Cancel/Apply */}
+            {/* Footer with Actions - Updated Clear Button */}
+            <DialogFooter className="mt-4 sm:justify-end gap-2">
+                 {/* This button now clears AND applies (which closes the dialog) */}
+                 <Button type="button" variant="ghost" onClick={handleClearAndApply} className="mr-auto sm:mr-0">Clear All Filters</Button>
+                 <div className="flex gap-2">
                      <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
                      <Button type="button" onClick={handleApply}>Apply Filters</Button>
                  </div>

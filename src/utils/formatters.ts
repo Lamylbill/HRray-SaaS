@@ -1,4 +1,3 @@
-
 // Add any existing formatters from the current file
 
 /**
@@ -166,4 +165,25 @@ export const formatFileSize = (bytes: number | null | undefined): string => {
 
 export const formatSalary = (amount: number | string | null | undefined, currency = 'SGD'): string => {
   return formatCurrency(amount, currency);
+};
+
+/**
+ * Get initials from a name or email
+ */
+export const getInitials = (nameOrEmail: string | null | undefined): string => {
+  if (!nameOrEmail) return '';
+  
+  // If it looks like an email, get initials from the part before @
+  if (nameOrEmail.includes('@')) {
+    const emailPart = nameOrEmail.split('@')[0];
+    return emailPart.substring(0, 2).toUpperCase();
+  }
+  
+  // Otherwise treat as name and get initials
+  const names = nameOrEmail.trim().split(' ');
+  if (names.length === 1) {
+    return names[0].substring(0, 2).toUpperCase();
+  }
+  
+  return (names[0][0] + names[names.length - 1][0]).toUpperCase();
 };

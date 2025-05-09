@@ -28,10 +28,10 @@ export const useComplianceData = () => {
   const [complianceScore, setComplianceScore] = useState<number>(0);
   const [cpfValidation, setCpfValidation] = useState<ComplianceCheck[]>([]);
   const [irasSubmission, setIrasSubmission] = useState<ComplianceCheck[]>([]);
-  const [workPassExpiry, setWorkPassExpiry] = useState<any[]>([]);
-  const [missingDataChecks, setMissingDataChecks] = useState<any[]>([]);
-  const [leavePolicyViolations, setLeavePolicyViolations] = useState<any[]>([]);
-  const [overtimeBreaches, setOvertimeBreaches] = useState<any[]>([]);
+  const [workPassExpiry, setWorkPassExpiry] = useState<ComplianceCheck[]>([]);
+  const [missingDataChecks, setMissingDataChecks] = useState<ComplianceCheck[]>([]);
+  const [leavePolicyViolations, setLeavePolicyViolations] = useState<ComplianceCheck[]>([]);
+  const [overtimeBreaches, setOvertimeBreaches] = useState<ComplianceCheck[]>([]);
   const [foreignWorkerQuota, setForeignWorkerQuota] = useState<ForeignWorkerQuota | null>(null);
 
   const fetchComplianceChecks = useCallback(async (checkType: string) => {
@@ -46,7 +46,17 @@ export const useComplianceData = () => {
         .order('check_date', { ascending: false });
         
       if (error) throw error;
-      return data || [];
+      
+      // Map database fields to our ComplianceCheck type
+      const mappedChecks: ComplianceCheck[] = (data || []).map(check => ({
+        id: check.id,
+        checkType: check.check_type,
+        checkDate: check.check_date,
+        status: check.status as 'passed' | 'failed' | 'warning',
+        details: check.details
+      }));
+      
+      return mappedChecks;
     } catch (error) {
       console.error(`Error fetching ${checkType} data:`, error);
       return [];
@@ -233,7 +243,20 @@ export const useComplianceData = () => {
       
       if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows returned"
       
-      return data;
+      if (data) {
+        // Map database fields to our ForeignWorkerQuota type
+        const mappedQuota: ForeignWorkerQuota = {
+          id: data.id,
+          industrySector: data.industry_sector,
+          quotaPercentage: data.quota_percentage,
+          localHeadcount: data.local_headcount,
+          foreignHeadcount: data.foreign_headcount,
+          maxForeignAllowed: data.max_foreign_allowed
+        };
+        return mappedQuota;
+      }
+      
+      return null;
     } catch (error) {
       console.error('Error fetching foreign worker quota:', error);
       return null;

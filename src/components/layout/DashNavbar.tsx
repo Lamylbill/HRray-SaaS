@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -26,8 +25,8 @@ import {
 } from "@/components/ui/navigation-menu";
 import { getInitials } from '@/utils/formatters';
 import { NotificationBell } from '@/components/ui-custom/NotificationBell';
-import { DateTimeBar } from '@/components/ui-custom/DateTimeBar';
-import { useMobileView } from '@/hooks/use-mobile';
+import DateTimeBar from '@/components/ui-custom/DateTimeBar';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import NavItem, { getDashboardNavItems } from './NavItems';
 
@@ -36,7 +35,7 @@ export const DashNavbar: React.FC = () => {
   const { user, isAuthenticated, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const isMobile = useMobileView();
+  const isMobile = useIsMobile();
 
   // Get dashboard navigation items
   const navItems = getDashboardNavItems();

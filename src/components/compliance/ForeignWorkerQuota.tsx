@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Users, 
@@ -209,7 +208,7 @@ const ForeignWorkerQuota: React.FC<ForeignWorkerQuotaProps> = ({ data, onRefresh
                   </span>
                 </div>
                 <div className="relative">
-                  <Progress value={quotaUsage} className="h-2" indicatorClassName={getProgressColor()} />
+                  <Progress value={quotaUsage} className="h-2" indicatorColor={getProgressColor()} />
                 </div>
                 {foreignHeadcount > maxForeignAllowed ? (
                   <p className="text-red-600 text-xs mt-1">

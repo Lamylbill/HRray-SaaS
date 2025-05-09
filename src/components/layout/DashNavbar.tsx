@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -25,7 +26,6 @@ import {
 } from "@/components/ui/navigation-menu";
 import { getInitials } from '@/utils/formatters';
 import { NotificationBell } from '@/components/ui-custom/NotificationBell';
-import DateTimeBar from '@/components/ui-custom/DateTimeBar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import NavItem, { getDashboardNavItems } from './NavItems';
@@ -61,18 +61,33 @@ export const DashNavbar: React.FC = () => {
         <div className="flex items-center">
           <Link to="/dashboard" className="flex items-center">
             <span className="text-xl font-bold text-blue-700">HR</span>
-            <span className="text-xl font-bold text-gray-700">Flow</span>
+            <span className="text-xl font-bold text-orange-500">ray</span>
           </Link>
         </div>
 
         {/* Desktop Navigation */}
         {isAuthenticated && (
-          <div className="hidden md:flex items-center space-x-1">
+          <div className="hidden md:flex items-center space-x-2">
             <NavigationMenu className="max-w-none">
-              <NavigationMenuList className="flex space-x-1">
-                {navItems.map((item) => (
-                  <NavItem key={item.href} item={item} />
-                ))}
+              <NavigationMenuList className="flex space-x-2">
+                {navItems.map((item) => {
+                  const isActive = location.pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      className={cn(
+                        "inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium transition-colors",
+                        isActive 
+                          ? "bg-blue-600 text-white" 
+                          : "text-gray-700 hover:bg-blue-50"
+                      )}
+                    >
+                      <span className="mr-2">{item.icon}</span>
+                      {item.name}
+                    </Link>
+                  );
+                })}
               </NavigationMenuList>
             </NavigationMenu>
           </div>
@@ -80,23 +95,31 @@ export const DashNavbar: React.FC = () => {
 
         {/* Right side - User Menu or Login button */}
         <div className="flex items-center gap-2">
-          {!isMobile && <DateTimeBar />}
-          
           {isAuthenticated ? (
             <>
               {/* Notification Bell */}
-              <NotificationBell />
+              <div className="relative">
+                <Button 
+                  variant="ghost" 
+                  className="h-10 w-10 rounded-full p-0"
+                >
+                  <Bell className="h-5 w-5" />
+                  <span className="absolute top-0 right-0 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">3+</span>
+                </Button>
+              </div>
               
               {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar className="h-10 w-10 border border-gray-200">
+                  <Button variant="ghost" className="flex items-center space-x-2 rounded-full">
+                    <Avatar className="h-8 w-8 border border-gray-200">
                       <AvatarImage src="" alt={user?.email || ''} />
                       <AvatarFallback className="bg-blue-100 text-blue-700">
                         {getInitials(user?.email || '')}
                       </AvatarFallback>
                     </Avatar>
+                    <span className="text-gray-700 font-medium">My Account</span>
+                    <ChevronDown className="h-4 w-4 text-gray-500" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 z-50 bg-white">

@@ -59,15 +59,15 @@ export const DashNavbar: React.FC = () => {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center">
-          <Link to="/dashboard" className="flex items-center">
-            <span className="text-xl font-bold text-blue-700">HR</span>
-            <span className="text-xl font-bold text-orange-500">ray</span>
+          <Link to="/" className="flex items-center">
+            <span className="text-2xl font-bold text-[#4361ee]">HR</span>
+            <span className="text-2xl font-bold text-[#fb8500]">ray</span>
           </Link>
         </div>
 
         {/* Desktop Navigation */}
         {isAuthenticated && (
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden md:flex items-center space-x-1">
             <NavigationMenu className="max-w-none">
               <NavigationMenuList className="flex space-x-2">
                 {navItems.map((item) => {
@@ -79,7 +79,7 @@ export const DashNavbar: React.FC = () => {
                       className={cn(
                         "inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium transition-colors",
                         isActive 
-                          ? "bg-blue-600 text-white" 
+                          ? "bg-[#4361ee] text-white" 
                           : "text-gray-700 hover:bg-blue-50"
                       )}
                     >
@@ -94,7 +94,7 @@ export const DashNavbar: React.FC = () => {
         )}
 
         {/* Right side - User Menu or Login button */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {isAuthenticated ? (
             <>
               {/* Notification Bell */}
@@ -114,8 +114,8 @@ export const DashNavbar: React.FC = () => {
                   <Button variant="ghost" className="flex items-center space-x-2 rounded-full">
                     <Avatar className="h-8 w-8 border border-gray-200">
                       <AvatarImage src="" alt={user?.email || ''} />
-                      <AvatarFallback className="bg-blue-100 text-blue-700">
-                        {getInitials(user?.email || '')}
+                      <AvatarFallback className="bg-gray-100 text-[#4361ee]">
+                        {user?.email ? getInitials(user.email) : 'YL'}
                       </AvatarFallback>
                     </Avatar>
                     <span className="text-gray-700 font-medium">My Account</span>

@@ -67,6 +67,7 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
   });
 
   const handleSubmit = async (data: EmployeeFormData) => {
+    console.log("EmployeeTabbedForm: handleSubmit triggered. Mode:", mode, "isProcessing:", isProcessing);
     if (isProcessing) return;
     setIsProcessing(true);
     const supabase = getAuthorizedClient();

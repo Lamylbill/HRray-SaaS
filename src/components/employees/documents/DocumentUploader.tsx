@@ -361,8 +361,11 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
       )}
 
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onUploadComplete} disabled={isUploading}>
-          Cancel
+      <Button type="button" variant="outline" onClick={() => {
+    console.log("DocumentUploader: Cancel button clicked, calling onUploadComplete");
+    onUploadComplete();
+  }} disabled={isUploading}>
+  Cancel
         </Button>
         <Button type="button" onClick={uploadFiles} disabled={isUploading || files.length === 0}>
           {isUploading ? (

@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  PlusCircle, Filter, Download, Trash, Edit, Eye, FileText,
-  RotateCw, Upload, X, Search, RefreshCw
+  Upload, FileText, X as CloseIcon, AlertCircle, Check, RotateCw, Search, RefreshCw, Eye, Trash
 } from 'lucide-react';
 import { Button } from '@/components/ui-custom/Button';
 import { Input } from '@/components/ui/input';
@@ -13,13 +12,12 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { getAuthorizedClient, STORAGE_BUCKET, ensureStorageBucket } from '@/integrations/supabase/client';
-import {
-  getDisplayLabel, DOCUMENT_CATEGORIES, getCategoryFromValue
-} from './DocumentCategoryTypes';
-import { DocumentUploader } from './DocumentUploader';
+import { getAuthorizedClient, STORAGE_BUCKET } from '@/integrations/supabase/client';
+import { DocumentUploader } from './DocumentUploader'; // Ensure this component is correctly implemented
 import { useAuth } from '@/context/AuthContext';
+import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 
+// --- Interfaces ---
 interface Document {
   id: string;
   employee_id: string;
@@ -31,9 +29,10 @@ interface Document {
   document_category?: string;
   document_type?: string;
   notes?: string;
+  file_path?: string; // Path in Supabase Storage (crucial for deletion)
 }
 
-interface DbDocument {
+interface DbDocument { // Represents the structure in your 'employee_documents' table
   id: string;
   employee_id: string;
   file_name: string;
@@ -41,18 +40,29 @@ interface DbDocument {
   file_size: number;
   file_path: string;
   uploaded_at: string;
-  category: string;
-  document_type: string;
-  user_id: string;
+  category?: string; // Maps to document_category
+  document_type?: string;
+  user_id: string; // ID of the user who uploaded
   notes?: string;
 }
+
+// Ensure DOCUMENT_CATEGORIES is correctly defined (e.g., imported from a types file)
+const DOCUMENT_CATEGORIES: Record<string, string> = {
+  ID: 'Identification',
+  CONTRACT: 'Contract & Agreements',
+  PERFORMANCE: 'Performance Review',
+  CERTIFICATES: 'Licenses & Certificates',
+  OTHER: 'Other Documents',
+};
+const documentCategoryKeys = Object.keys(DOCUMENT_CATEGORIES);
+// --- End Interfaces ---
 
 interface DocumentManagerProps {
   employeeId: string;
   refreshTrigger?: number;
   isTabbed?: boolean;
   isReadOnly?: boolean;
-  bucketReady?: boolean; // Add the bucketReady prop to the interface
+  bucketReady: boolean;
 }
 
 export const DocumentManager: React.FC<DocumentManagerProps> = ({
@@ -60,7 +70,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
   refreshTrigger = 0,
   isTabbed = false,
   isReadOnly = false,
-  bucketReady = false // Set default value to false
+  bucketReady
 }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
@@ -69,375 +79,268 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
-  const [bucketError, setBucketError] = useState<string | null>(null);
-  const [isBucketReady, setBucketReady] = useState(bucketReady); // Initialize with the prop value
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Only run the bucket check if bucketReady is false
-  useEffect(() => {
-    if (!bucketReady) {
-      const checkBucket = async () => {
-        setBucketError(null);
-        try {
-          const bucketExists = await ensureStorageBucket(STORAGE_BUCKET);
-          setBucketReady(bucketExists);
-          if (!bucketExists) {
-            setBucketError('Document storage setup issue. Please try refreshing the page.');
-          }
-        } catch (error) {
-          console.error('Error checking storage bucket:', error);
-          setBucketError('Failed to configure document storage. Please contact an administrator.');
-        }
-      };
-      
-      checkBucket();
+  const fetchDocuments = useCallback(async () => {
+    if (!employeeId || !user || !bucketReady) {
+      if (!bucketReady && employeeId && user) {
+        console.warn("DocumentManager: Bucket not ready or missing user/employeeId, skipping document fetch.");
+      }
+      setDocuments([]);
+      setFilteredDocuments([]);
+      setIsLoading(false); // Ensure loading is false if we bail early
+      return;
     }
-  }, [bucketReady]);
-
-  // Update internal state when prop changes
-  useEffect(() => {
-    setBucketReady(bucketReady);
-  }, [bucketReady]);
-
-  const fetchDocuments = async () => {
-    if (!employeeId || !user) return;
-
     setIsLoading(true);
     setError(null);
-
     try {
       const supabase = getAuthorizedClient();
-
       const { data: dbDocuments, error: fetchError } = await supabase
         .from('employee_documents')
         .select('*')
         .eq('employee_id', employeeId)
-        .eq('user_id', user.id);
+        .order('uploaded_at', { ascending: false });
 
-      if (fetchError) throw fetchError;
-
+      if (fetchError) {
+        console.error("DocumentManager: Supabase error fetching documents:", fetchError);
+        throw fetchError;
+      }
       if (!dbDocuments || dbDocuments.length === 0) {
         setDocuments([]);
         setFilteredDocuments([]);
         setIsLoading(false);
         return;
       }
-
       const docs: Document[] = await Promise.all(
         dbDocuments.map(async (doc: DbDocument) => {
-          try {
-            const { data: urlData } = supabase.storage
-              .from(STORAGE_BUCKET)
-              .getPublicUrl(doc.file_path);
-
-            return {
-              id: doc.id,
-              employee_id: doc.employee_id,
-              file_name: doc.file_name,
-              file_type: doc.file_type,
-              file_size: doc.file_size,
-              file_url: urlData.publicUrl,
-              upload_date: doc.uploaded_at,
-              document_category: doc.category,
-              document_type: doc.document_type,
-              notes: doc.notes
-            };
-          } catch (err) {
-            console.error('Error getting URL for document:', err);
-            // Return with a placeholder URL
-            return {
-              id: doc.id,
-              employee_id: doc.employee_id,
-              file_name: doc.file_name,
-              file_type: doc.file_type,
-              file_size: doc.file_size,
-              file_url: '#',
-              upload_date: doc.uploaded_at,
-              document_category: doc.category,
-              document_type: doc.document_type,
-              notes: doc.notes
-            };
+          let publicUrl = '#'; // Default if URL retrieval fails
+          if (doc.file_path) {
+            try {
+              const { data: urlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(doc.file_path);
+              if (urlData) {
+                publicUrl = urlData.publicUrl;
+              } else {
+                console.warn(`DocumentManager: Could not get public URL for ${doc.file_path}`);
+              }
+            } catch (urlError) {
+              console.error(`DocumentManager: Error getting public URL for ${doc.file_path}:`, urlError);
+            }
+          } else {
+            console.warn(`DocumentManager: Document ID ${doc.id} has no file_path.`);
           }
+          return {
+            id: doc.id,
+            employee_id: doc.employee_id,
+            file_name: doc.file_name || 'Unnamed File',
+            file_type: doc.file_type || 'application/octet-stream',
+            file_size: doc.file_size || 0,
+            file_url: publicUrl,
+            upload_date: doc.uploaded_at,
+            document_category: doc.category,
+            document_type: doc.document_type,
+            notes: doc.notes,
+            file_path: doc.file_path,
+          };
         })
       );
-
       setDocuments(docs);
-      applyFilters(docs, searchTerm, selectedCategory);
     } catch (err: any) {
-      console.error(err);
+      console.error("Error in fetchDocuments:", err);
       setError(err.message || 'Failed to fetch documents');
-      toast({
-        title: 'Error',
-        description: 'Failed to load documents. Please try again.',
-        variant: 'destructive'
-      });
+      toast({ title: 'Error', description: 'Failed to load documents.', variant: 'destructive' });
+      setDocuments([]);
+      setFilteredDocuments([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [employeeId, user, bucketReady, toast]);
 
   useEffect(() => {
-    if (isBucketReady) {
+    if (bucketReady && employeeId && user) {
       fetchDocuments();
+    } else if (!bucketReady) {
+      setDocuments([]);
+      setFilteredDocuments([]);
+      setIsLoading(false); // Also set loading false if bucket isn't ready
     }
-  }, [employeeId, refreshTrigger, user, isBucketReady]);
+  }, [employeeId, user, bucketReady, refreshTrigger, fetchDocuments]);
 
-  useEffect(() => {
-    applyFilters(documents, searchTerm, selectedCategory);
-  }, [searchTerm, selectedCategory, documents]);
-
-  const applyFilters = (docs: Document[], search: string, category: string | null) => {
-    let filtered = [...docs];
-    
-    if (category) {
-      filtered = filtered.filter(doc => doc.document_category === category);
+  const applyFilters = useCallback((docsToFilter: Document[], currentSearchTerm: string, currentSelectedCategory: string | null) => {
+    let filtered = [...docsToFilter];
+    if (currentSelectedCategory) {
+      filtered = filtered.filter(doc => doc.document_category === currentSelectedCategory);
     }
-    
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filtered = filtered.filter(doc => 
+    if (currentSearchTerm) {
+      const searchLower = currentSearchTerm.toLowerCase();
+      filtered = filtered.filter(doc =>
         doc.file_name.toLowerCase().includes(searchLower) ||
         (doc.document_type && doc.document_type.toLowerCase().includes(searchLower)) ||
         (doc.document_category && doc.document_category.toLowerCase().includes(searchLower))
       );
     }
-    
     setFilteredDocuments(filtered);
-  };
+  }, []);
 
-  const handleDelete = async (documentId: string) => {
-    if (!user) return;
+  useEffect(() => {
+    applyFilters(documents, searchTerm, selectedCategory);
+  }, [searchTerm, selectedCategory, documents, applyFilters]);
 
+  const handleDelete = useCallback(async (documentId: string, filePath?: string) => {
+    if (!user || !filePath) {
+      toast({ title: 'Error', description: 'File path is missing for deletion.', variant: 'destructive' });
+      return;
+    }
+    if (!window.confirm("Are you sure you want to delete this document? This action cannot be undone.")) {
+      return;
+    }
     try {
       const supabase = getAuthorizedClient();
+      const { error: storageErr } = await supabase.storage.from(STORAGE_BUCKET).remove([filePath]);
+      // Don't throw if already deleted from storage, just log and proceed to delete DB record
+      if (storageErr && storageErr.message !== 'The resource was not found') {
+        console.error("Storage deletion error:", storageErr);
+        throw storageErr;
+      }
 
-      const { data, error } = await supabase
-        .from('employee_documents')
-        .select('file_path')
-        .eq('id', documentId)
-        .single();
-
-      if (error) throw error;
-
-      const { error: storageErr } = await supabase.storage
-        .from(STORAGE_BUCKET)
-        .remove([data.file_path]);
-
-      if (storageErr) throw storageErr;
-
-      const { error: dbErr } = await supabase
-        .from('employee_documents')
-        .delete()
-        .eq('id', documentId);
-
-      if (dbErr) throw dbErr;
-
+      const { error: dbErr } = await supabase.from('employee_documents').delete().eq('id', documentId);
+      if (dbErr) {
+        console.error("Database deletion error:", dbErr);
+        throw dbErr;
+      }
       toast({ title: 'Deleted', description: 'Document successfully deleted.' });
-      fetchDocuments();
+      fetchDocuments(); // Refresh the list
     } catch (err: any) {
-      toast({
-        title: 'Error',
-        description: err.message || 'Failed to delete document.',
-        variant: 'destructive'
-      });
+      toast({ title: 'Deletion Error', description: err.message || 'Failed to delete document.', variant: 'destructive' });
     }
-  };
+  }, [user, toast, fetchDocuments]);
 
-  const formatBytes = (bytes: number): string => {
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
-  };
+  const formatBytes = useCallback((bytes: number, decimals = 2): string => {
+    if (bytes === null || bytes === undefined || isNaN(bytes) || !isFinite(bytes)) return 'N/A';
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    if (i < 0 || i >= sizes.length) return bytes + ' Bytes'; // Fallback for extreme values
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  }, []);
 
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('en-SG', { year: 'numeric', month: 'short', day: 'numeric' });
+  const formatDate = useCallback((dateStr: string | null | undefined): string => {
+    if (!dateStr) return 'N/A';
+    try { return new Date(dateStr).toLocaleDateString('en-SG', { year: 'numeric', month: 'short', day: 'numeric' }); }
+    catch { return "Invalid Date"; }
+  }, []);
 
-  const clearFilters = () => {
-    setSearchTerm('');
-    setSelectedCategory(null);
-  };
-
-  const hasActiveFilters = searchTerm || selectedCategory;
-
-  const documentCategoryKeys = Object.keys(DOCUMENT_CATEGORIES);
-
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    documents.forEach(doc => {
-      if (doc.document_category) {
-        counts[doc.document_category] = (counts[doc.document_category] || 0) + 1;
-      }
-    });
-    return counts;
-  }, [documents]);
-  
-  const refreshBucket = async () => {
-    setBucketError(null);
-    try {
-      const created = await ensureStorageBucket(STORAGE_BUCKET);
-      setBucketReady(created);
-      if (created) {
-        toast({
-          title: 'Success',
-          description: 'Document storage configured successfully.'
-        });
-        fetchDocuments();
-      } else {
-        setBucketError('Failed to set up document storage. Please try again or contact an administrator.');
-      }
-    } catch (err) {
-      console.error('Error refreshing storage bucket:', err);
-      setBucketError('Error configuring document storage. Please contact an administrator.');
-    }
-  };
+  const clearFilters = useCallback(() => { setSearchTerm(''); setSelectedCategory(null); }, []);
+  const hasActiveFilters = !!searchTerm || !!selectedCategory;
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Documents</h2>
+    <div className="space-y-4 h-full flex flex-col">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+        <h2 className="text-lg font-semibold shrink-0">Documents</h2>
         {!isReadOnly && (
-          <Button onClick={() => setIsUploadDialogOpen(true)} disabled={!isBucketReady} size="sm">
-            <Upload className="w-4 h-4 mr-2" />
-            Upload Documents
+          <Button
+            type="button" // Ensured this is type="button"
+            onClick={() => {
+              if (!bucketReady) {
+                toast({ title: 'Storage Not Ready', description: 'Document storage is not available. Please try again or contact support.', variant: 'destructive' });
+                return;
+              }
+              console.log("DocumentManager: 'Upload Documents' button clicked. Setting isUploadDialogOpen to true.");
+              setIsUploadDialogOpen(true);
+            }}
+            disabled={!bucketReady || isLoading}
+            size="sm"
+            className="w-full sm:w-auto"
+          >
+            <Upload className="w-4 h-4 mr-2" /> Upload Documents
           </Button>
         )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-full sm:w-auto sm:flex-grow">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-          <Input
-            placeholder="Search documents..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+          <Input placeholder="Search by name, type, category..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 w-full"/>
         </div>
-        
-        {hasActiveFilters && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={clearFilters} 
-            className="whitespace-nowrap"
-          >
-            <RefreshCw className="w-4 h-4 mr-1" />
-            Clear Filters
-          </Button>
-        )}
+        {hasActiveFilters && (<Button variant="outline" size="sm" onClick={clearFilters} className="whitespace-nowrap w-full sm:w-auto"><RefreshCw className="w-4 h-4 mr-1" /> Clear Filters</Button>)}
       </div>
-      
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 pb-2 border-b">
+        <Badge variant={!selectedCategory ? "default" : "outline"} className={`cursor-pointer hover:bg-gray-100 ${!selectedCategory ? 'bg-primary text-primary-foreground hover:bg-primary' : ''}`} onClick={() => setSelectedCategory(null)}>All Categories</Badge>
         {documentCategoryKeys.map(key => {
-          const category = DOCUMENT_CATEGORIES[key as keyof typeof DOCUMENT_CATEGORIES];
-          return (
-            <Badge 
-              key={category}
-              variant={selectedCategory === category ? "default" : "outline"}
-              className={`cursor-pointer hover:bg-gray-100 ${
-                selectedCategory === category ? 'bg-primary text-primary-foreground hover:bg-primary' : ''
-              }`}
-              onClick={() => setSelectedCategory(selectedCategory === category ? null : category)}
-            >
-              {category}
-              {categoryCounts[category] ? ` (${categoryCounts[category]})` : ''}
-            </Badge>
-          );
+          const categoryValue = DOCUMENT_CATEGORIES[key as keyof typeof DOCUMENT_CATEGORIES];
+          return (<Badge key={categoryValue} variant={selectedCategory === categoryValue ? "default" : "outline"} className={`cursor-pointer hover:bg-gray-100 ${selectedCategory === categoryValue ? 'bg-primary text-primary-foreground hover:bg-primary' : ''}`} onClick={() => setSelectedCategory(selectedCategory === categoryValue ? null : categoryValue)}>{categoryValue}</Badge>);
         })}
       </div>
 
-      {bucketError && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-md border flex justify-between items-center">
-          <div>{bucketError}</div>
-          <Button variant="outline" size="sm" onClick={refreshBucket}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Retry Setup
-          </Button>
-        </div>
-      )}
+      {!bucketReady && !isLoading && ( <div className="bg-yellow-50 text-yellow-700 p-4 rounded-md border border-yellow-200">Document storage is not configured or available. Please check setup or contact support.</div>)}
 
-      {isLoading ? (
-        <div className="text-center py-10">
-          <RotateCw className="h-6 w-6 animate-spin text-gray-500 mx-auto" />
-          <p>Loading documents...</p>
-        </div>
-      ) : error ? (
-        <div className="text-center text-red-500">{error}</div>
-      ) : filteredDocuments.length === 0 ? (
-        <p className="text-gray-500 text-center">
-          {documents.length === 0 
-            ? "No documents found. Upload documents to get started." 
-            : "No documents match your search criteria."}
-        </p>
-      ) : (
-        <div className="overflow-auto border rounded-md">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Document</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Size</TableHead>
-                <TableHead>Uploaded</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredDocuments.map(doc => (
-                <TableRow key={doc.id}>
-                  <TableCell className="font-medium truncate">{doc.file_name}</TableCell>
-                  <TableCell>
-                    {doc.document_category && (
-                      <Badge variant="outline">{doc.document_category}</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>{doc.document_type}</TableCell>
-                  <TableCell>{formatBytes(doc.file_size)}</TableCell>
-                  <TableCell>{formatDate(doc.upload_date)}</TableCell>
-                  <TableCell className="text-right space-x-1">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => window.open(doc.file_url, '_blank')}
-                      title="View"
-                      disabled={doc.file_url === '#'}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    {!isReadOnly && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleDelete(doc.id)}
-                        title="Delete"
-                      >
-                        <Trash className="w-4 h-4 text-red-500" />
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      <div className="flex-1 overflow-y-auto">
+        {isLoading ? (
+          <div className="text-center py-10 flex flex-col items-center justify-center h-full">
+            <LoadingSpinner size="lg" />
+            <p className="mt-2 text-gray-500">Loading documents...</p>
+          </div>
+        ) : error ? ( <div className="text-center text-red-500 py-10">{error}</div> )
+         : !bucketReady ? null // Message handled above
+         : documents.length === 0 ? ( <p className="text-gray-500 text-center py-10">No documents found for this employee. Upload documents to get started.</p> )
+         : filteredDocuments.length === 0 && (searchTerm || selectedCategory) ? ( <p className="text-gray-500 text-center py-10">No documents match your current filter criteria.</p> )
+         : ( <div className="border rounded-md"><Table className="w-full table-fixed">
+               <TableHeader><TableRow>
+                   <TableHead className="w-[30%] p-2">Document Name</TableHead>
+                   <TableHead className="w-[15%] p-2">Category</TableHead>
+                   <TableHead className="w-[20%] p-2">Type</TableHead>
+                   <TableHead className="w-[10%] p-2">Size</TableHead>
+                   <TableHead className="w-[15%] p-2">Uploaded</TableHead>
+                   <TableHead className="text-right w-[10%] p-2">Actions</TableHead>
+                 </TableRow></TableHeader>
+               <TableBody>
+                 {filteredDocuments.map(doc => {
+                   const isViewDisabled = doc.file_url === '#' || !doc.file_url;
+                   return (<TableRow key={doc.id}>
+                       <TableCell className="font-medium truncate py-2 px-2" title={doc.file_name}>{doc.file_name}</TableCell>
+                       <TableCell className="py-2 px-2">{doc.document_category && (<Badge variant="outline">{doc.document_category}</Badge>)}</TableCell>
+                       <TableCell className="py-2 px-2 text-xs text-gray-600 truncate" title={doc.document_type}>{doc.document_type}</TableCell>
+                       <TableCell className="py-2 px-2">{formatBytes(doc.file_size)}</TableCell>
+                       <TableCell className="py-2 px-2">{formatDate(doc.upload_date)}</TableCell>
+                       <TableCell className="text-right py-1 px-2 space-x-1">
+                         <Button asChild size="icon" variant="ghost" title="View Document" disabled={isViewDisabled}>
+                           <a // This 'a' tag is the single child
+                             href={isViewDisabled ? undefined : doc.file_url} // Use undefined for href if disabled
+                             target="_blank"
+                             rel="noopener noreferrer"
+                             aria-disabled={isViewDisabled}
+                             className={isViewDisabled ? "pointer-events-none opacity-50 cursor-not-allowed" : "cursor-pointer"}
+                             onClick={(e) => { if (isViewDisabled) e.preventDefault(); }} // Prevent navigation if disabled
+                           >
+                             <Eye className="w-4 h-4" />
+                           </a>
+                         </Button>
+                         {!isReadOnly && (<Button type="button" size="icon" variant="ghost" onClick={() => handleDelete(doc.id, doc.file_path)} title="Delete Document"><Trash className="w-4 h-4 text-red-500" /></Button>)}
+                       </TableCell>
+                     </TableRow>);
+                 })}
+                 {filteredDocuments.length === 0 && (documents.length > 0 || searchTerm || selectedCategory) && (
+                    <TableRow><TableCell colSpan={6} className="h-24 text-center text-gray-500 p-2">No documents match your current filter/search criteria.</TableCell></TableRow>
+                 )}
+               </TableBody>
+             </Table></div> )}
+      </div>
 
       <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
         <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Upload Documents</DialogTitle>
-            <DialogDescription>
-              Supported: PDF, JPG, DOCX, XLS, etc. Document metadata will be saved per employee.
-            </DialogDescription>
-          </DialogHeader>
-          <DocumentUploader
-            employeeId={employeeId}
-            onUploadComplete={() => {
-              fetchDocuments();
-              setIsUploadDialogOpen(false);
-            }}
-          />
+          <DialogHeader><DialogTitle>Upload New Documents</DialogTitle><DialogDescription>Supported files: PDF, JPG, PNG, DOC(X), XLS(X). Please provide category and type.</DialogDescription></DialogHeader>
+          {employeeId && (
+            <DocumentUploader
+              employeeId={employeeId}
+              onUploadComplete={() => {
+                console.log("DocumentManager: DocumentUploader onUploadComplete triggered.");
+                fetchDocuments(); // Refresh the list after upload
+                setIsUploadDialogOpen(false); // Close the upload dialog
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

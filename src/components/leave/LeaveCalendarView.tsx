@@ -9,6 +9,22 @@ import LeaveItem from '../leave-calendar/LeaveItem';
 import { uniq } from 'lodash';
 import _ from 'lodash';
 
+interface ApiLeaveRequest {
+  id: string;
+  employee_id: string;
+  start_date: string;
+  end_date: string;
+  status: 'Approved' | 'Pending' | 'Rejected';
+  employee: {
+    full_name: string;
+  };
+  leave_type: {
+    id: string;
+    name: string;
+    color: string;
+  };
+}
+
 const LeaveCalendarView: React.FC = () => {
   const [visibleWeeks, setVisibleWeeks] = useState<{ year: number, month: number, week: number }[]>([]);
   const [showBackToToday, setShowBackToToday] = useState(false);
@@ -70,33 +86,17 @@ const LeaveCalendarView: React.FC = () => {
           console.error('Error fetching leave requests:', error);
         }
 
-        interface ApiLeaveRequest {
-          id: string;
-          employee_id: string;
-          start_date: string;
-          end_date: string;
-          status: 'Approved' | 'Pending' | 'Rejected';
-          employee: {
-            full_name: string;
-          };
-          leave_type: {
-            id: string;
-            name: string;
-            color: string;
-          };
-        }
-
         const formattedData: LeaveRequest[] = data
-          ? data.map((item: ApiLeaveRequest) => ({
+          ? data.map((item: any) => ({
               id: item.id,
               employee: {
                 id: item.employee_id,
-                full_name: item.employee.full_name,
+                full_name: item.employee?.full_name || 'Unknown',
               },
               leave_type: {
-                id: item.leave_type.id,
-                name: item.leave_type.name,
-                color: item.leave_type.color,
+                id: item.leave_type?.id || '',
+                name: item.leave_type?.name || 'Unknown',
+                color: item.leave_type?.color || '#cccccc',
               },
               start_date: item.start_date,
               end_date: item.end_date,

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -26,6 +27,16 @@ interface Event {
   leaveTypeId: string;
   leaveTypeName: string;
   leaveTypeColor: string;
+}
+
+interface LeaveTypeResponse {
+  id: string;
+  name: string;
+  color: string;
+}
+
+interface EmployeeResponse {
+  full_name: string;
 }
 
 export function MonthCalendarView() {
@@ -173,7 +184,7 @@ export function MonthCalendarView() {
       
       if (error) throw error;
       
-      const formattedEvents = data.map(event => ({
+      const formattedEvents = data.map((event: any) => ({
         id: event.id,
         title: event.employee?.full_name || 'Unknown Employee',
         start: event.start_date,

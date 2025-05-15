@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react'; // Added useCallback
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -31,9 +32,8 @@ import { getUserAvatar, getUserInitials } from '@/utils/formatters';
 // import { NotificationBell } from '@/components/ui-custom/NotificationBell';
 import { useIsMobile } from '@/hooks/use-mobile'; // Assuming this hook is correctly defined
 import { cn } from '@/lib/utils';
-// Ensure NavItems.ts exports getDashboardNavItems and a NavItemType interface/type
-import NavItems from './NavItems';
-import type { NavItemType } from './NavItems';
+// Import the getDashboardNavItems function and NavItemType from NavItems
+import { NavItemType, getDashboardNavItems } from './NavItems';
 
 export const DashNavbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

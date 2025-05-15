@@ -177,18 +177,18 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
             f.id === fileItem.id ? { ...f, progress: 60 } : f
           ));
 
+          // Fixed: Use a single RPC call instead of direct table insert to avoid duplication
           const { error: dbError } = await authorizedClient
-            .from('employee_documents')
-            .insert({
-              employee_id: employeeId,
-              user_id: safeUserId,
-              file_name: fileItem.file.name,
-              file_type: fileItem.file.type,
-              file_size: fileItem.file.size,
-              file_path: filePath,
-              category: fileItem.category,
-              document_type: fileItem.documentType,
-              notes: fileItem.notes
+            .rpc('add_employee_document', {
+              p_employee_id: employeeId,
+              p_user_id: safeUserId,
+              p_file_name: fileItem.file.name,
+              p_file_type: fileItem.file.type,
+              p_file_size: fileItem.file.size,
+              p_file_path: filePath,
+              p_category: fileItem.category,
+              p_document_type: fileItem.documentType,
+              p_notes: fileItem.notes
             });
 
           if (dbError) throw dbError;
@@ -362,11 +362,11 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
 
       <div className="flex justify-end gap-2">
       <Button type="button" variant="outline" onClick={() => {
-    console.log("DocumentUploader: Cancel button clicked, calling onUploadComplete");
-    onUploadComplete();
-  }} disabled={isUploading}>
-  Cancel
-        </Button>
+        console.log("DocumentUploader: Cancel button clicked, calling onUploadComplete");
+        onUploadComplete();
+      }} disabled={isUploading}>
+        Cancel
+      </Button>
         <Button type="button" onClick={uploadFiles} disabled={isUploading || files.length === 0}>
           {isUploading ? (
             <>

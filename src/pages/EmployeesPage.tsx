@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Search, PlusCircle, Download, AlertCircle,
@@ -86,8 +87,10 @@ const EmployeesPage = () => {
 
       const authorizedClient = getAuthorizedClient();
       
+      // Modified query to select distinct employees and prevent duplicates
+      // Using the 'employees' table instead of 'employees_with_documents' to avoid duplications
       const { data, error } = await authorizedClient
-        .from('employees_with_documents')
+        .from('employees')
         .select('*')
         .eq('user_id', user.id)
         .order('full_name', { ascending: true });
@@ -98,8 +101,13 @@ const EmployeesPage = () => {
       
       const standardizedEmployees = rawEmployees.map(emp => standardizeEmployee(emp)) as Employee[];
       
-      setEmployees(standardizedEmployees);
-      setFilteredEmployees(standardizedEmployees);
+      // Ensure we have no duplicates by using employee id as the unique identifier
+      const uniqueEmployees = Array.from(
+        new Map(standardizedEmployees.map(item => [item.id, item])).values()
+      );
+      
+      setEmployees(uniqueEmployees);
+      setFilteredEmployees(uniqueEmployees);
     } catch (err: any) {
       setError(err.message || 'An error occurred.');
     } finally {

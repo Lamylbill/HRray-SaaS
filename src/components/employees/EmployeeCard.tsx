@@ -44,6 +44,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
         isSelected ? 'ring-2 ring-hrflow-blue bg-blue-50' : ''
       }`}
       onClick={handleCardClick}
+      data-employee-id={employee.id}
     >
       <div className="flex items-center mb-3">
         <Avatar 

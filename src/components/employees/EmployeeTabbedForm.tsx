@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, forwardRef } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,7 +13,7 @@ import { DocumentsTab } from './tabs/DocumentsTab';
 import { employeeFormSchema } from '@/utils/employeeFieldUtils';
 import { EmployeeFormData } from '@/types/employee';
 import { TabNav } from './tabs/TabNav';
-import { getAuthorizedClient } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
 export interface EmployeeTabbedFormProps {
@@ -70,7 +69,6 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
     console.log("EmployeeTabbedForm: handleSubmit triggered. Mode:", mode, "isProcessing:", isProcessing);
     if (isProcessing) return;
     setIsProcessing(true);
-    const supabase = getAuthorizedClient();
   
     try {
       console.log('Data to submit:', data.employee);

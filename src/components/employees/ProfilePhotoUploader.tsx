@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { supabase, AVATAR_BUCKET, ensureStorageBucket, getAuthorizedClient } from '@/integrations/supabase/client';
+import { supabase, AVATAR_BUCKET, ensureStorageBucket } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui-custom/Button';
 
@@ -88,10 +88,8 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
       const fileName = `${tempId}_${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // Get an authorized client
-      const authorizedClient = getAuthorizedClient();
-      
-      const { error: uploadError } = await authorizedClient.storage
+      // Using supabase directly instead of getAuthorizedClient
+      const { error: uploadError } = await supabase.storage
         .from(AVATAR_BUCKET)
         .upload(filePath, file, {
           cacheControl: '3600',
@@ -101,7 +99,7 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
       if (uploadError) throw uploadError;
       
       // Get public URL after upload
-      const { data: urlData } = authorizedClient.storage
+      const { data: urlData } = supabase.storage
         .from(AVATAR_BUCKET)
         .getPublicUrl(filePath);
       
@@ -110,7 +108,7 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
       
       // If employeeId exists, update profile_picture in DB
       if (employeeId) {
-        const { error: updateError } = await authorizedClient
+        const { error: updateError } = await supabase
           .from('employees')
           .update({ profile_picture: publicUrl })
           .eq('id', employeeId);

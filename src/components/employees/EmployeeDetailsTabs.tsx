@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Employee } from '@/types/employee';
 import { formatPhoneNumber, formatCurrency, formatDate } from '@/utils/formatters';
 import { Button } from '@/components/ui-custom/Button';
@@ -7,6 +7,7 @@ import { Edit, Save, Upload } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DocumentManager } from '@/components/employees/documents/DocumentManager';
 import { TabNav } from '@/components/employees/tabs/TabNav';
+import { ensureStorageBucket, STORAGE_BUCKET } from '@/integrations/supabase/client';
 
 interface EmployeeDetailsTabsProps {
   employee: Employee;
@@ -23,7 +24,18 @@ export const EmployeeDetailsTabs: React.FC<EmployeeDetailsTabsProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState('personal-info');
   const [refreshDocuments, setRefreshDocuments] = useState(0);
+  const [bucketReady, setBucketReady] = useState(false);
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    // Check if storage bucket is ready
+    const checkBucket = async () => {
+      const ready = await ensureStorageBucket(STORAGE_BUCKET);
+      setBucketReady(ready);
+    };
+    
+    checkBucket();
+  }, []);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -295,6 +307,7 @@ export const EmployeeDetailsTabs: React.FC<EmployeeDetailsTabsProps> = ({
             employeeId={employee.id}
             refreshTrigger={refreshDocuments}
             isTabbed={true}
+            bucketReady={bucketReady}
           />
         ) : activeTab === 'documents' ? (
           <div className="p-6 border border-dashed rounded-md text-center bg-gray-50">

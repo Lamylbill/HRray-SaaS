@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import {
@@ -16,7 +15,7 @@ import { DocumentSelector } from './DocumentSelector';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { STORAGE_BUCKET, ensureStorageBucket, getAuthorizedClient } from '@/integrations/supabase/client';
+import { STORAGE_BUCKET, ensureStorageBucket, supabase } from '@/integrations/supabase/client';
 
 interface DocumentUploaderProps {
   employeeId: string;
@@ -143,7 +142,6 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
       await createBucketIfNeeded();
       
       let successCount = 0;
-      const authorizedClient = getAuthorizedClient();
 
       for (const fileItem of files) {
         if (fileItem.status === 'success') {
@@ -164,7 +162,7 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
             f.id === fileItem.id ? { ...f, progress: 30 } : f
           ));
 
-          const { error: uploadError } = await authorizedClient.storage
+          const { error: uploadError } = await supabase.storage
             .from(STORAGE_BUCKET)
             .upload(filePath, fileItem.file, {
               cacheControl: '3600',
@@ -177,18 +175,19 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
             f.id === fileItem.id ? { ...f, progress: 60 } : f
           ));
 
-          // Fixed: Use a single RPC call instead of direct table insert to avoid duplication
-          const { error: dbError } = await authorizedClient
-            .rpc('add_employee_document', {
-              p_employee_id: employeeId,
-              p_user_id: safeUserId,
-              p_file_name: fileItem.file.name,
-              p_file_type: fileItem.file.type,
-              p_file_size: fileItem.file.size,
-              p_file_path: filePath,
-              p_category: fileItem.category,
-              p_document_type: fileItem.documentType,
-              p_notes: fileItem.notes
+          // Direct database insert instead of RPC call
+          const { error: dbError } = await supabase
+            .from('employee_documents')
+            .insert({
+              employee_id: employeeId,
+              user_id: safeUserId,
+              file_name: fileItem.file.name,
+              file_type: fileItem.file.type,
+              file_size: fileItem.file.size,
+              file_path: filePath,
+              category: fileItem.category,
+              document_type: fileItem.documentType,
+              notes: fileItem.notes
             });
 
           if (dbError) throw dbError;
@@ -361,12 +360,12 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
       )}
 
       <div className="flex justify-end gap-2">
-      <Button type="button" variant="outline" onClick={() => {
-        console.log("DocumentUploader: Cancel button clicked, calling onUploadComplete");
-        onUploadComplete();
-      }} disabled={isUploading}>
-        Cancel
-      </Button>
+        <Button type="button" variant="outline" onClick={() => {
+          console.log("DocumentUploader: Cancel button clicked, calling onUploadComplete");
+          onUploadComplete();
+        }} disabled={isUploading}>
+          Cancel
+        </Button>
         <Button type="button" onClick={uploadFiles} disabled={isUploading || files.length === 0}>
           {isUploading ? (
             <>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Upload, FileText, X as CloseIcon, AlertCircle, Check, RotateCw, Search, RefreshCw, Eye, Trash
 } from 'lucide-react';
-import { Button } from '@/components/ui-custom/Button'; // Your custom button
+import { Button } from '@/components/ui-custom/Button';
 import { Input } from '@/components/ui/input';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { getAuthorizedClient, STORAGE_BUCKET } from '@/integrations/supabase/client';
+import { supabase, STORAGE_BUCKET } from '@/integrations/supabase/client';
 import { DocumentUploader } from './DocumentUploader';
 import { useAuth } from '@/context/AuthContext';
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
@@ -36,12 +36,19 @@ const documentCategoryKeys = Object.keys(DOCUMENT_CATEGORIES);
 // --- End Interfaces ---
 
 interface DocumentManagerProps {
-  employeeId: string; refreshTrigger?: number; isTabbed?: boolean;
-  isReadOnly?: boolean; bucketReady: boolean;
+  employeeId: string; 
+  refreshTrigger?: number; 
+  isTabbed?: boolean;
+  isReadOnly?: boolean; 
+  bucketReady: boolean;
 }
 
 export const DocumentManager: React.FC<DocumentManagerProps> = ({
-  employeeId, refreshTrigger = 0, isTabbed = false, isReadOnly = false, bucketReady
+  employeeId, 
+  refreshTrigger = 0, 
+  isTabbed = false, 
+  isReadOnly = false, 
+  bucketReady = false
 }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
@@ -60,19 +67,70 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
     }
     setIsLoading(true); setError(null);
     try {
-      const supabase = getAuthorizedClient();
-      const { data: dbDocuments, error: fetchError } = await supabase.from('employee_documents').select('*').eq('employee_id', employeeId).order('uploaded_at', { ascending: false });
-      if (fetchError) { console.error("DocumentManager: Supabase error fetching documents:", fetchError); throw fetchError; }
-      if (!dbDocuments || dbDocuments.length === 0) { setDocuments([]); setFilteredDocuments([]); setIsLoading(false); return; }
+      const { data: dbDocuments, error: fetchError } = await supabase
+        .from('employee_documents')
+        .select('*')
+        .eq('employee_id', employeeId)
+        .order('uploaded_at', { ascending: false });
+
+      if (fetchError) { 
+        console.error("DocumentManager: Supabase error fetching documents:", fetchError); 
+        throw fetchError; 
+      }
+      if (!dbDocuments || dbDocuments.length === 0) { 
+        setDocuments([]); 
+        setFilteredDocuments([]); 
+        setIsLoading(false); 
+        return; 
+      }
+      
       const docs: Document[] = await Promise.all(
         dbDocuments.map(async (doc: DbDocument) => {
-          let publicUrl = '#'; if (doc.file_path) { try { const { data: urlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(doc.file_path); if (urlData) publicUrl = urlData.publicUrl; else console.warn(`Could not get public URL for ${doc.file_path}`); } catch (urlError) { console.error(`Error getting public URL for ${doc.file_path}:`, urlError); } } else { console.warn(`Document ID ${doc.id} has no file_path.`);}
-          return { id: doc.id, employee_id: doc.employee_id, file_name: doc.file_name || 'Unnamed File', file_type: doc.file_type || 'application/octet-stream', file_size: doc.file_size || 0, file_url: publicUrl, upload_date: doc.uploaded_at, document_category: doc.category, document_type: doc.document_type, notes: doc.notes, file_path: doc.file_path };
+          let publicUrl = '#'; 
+          if (doc.file_path) { 
+            try { 
+              const { data: urlData } = supabase.storage
+                .from(STORAGE_BUCKET)
+                .getPublicUrl(doc.file_path); 
+              if (urlData) publicUrl = urlData.publicUrl; 
+              else console.warn(`Could not get public URL for ${doc.file_path}`); 
+            } catch (urlError) { 
+              console.error(`Error getting public URL for ${doc.file_path}:`, urlError); 
+            } 
+          } else { 
+            console.warn(`Document ID ${doc.id} has no file_path.`);
+          }
+          
+          return { 
+            id: doc.id, 
+            employee_id: doc.employee_id, 
+            file_name: doc.file_name || 'Unnamed File', 
+            file_type: doc.file_type || 'application/octet-stream', 
+            file_size: doc.file_size || 0, 
+            file_url: publicUrl, 
+            upload_date: doc.uploaded_at, 
+            document_category: doc.category, 
+            document_type: doc.document_type, 
+            notes: doc.notes, 
+            file_path: doc.file_path 
+          };
         })
       );
+      
       setDocuments(docs);
-    } catch (err: any) { console.error("Error in fetchDocuments:", err); setError(err.message || 'Failed to fetch documents'); toast({ title: 'Error', description: 'Failed to load documents.', variant: 'destructive' }); setDocuments([]); setFilteredDocuments([]);}
-    finally { setIsLoading(false); }
+    } catch (err: any) { 
+      console.error("Error in fetchDocuments:", err); 
+      setError(err.message || 'Failed to fetch documents'); 
+      toast({ 
+        title: 'Error', 
+        description: 'Failed to load documents.', 
+        variant: 'destructive' 
+      }); 
+      setDocuments([]); 
+      setFilteredDocuments([]);
+    } finally { 
+      setIsLoading(false); 
+    }
   }, [employeeId, user, bucketReady, toast]);
 
   useEffect(() => {
@@ -97,10 +155,43 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
   }, [documents, searchTerm, selectedCategory]);
 
   const handleDelete = useCallback(async (documentId: string, filePath?: string) => {
-    if (!user || !filePath) { toast({title: 'Error', description: 'File path is missing for deletion.', variant: 'destructive'}); return; }
+    if (!user || !filePath) { 
+      toast({
+        title: 'Error', 
+        description: 'File path is missing for deletion.', 
+        variant: 'destructive'
+      }); 
+      return; 
+    }
     if (!window.confirm("Are you sure you want to delete this document? This action cannot be undone.")) return;
-    try { const supabase = getAuthorizedClient(); const { error: storageErr } = await supabase.storage.from(STORAGE_BUCKET).remove([filePath]); if (storageErr && storageErr.message !== 'The resource was not found') throw storageErr; const { error: dbErr } = await supabase.from('employee_documents').delete().eq('id', documentId); if (dbErr) throw dbErr; toast({ title: 'Deleted', description: 'Document successfully deleted.' }); fetchDocuments(); }
-    catch (err: any) { toast({ title: 'Deletion Error', description: err.message || 'Failed to delete document.', variant: 'destructive' }); }
+    
+    try { 
+      const { error: storageErr } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .remove([filePath]); 
+        
+      if (storageErr && storageErr.message !== 'The resource was not found') throw storageErr; 
+      
+      const { error: dbErr } = await supabase
+        .from('employee_documents')
+        .delete()
+        .eq('id', documentId); 
+        
+      if (dbErr) throw dbErr; 
+      
+      toast({ 
+        title: 'Deleted', 
+        description: 'Document successfully deleted.' 
+      }); 
+      
+      fetchDocuments(); 
+    } catch (err: any) { 
+      toast({ 
+        title: 'Deletion Error', 
+        description: err.message || 'Failed to delete document.', 
+        variant: 'destructive' 
+      }); 
+    }
   }, [user, toast, fetchDocuments]);
 
   const formatBytes = useCallback((bytes: number, decimals = 2): string => { if (bytes === null || bytes === undefined || isNaN(bytes) || !isFinite(bytes)) return 'N/A'; if (bytes === 0) return '0 Bytes'; const k = 1024; const dm = decimals < 0 ? 0 : decimals; const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']; const i = Math.floor(Math.log(bytes) / Math.log(k)); if (i < 0 || i >= sizes.length) return bytes + ' Bytes'; return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]; }, []);

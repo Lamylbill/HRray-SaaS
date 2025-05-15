@@ -1,5 +1,5 @@
+
 import { createClient } from '@supabase/supabase-js';
-import { getSession } from 'next-auth/react';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -14,27 +14,15 @@ if (!supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-export async function getAuthorizedClient() {
-  const session = await getSession();
-
-  if (!session?.supabaseAccessToken) {
-    console.warn('No Supabase access token found in session. Using anon key.');
-    return supabase;
-  }
-
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    global: {
-      headers: {
-        Authorization: `Bearer ${session.supabaseAccessToken}`,
-      },
-    },
-  });
+// Instead of returning a Promise, we're returning the client directly
+export function getAuthorizedClient() {
+  // Since we're no longer using next-auth, we'll just use the anon key for now
+  return supabase;
 }
 
 export async function ensureStorageBucket(bucketName: string): Promise<boolean> {
   try {
-    const authorizedClient = getAuthorizedClient();
-    const { data, error } = await authorizedClient
+    const { data, error } = await supabase
       .storage
       .createBucket(bucketName, { public: false });
 
@@ -56,5 +44,6 @@ export async function ensureStorageBucket(bucketName: string): Promise<boolean> 
   }
 }
 
-// Make sure the STORAGE_BUCKET constant is exported
+// Storage bucket constants
 export const STORAGE_BUCKET = 'employee-documents';
+export const AVATAR_BUCKET = 'employee-avatars';

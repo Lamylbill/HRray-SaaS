@@ -8,6 +8,13 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 
+// Define the NavItemType interface and export it
+export interface NavItemType {
+  name: string;
+  href: string;
+  icon: React.ReactNode;
+}
+
 // Export the navigation items for reuse
 export const getNavItems = () => {
   return [
@@ -85,7 +92,7 @@ export const getFeaturesItems = () => [
 ];
 
 // Get dashboard navigation items
-export const getDashboardNavItems = () => {
+export const getDashboardNavItems = (): NavItemType[] => {
   return [
     {
       name: 'Dashboard',
@@ -120,7 +127,7 @@ export const NavItem = ({
   item, 
   onClick 
 }: { 
-  item: { name: string; href: string; icon: React.ReactNode }; 
+  item: NavItemType; 
   onClick?: (e: React.MouseEvent<HTMLAnchorElement>, href: string) => void 
 }) => {
   const navigate = useNavigate();

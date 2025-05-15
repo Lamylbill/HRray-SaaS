@@ -159,7 +159,8 @@ export function MonthCalendarView() {
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0);
       
-      const { data, error } = await supabase
+      const authorizedClient = getAuthorizedClient();
+      const { data, error } = await authorizedClient
         .from('leave_requests')
         .select(`
           id, start_date, end_date, half_day, half_day_type, status,

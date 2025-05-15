@@ -70,8 +70,24 @@ const LeaveCalendarView: React.FC = () => {
           console.error('Error fetching leave requests:', error);
         }
 
+        interface ApiLeaveRequest {
+          id: string;
+          employee_id: string;
+          start_date: string;
+          end_date: string;
+          status: 'Approved' | 'Pending' | 'Rejected';
+          employee: {
+            full_name: string;
+          };
+          leave_type: {
+            id: string;
+            name: string;
+            color: string;
+          };
+        }
+
         const formattedData: LeaveRequest[] = data
-          ? data.map((item) => ({
+          ? data.map((item: ApiLeaveRequest) => ({
               id: item.id,
               employee: {
                 id: item.employee_id,
@@ -84,7 +100,7 @@ const LeaveCalendarView: React.FC = () => {
               },
               start_date: item.start_date,
               end_date: item.end_date,
-              status: item.status as 'Approved' | 'Pending' | 'Rejected',
+              status: item.status,
             }))
           : [];
 

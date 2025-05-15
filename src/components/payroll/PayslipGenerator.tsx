@@ -42,7 +42,15 @@ const PayslipGenerator: React.FC = () => {
         .select('id, full_name, email')
         .order('full_name', { ascending: true });
     
-      if (error) throw error;
+      if (error) {
+        toast({
+          title: "Error fetching employees",
+          description: error.message || "Failed to fetch employees",
+          variant: "destructive",
+        });
+        console.error('Error fetching employees:', error);
+        return;
+      }
     
       // Use the array directly instead of trying to convert it to an object
       setEmployees(data || []);
@@ -51,9 +59,13 @@ const PayslipGenerator: React.FC = () => {
       if (data && data.length > 0) {
         setSelectedEmployee(data[0]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching employees:', error);
-      toast.error('Failed to load employees');
+      toast({
+        title: "Error fetching employees",
+        description: error.message || "Failed to load employees",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -76,7 +88,7 @@ const PayslipGenerator: React.FC = () => {
         title: "Required Fields Missing",
         description: "Please select an employee and pay period.",
         variant: "destructive",
-      })
+      });
       return;
     }
 
@@ -100,21 +112,21 @@ const PayslipGenerator: React.FC = () => {
           title: "Error generating payslip",
           description: "Failed to generate payslip. Please try again.",
           variant: "destructive",
-        })
+        });
       } else {
         console.log('Payslip generated successfully:', data);
         toast({
           title: "Payslip Generated",
           description: "Payslip generated successfully!",
-        })
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating payslip:', error);
       toast({
         title: "Error generating payslip",
         description: "Failed to generate payslip. Please try again.",
         variant: "destructive",
-      })
+      });
     }
   };
 

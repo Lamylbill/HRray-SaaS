@@ -1,6 +1,6 @@
 
 import React from 'react';
-import MonthCalendarView from './MonthCalendarView';
+import { MonthCalendarView } from './MonthCalendarView';
 
 const LeaveCalendar: React.FC = () => {
   return (

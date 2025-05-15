@@ -1,256 +1,228 @@
-
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui-custom/Button';
-import { useToast } from '@/hooks/use-toast';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Checkbox } from '@/components/ui/checkbox';
-import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
-import { getAuthorizedClient } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
-import { PayrollPeriod, PayrollItem } from '@/types/payroll';
-import { Download, FileText, Mail, Printer } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { useToast } from "@/hooks/use-toast"
+
+interface Employee {
+  id: string;
+  full_name: string;
+  email: string;
+}
 
 const PayslipGenerator: React.FC = () => {
-  const [payrollPeriods, setPayrollPeriods] = useState<PayrollPeriod[]>([]);
-  const [payrollItems, setPayrollItems] = useState<PayrollItem[]>([]);
-  const [selectedPeriodId, setSelectedPeriodId] = useState<string>('');
-  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
-  const [selectAll, setSelectAll] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [payPeriodStart, setPayPeriodStart] = useState<Date | undefined>(undefined);
+  const [payPeriodEnd, setPayPeriodEnd] = useState<Date | undefined>(undefined);
+  const [grossPay, setGrossPay] = useState<string>('');
+  const [deductions, setDeductions] = useState<string>('');
+  const [netPay, setNetPay] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
   const { toast } = useToast();
-  const supabase = getAuthorizedClient();
 
   useEffect(() => {
-    fetchPayrollPeriods();
+    fetchEmployees();
   }, []);
 
-  const fetchPayrollPeriods = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('payroll_periods')
-        .select('*')
-        .order('payment_date', { ascending: false });
-
-      if (error) throw error;
-
-      // Convert database response to match our type definitions
-      const typedData = data?.map(item => ({
-        ...item,
-        status: item.status as PayrollPeriod['status']
-      })) || [];
-
-      setPayrollPeriods(typedData);
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    if (selectedPeriodId) {
-      fetchPayrollItems(selectedPeriodId);
-    } else {
-      setPayrollItems([]);
-      setSelectAll(false);
-      setSelectedEmployees([]);
-    }
-  }, [selectedPeriodId]);
+    calculateNetPay();
+  }, [grossPay, deductions]);
 
-  const fetchPayrollItems = async (periodId: string) => {
+  const fetchEmployees = async () => {
     try {
-      setLoading(true);
       const { data, error } = await supabase
-        .from('payroll_items')
-        .select('id, employee_id, basic_salary, allowances, deductions, net_pay, employees(full_name, email)')
-        .eq('payroll_period_id', periodId);
-
+        .from('employees')
+        .select('id, full_name, email')
+        .order('full_name', { ascending: true });
+    
       if (error) throw error;
-
-      // Create complete PayrollItem objects with all required fields
-      const typedData = (data || []).map(item => {
-        // Extract the employees nested object to use separately
-        const { employees, ...rest } = item;
-        
-        // Create a properly typed PayrollItem with default values for missing fields
-        const payrollItem: PayrollItem = {
-          id: rest.id,
-          payroll_period_id: periodId,
-          employee_id: rest.employee_id,
-          basic_salary: rest.basic_salary,
-          allowances: rest.allowances,
-          deductions: rest.deductions,
-          employee_cpf: 0, // Default value
-          employer_cpf: 0, // Default value
-          sdl: 0, // Default value
-          sinda: 0, // Default value
-          cdac: 0, // Default value
-          mbmf: 0, // Default value
-          gross_pay: 0, // Default value
-          net_pay: rest.net_pay,
-          status: 'Calculated', // Default value
-          created_at: new Date().toISOString(), // Default value
-          updated_at: new Date().toISOString(), // Default value
-          // Store employee info to use for display
-          employees: employees as { full_name: string; email: string }
-        };
-        
-        return payrollItem;
-      });
-
-      setPayrollItems(typedData);
-      setSelectAll(false);
-      setSelectedEmployees([]);
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive'
-      });
+    
+      // Use the array directly instead of trying to convert it to an object
+      setEmployees(data || []);
+    
+      // Set the selected employee to the first one in the list if there are any
+      if (data && data.length > 0) {
+        setSelectedEmployee(data[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      toast.error('Failed to load employees');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEmployeeSelect = (employeeId: string) => {
-    setSelectedEmployees((prev) => {
-      if (prev.includes(employeeId)) {
-        return prev.filter((id) => id !== employeeId);
-      } else {
-        return [...prev, employeeId];
-      }
-    });
-  };
+  const calculateNetPay = () => {
+    const parsedGrossPay = parseFloat(grossPay);
+    const parsedDeductions = parseFloat(deductions);
 
-  const handleSelectAll = () => {
-    setSelectAll((prev) => !prev);
-    if (!selectAll) {
-      setSelectedEmployees(payrollItems.map((item) => item.employee_id));
+    if (!isNaN(parsedGrossPay) && !isNaN(parsedDeductions)) {
+      setNetPay(parsedGrossPay - parsedDeductions);
     } else {
-      setSelectedEmployees([]);
+      setNetPay(0);
     }
   };
 
-  const handleGeneratePayslips = async () => {
-    if (selectedEmployees.length === 0) {
+  const generatePayslip = async () => {
+    if (!selectedEmployee || !payPeriodStart || !payPeriodEnd) {
       toast({
-        title: 'Warning',
-        description: 'Please select at least one employee to generate payslips.',
-        variant: 'default',
-      });
+        title: "Required Fields Missing",
+        description: "Please select an employee and pay period.",
+        variant: "destructive",
+      })
       return;
     }
 
-    try {
-      setGenerating(true);
-      // Simulate generating payslips (replace with actual logic)
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    const payslipData = {
+      employee_id: selectedEmployee.id,
+      pay_period_start: format(payPeriodStart, 'yyyy-MM-dd'),
+      pay_period_end: format(payPeriodEnd, 'yyyy-MM-dd'),
+      gross_pay: parseFloat(grossPay),
+      deductions: parseFloat(deductions),
+      net_pay: netPay,
+    };
 
+    try {
+      const { data, error } = await supabase
+        .from('payslips')
+        .insert([payslipData]);
+
+      if (error) {
+        console.error('Error creating payslip:', error);
+        toast({
+          title: "Error generating payslip",
+          description: "Failed to generate payslip. Please try again.",
+          variant: "destructive",
+        })
+      } else {
+        console.log('Payslip generated successfully:', data);
+        toast({
+          title: "Payslip Generated",
+          description: "Payslip generated successfully!",
+        })
+      }
+    } catch (error) {
+      console.error('Error generating payslip:', error);
       toast({
-        title: 'Success',
-        description: `Successfully generated payslips for ${selectedEmployees.length} employees.`,
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: 'Failed to generate payslips. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setGenerating(false);
+        title: "Error generating payslip",
+        description: "Failed to generate payslip. Please try again.",
+        variant: "destructive",
+      })
     }
   };
 
-  if (loading) {
-    return <LoadingSpinner size="lg" />;
-  }
-
   return (
-    <div className="space-y-6">
-      <Card className="bg-white shadow-md">
-        <CardHeader>
-          <CardTitle>Generate Payslips</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Payslip Generator</h1>
+
+      {loading ? (
+        <div>Loading...</div>
+      ) : (
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="employee">Employee</Label>
+            <Select onValueChange={(value) => setSelectedEmployee(employees.find(emp => emp.id === value) || null)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select an employee" defaultValue={selectedEmployee?.id} />
+              </SelectTrigger>
+              <SelectContent>
+                {employees.map((employee) => (
+                  <SelectItem key={employee.id} value={employee.id}>{employee.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="payroll-period">Payroll Period</Label>
-              <Select 
-                value={selectedPeriodId} 
-                onValueChange={setSelectedPeriodId}
-              >
-                <SelectTrigger id="payroll-period" className="w-full bg-white">
-                  <SelectValue placeholder="Select payroll period" />
-                </SelectTrigger>
-                <SelectContent className="z-50 bg-white">
-                  {payrollPeriods.map((period) => (
-                    <SelectItem key={period.id} value={period.id}>
-                      {period.period_name} ({format(new Date(period.payment_date), 'dd MMM yyyy')})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Pay Period Start</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={format(payPeriodStart || new Date(), 'yyyy-MM-dd') + "w-[240px] justify-start text-left font-normal"}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {payPeriodStart ? format(payPeriodStart, "yyyy-MM-dd") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={payPeriodStart}
+                    onSelect={setPayPeriodStart}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
-            {payrollItems.length > 0 && (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[50px]">
-                        <Checkbox checked={selectAll} onCheckedChange={handleSelectAll} />
-                      </TableHead>
-                      <TableHead>Employee Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Net Pay</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {payrollItems.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedEmployees.includes(item.employee_id)}
-                            onCheckedChange={() => handleEmployeeSelect(item.employee_id)}
-                          />
-                        </TableCell>
-                        <TableCell>{item.employees?.full_name}</TableCell>
-                        <TableCell>{item.employees?.email}</TableCell>
-                        <TableCell>{item.net_pay}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-
-            <div className="flex justify-end">
-              <Button
-                onClick={handleGeneratePayslips}
-                disabled={selectedEmployees.length === 0 || generating}
-                isLoading={generating}
-              >
-                {generating ? 'Generating...' : 'Generate Payslips'}
-              </Button>
+            <div>
+              <Label>Pay Period End</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={format(payPeriodEnd || new Date(), 'yyyy-MM-dd') + "w-[240px] justify-start text-left font-normal"}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {payPeriodEnd ? format(payPeriodEnd, "yyyy-MM-dd") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={payPeriodEnd}
+                    onSelect={setPayPeriodEnd}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          <div>
+            <Label htmlFor="grossPay">Gross Pay</Label>
+            <Input
+              type="number"
+              id="grossPay"
+              value={grossPay}
+              onChange={(e) => setGrossPay(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="deductions">Deductions</Label>
+            <Input
+              type="number"
+              id="deductions"
+              value={deductions}
+              onChange={(e) => setDeductions(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="netPay">Net Pay</Label>
+            <Input
+              type="number"
+              id="netPay"
+              value={netPay.toFixed(2)}
+              readOnly
+            />
+          </div>
+
+          <Button onClick={generatePayslip}>Generate Payslip</Button>
+        </div>
+      )}
     </div>
   );
 };

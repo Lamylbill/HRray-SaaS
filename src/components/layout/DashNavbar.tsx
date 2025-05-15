@@ -32,7 +32,8 @@ import { getUserAvatar, getUserInitials } from '@/utils/formatters';
 import { useIsMobile } from '@/hooks/use-mobile'; // Assuming this hook is correctly defined
 import { cn } from '@/lib/utils';
 // Ensure NavItems.ts exports getDashboardNavItems and a NavItemType interface/type
-import { getDashboardNavItems, NavItemType } from './NavItems';
+import NavItems from './NavItems';
+import type { NavItemType } from './NavItems';
 
 export const DashNavbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

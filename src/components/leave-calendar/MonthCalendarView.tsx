@@ -1,248 +1,281 @@
-
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Calendar } from '@fullcalendar/core';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import FullCalendar from '@fullcalendar/react';
+import { INITIAL_EVENTS, createEventId } from './event-utils';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useToast } from "@/hooks/use-toast"
+import { useAuth } from '@/context/AuthContext';
 import { getAuthorizedClient } from '@/integrations/supabase/client';
-import {
-  startOfMonth,
-  addMonths,
-  getMonth,
-  getYear,
-} from 'date-fns';
-import WeekdayHeader from './WeekdayHeader';
-import BackToTodayButton from './BackToTodayButton';
-import { LeaveRequest } from './interfaces';
-import MonthView from './MonthView';
+import { LeaveType } from './interfaces';
 
-const MonthCalendarView: React.FC = () => {
-  const [visibleMonths, setVisibleMonths] = useState<{ month: number; year: number }[]>([]);
-  const [showBackToToday, setShowBackToToday] = useState(false);
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [loadingPastMonths, setLoadingPastMonths] = useState(false);
-  const [scrollDirection, setScrollDirection] = useState<'up' | 'down' | null>(null);
-  const [lastScrollTop, setLastScrollTop] = useState(0);
+interface Event {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  halfDay: boolean;
+  halfDayType: 'start' | 'end' | null;
+  status: string;
+  employeeId: string;
+  leaveTypeId: string;
+  leaveTypeName: string;
+  leaveTypeColor: string;
+}
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+export function MonthCalendarView() {
+  const [weekendsVisible, setWeekendsVisible] = useState(true)
+  const [currentEvents, setCurrentEvents] = useState<Event[]>([])
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
+  const [selectedLeaveType, setSelectedLeaveType] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
 
-  const getCurrentMonthYear = useCallback(() => {
+  useEffect(() => {
     const today = new Date();
-    return { month: getMonth(today), year: getYear(today) };
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth() + 1;
+    fetchEvents(currentYear, currentMonth);
   }, []);
 
-  const generateInitialMonths = useCallback(() => {
-    const today = new Date();
-    const startMonth = startOfMonth(addMonths(today, -5));
-    const initialMonths = [];
-    for (let i = 0; i < 11; i++) {
-      const monthDate = addMonths(startMonth, i);
-      initialMonths.push({
-        month: getMonth(monthDate),
-        year: getYear(monthDate),
-      });
-    }
-    return initialMonths.sort((a, b) => a.year - b.year || a.month - b.month);
-  }, []);
-
-  const generateMoreMonths = useCallback(
-    (direction: 'past' | 'future', count: number = 3) => {
-      if (visibleMonths.length === 0) return [];
-      const referenceMonth = direction === 'past' ? visibleMonths[0] : visibleMonths[visibleMonths.length - 1];
-      const startDate = new Date(referenceMonth.year, referenceMonth.month, 1);
-      const delta = direction === 'past' ? -1 : 1;
-
-      const newMonths = [];
-      for (let i = 1; i <= count; i++) {
-        const monthDate = addMonths(startDate, delta * i);
-        newMonths.push({
-          month: getMonth(monthDate),
-          year: getYear(monthDate),
-        });
-      }
-
-      return newMonths;
-    },
-    [visibleMonths]
-  );
-
-  const fetchLeaveRequests = useCallback(async () => {
-    if (visibleMonths.length === 0) return;
-    setLoading(true);
-    try {
-      const client = getAuthorizedClient();
-      const firstMonth = visibleMonths[0];
-      const lastMonth = visibleMonths[visibleMonths.length - 1];
-      const startDate = new Date(firstMonth.year, firstMonth.month, 1);
-      const endDate = new Date(lastMonth.year, lastMonth.month + 1, 0);
-
-      const { data, error } = await client
-        .from('leave_requests')
-        .select('id, employee_id, start_date, end_date, status, leave_type:leave_type_id(id, name, color), employee:employee_id(full_name)')
-        .gte('end_date', startDate.toISOString().split('T')[0])
-        .lte('start_date', endDate.toISOString().split('T')[0]);
-
-      if (error) {
-        console.error('Error fetching leave requests:', error);
-      } else {
-        const formattedData: LeaveRequest[] = data.map((item) => ({
-          id: item.id,
-          employee: {
-            id: item.employee_id,
-            full_name: item.employee.full_name,
-          },
-          leave_type: {
-            id: item.leave_type.id,
-            name: item.leave_type.name,
-            color: item.leave_type.color,
-          },
-          start_date: item.start_date,
-          end_date: item.end_date,
-          status: item.status as 'Approved' | 'Pending' | 'Rejected',
-        }));
-        setLeaveRequests(formattedData);
-      }
-    } catch (err) {
-      console.error('Error fetching leave requests:', err);
-    } finally {
-      setLoading(false);
-      setIsLoadingMore(false);
-    }
-  }, [visibleMonths]);
-
-  const loadMoreMonths = useCallback((direction: 'past' | 'future') => {
-    if (isLoadingMore) return;
-    setIsLoadingMore(true);
-    const newMonths = generateMoreMonths(direction);
-    setVisibleMonths((prev) => {
-      const combined = direction === 'past' ? [...newMonths, ...prev] : [...prev, ...newMonths];
-      return combined.sort((a, b) => a.year - b.year || a.month - b.month);
-    });
-  }, [generateMoreMonths, isLoadingMore]);
-
-  const loadPastMonths = useCallback(async () => {
-    if (isLoadingMore) return;
-    setIsLoadingMore(true);
-    const newMonths = generateMoreMonths('past');
-    setVisibleMonths((prev) =>
-      [...newMonths, ...prev].sort((a, b) => a.year - b.year || a.month - b.month)
-    );
-    setIsLoadingMore(false);
-  }, [generateMoreMonths, isLoadingMore]);
-
-  const handleScroll = useCallback(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const { scrollTop, scrollHeight, clientHeight } = container;
-    setShowBackToToday(scrollTop > 100);
-    setScrollDirection(scrollTop > lastScrollTop ? 'down' : 'up');
-    setLastScrollTop(scrollTop);
-
-    if (scrollTop + clientHeight >= scrollHeight - 50) {
-      loadMoreMonths('future');
-    }
-
-    if (scrollTop < 50 && scrollDirection === 'up' && !loadingPastMonths) {
-      setLoadingPastMonths(true);
-      loadPastMonths().then(() => setLoadingPastMonths(false));
-    }
-  }, [lastScrollTop, scrollDirection, loadingPastMonths, loadPastMonths, loadMoreMonths]);
-
   useEffect(() => {
-    setVisibleMonths(generateInitialMonths());
-  }, [generateInitialMonths]);
+    const fetchLeaveTypes = async () => {
+      try {
+        const authorizedClient = getAuthorizedClient();
+        const { data, error } = await authorizedClient
+          .from('leave_types')
+          .select('*')
+          .order('name');
 
-  useEffect(() => {
-    fetchLeaveRequests();
-  }, [visibleMonths, fetchLeaveRequests]);
-
-  useEffect(() => {
-    const scrollContainer = scrollContainerRef.current;
-    if (scrollContainer) {
-      scrollContainer.addEventListener('scroll', handleScroll);
-    }
-    return () => {
-      if (scrollContainer) {
-        scrollContainer.removeEventListener('scroll', handleScroll);
+        if (error) throw error;
+        setLeaveTypes(data || []);
+      } catch (error) {
+        console.error('Error fetching leave types:', error);
       }
     };
-  }, [handleScroll]);
 
-  useEffect(() => {
-    if (isFirstLoad && !loading && visibleMonths.length > 0) {
+    fetchLeaveTypes();
+  }, []);
+
+  const renderEventContent = (eventInfo: any) => {
+    return (
+      <>
+        <b>{eventInfo.timeText}</b>
+        <span>{eventInfo.event.title}</span>
+      </>
+    )
+  }
+
+  const handleDateSelect = (selectInfo: any) => {
+    setIsDialogOpen(true);
+    setStartDate(selectInfo.startStr);
+    setEndDate(selectInfo.endStr);
+  }
+
+  const handleEventClick = (clickInfo: any) => {
+    if (confirm(`Are you sure you want to delete the event '${clickInfo.event.title}'`)) {
+      clickInfo.event.remove()
+    }
+  }
+
+  const handleEvents = (events: any) => {
+    setCurrentEvents(events)
+  }
+
+  const toggleWeekends = () => {
+    setWeekendsVisible(!weekendsVisible)
+  }
+
+  const addLeaveRequest = async () => {
+    if (!user) {
+      toast({
+        title: 'Unauthorized',
+        description: 'You must be logged in to submit a leave request.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!selectedLeaveType || !startDate || !endDate) {
+      toast({
+        title: 'Missing Information',
+        description: 'Please fill in all fields.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const authorizedClient = getAuthorizedClient();
+      const { data, error } = await authorizedClient
+        .from('leave_requests')
+        .insert([
+          {
+            employee_id: user.id,
+            leave_type_id: selectedLeaveType,
+            start_date: startDate,
+            end_date: endDate,
+            status: 'Pending',
+          },
+        ]);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Leave request submitted successfully!',
+      });
+
+      setIsDialogOpen(false);
       const today = new Date();
-      const currentMonthYear = { month: today.getMonth(), year: today.getFullYear() };
-      const currentMonthElement = document.querySelector(
-        `[data-month="${currentMonthYear.month}"][data-year="${currentMonthYear.year}"]`
-      );
-      if (currentMonthElement && scrollContainerRef.current) {
-        currentMonthElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        setIsFirstLoad(false);
-      }
+      const currentYear = today.getFullYear();
+      const currentMonth = today.getMonth() + 1;
+      fetchEvents(currentYear, currentMonth);
+    } catch (error: any) {
+      console.error('Error submitting leave request:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to submit leave request.',
+        variant: 'destructive',
+      });
     }
-  }, [visibleMonths, loading, isFirstLoad]);
+  };
 
-  const scrollToCurrentMonth = useCallback(() => {
-    const currentMonthYear = getCurrentMonthYear();
-
-    const monthExists = visibleMonths.some(
-      (m) => m.month === currentMonthYear.month && m.year === currentMonthYear.year
-    );
-    if (!monthExists) {
-      setVisibleMonths((prev) =>
-        [...prev, currentMonthYear].sort((a, b) => a.year - b.year || a.month - b.month)
-      );
+  const fetchEvents = async (year: number, month: number) => {
+    setIsLoading(true);
+    try {
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0);
+      
+      const { data, error } = await supabase
+        .from('leave_requests')
+        .select(`
+          id, start_date, end_date, half_day, half_day_type, status,
+          employee_id, employee:employee_id (full_name),
+          leave_type_id, leave_type:leave_type_id (id, name, color)
+        `)
+        .gte('start_date', startDate.toISOString().split('T')[0])
+        .lte('end_date', endDate.toISOString().split('T')[0])
+        .in('status', ['Approved', 'Pending']);
+      
+      if (error) throw error;
+      
+      const formattedEvents = data.map(event => ({
+        id: event.id,
+        title: event.employee?.full_name || 'Unknown Employee',
+        start: event.start_date,
+        end: event.end_date,
+        halfDay: event.half_day,
+        halfDayType: event.half_day_type,
+        status: event.status,
+        employeeId: event.employee_id,
+        leaveTypeId: event.leave_type_id,
+        leaveTypeName: event.leave_type?.name || 'Unknown',
+        leaveTypeColor: event.leave_type?.color || '#cccccc',
+      }));
+      
+      setEvents(formattedEvents);
+    } catch (error) {
+      console.error('Error fetching leave events:', error);
+      setEvents([]);
+    } finally {
+      setIsLoading(false);
     }
-    setTimeout(() => {
-      const currentMonthElement = document.querySelector(
-        `[data-month="${currentMonthYear.month}"][data-year="${currentMonthYear.year}"]`
-      );
-      if (currentMonthElement && scrollContainerRef.current) {
-        currentMonthElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 100);
-  }, [visibleMonths, getCurrentMonthYear]);
-
-  const isCurrentMonth = (month: number, year: number): boolean => {
-    const today = new Date();
-    return today.getMonth() === month && today.getFullYear() === year;
   };
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
-      <WeekdayHeader />
-      <div
-        ref={scrollContainerRef}
-        className="overflow-y-auto border-t border-gray-200"
-        style={{ height: 'calc(100vh - 350px)', maxHeight: 'calc(100vh - 350px)' }}
-      >
-        {loading && visibleMonths.length === 0 ? (
-          <div className="flex items-center justify-center h-48">
-            <p className="text-center">Loading calendar data...</p>
-          </div>
-        ) : (
-          <>
-            {visibleMonths.map(({ month, year }, index) => (
-              <MonthView
-                key={`${year}-${month}`}
-                month={month}
-                year={year}
-                leaveRequests={leaveRequests}
-                isFirst={index === 0}
-                isCurrent={isCurrentMonth(month, year)}
-              />
-            ))}
-            {isLoadingMore && (
-              <div className="py-4 flex justify-center">
-                <p className="text-gray-500">Loading more months...</p>
-              </div>
-            )}
-          </>
-        )}
+    <div className='demo-app'>
+      <div className='demo-app-top'>
+        <Button onClick={toggleWeekends}>toggle weekends</Button>&nbsp;
       </div>
-      <BackToTodayButton onClick={scrollToCurrentMonth} isVisible={showBackToToday} />
-    </div>
-  );
-};
+      <div className='demo-app-calendar'>
+        <FullCalendar
+          plugins={[dayGridPlugin, interactionPlugin]}
+          headerToolbar={{
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+          }}
+          initialView='dayGridMonth'
+          editable={true}
+          selectable={true}
+          selectMirror={true}
+          dayMaxEvents={true}
+          weekends={weekendsVisible}
+          events={events}
+          select={handleDateSelect}
+          eventContent={renderEventContent}
+          eventClick={handleEventClick}
+          eventsSet={handleEvents}
+        />
+      </div>
 
-export default MonthCalendarView;
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add Leave Request</DialogTitle>
+            <DialogDescription>
+              Submit a leave request for review.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="leaveType" className="text-right">
+                Leave Type
+              </Label>
+              <Select onValueChange={setSelectedLeaveType} defaultValue={selectedLeaveType} >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select leave type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {leaveTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="startDate" className="text-right">
+                Start Date
+              </Label>
+              <Input
+                type="date"
+                id="startDate"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="endDate" className="text-right">
+                End Date
+              </Label>
+              <Input
+                type="date"
+                id="endDate"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <Button onClick={addLeaveRequest}>Submit Leave Request</Button>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}

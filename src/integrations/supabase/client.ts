@@ -1,18 +1,22 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// In Vite, we use import.meta.env instead of process.env
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl) {
-  throw new Error('NEXT_PUBLIC_SUPABASE_URL is not defined in the environment variables.');
-}
+// Fallback to hardcoded values if env variables aren't set (development only)
+const fallbackUrl = 'https://ezvdmuahwliqotnbocdd.supabase.co';
+const fallbackKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6dmRtdWFod2xpcW90bmJvY2RkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIyMjAzMTksImV4cCI6MjA1Nzc5NjMxOX0.NjZ8o0b71gTScc2B2yoB_dNzDXHZrV8RP1T13WX2I3U';
 
-if (!supabaseAnonKey) {
-  throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not defined in the environment variables.');
-}
+// Use fallbacks if env variables aren't set
+const finalSupabaseUrl = supabaseUrl || fallbackUrl;
+const finalSupabaseAnonKey = supabaseAnonKey || fallbackKey;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+console.log('Supabase URL:', finalSupabaseUrl);
+console.log('Using env variables:', !!supabaseUrl);
+
+export const supabase = createClient(finalSupabaseUrl, finalSupabaseAnonKey);
 
 // Instead of returning a Promise, we're returning the client directly
 export function getAuthorizedClient() {

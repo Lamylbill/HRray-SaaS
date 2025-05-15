@@ -1,51 +1,47 @@
 
 import React from 'react';
-import { Slot } from '@radix-ui/react-slot'; // Import Slot for explicit understanding
-import { Button as ShadcnButton, type ButtonProps as ShadcnBaseButtonProps } from '@/components/ui/button'; // Assuming this is the Shadcn path
+import { Button as ShadcnButton, type ButtonProps as ShadcnButtonProps } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 // Extend the base ButtonProps from '@/components/ui/button'
-interface ButtonProps extends BaseButtonProps {
-    isLoading?: boolean;
-  }
+interface ButtonProps extends ShadcnButtonProps {
+  isLoading?: boolean;
+}
 
 // This is a custom extension of the Shadcn button that includes our HRFlow styling
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
-  children,
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   className,
   variant = 'default',
   size,
   isLoading = false,
   disabled,
-  asChild = false, // Explicitly destructure asChild
-  ...props // Remaining props
+  asChild = false,
+  children,
+  ...props
 }, ref) => {
-  // Map size xl to lg for the Shadcn button (this logic is fine)
+  // Map size xl to lg for the Shadcn button
   const sizeMapping: Record<string, string | undefined> = {
     'xl': 'lg'
   };
-  const localSize = size as string; // Cast size for indexing
+  const localSize = size as string;
   const mappedSize = sizeMapping[localSize] || size;
 
-     // The ShadcnButton will handle the Slot rendering if asChild is true
   return (
     <ShadcnButton
-      className={cn(className)} // Apply any custom classes
+      className={cn(className)}
       variant={variant}
-      size={mappedSize as any} // Cast mappedSize if necessary
+      size={mappedSize as any}
       disabled={isLoading || disabled}
       ref={ref}
-      asChild={asChild} // Pass asChild to the ShadcnButton
-      {...props} // Pass down all other props
+      asChild={asChild}
+      {...props}
     >
-      {/*
-        If asChild is true, ShadcnButton (via Radix Slot) expects to find its child here.
-        If asChild is false, ShadcnButton renders a normal button and these children go inside.
-        This structure should be correct.
-      */}
       {children}
     </ShadcnButton>
   );
 });
 
 Button.displayName = 'Button';
+
+export { Button };
+export type { ButtonProps };

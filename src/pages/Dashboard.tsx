@@ -36,14 +36,14 @@ const Dashboard = () => {
         }
         
         const { count: totalCount, error: countError } = await authorizedClient
-          .from('employees_with_documents')
+          .from('employees')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user.id);
 
         if (countError) throw countError;
 
         const { data: activeData, error: activeError } = await authorizedClient
-          .from('employees_with_documents')
+          .from('employees')
           .select('id')
           .eq('user_id', user.id)
           .eq('employment_status', 'Active');

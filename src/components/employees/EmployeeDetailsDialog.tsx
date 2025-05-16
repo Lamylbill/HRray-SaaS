@@ -26,14 +26,9 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
 
-  useEffect(() => {
-    console.log("EmployeeDetailsDialog: Rendered or viewMode/employee changed. Current viewMode:", viewMode, "Employee ID:", employee?.id);
-  }, [viewMode, employee]);
-
   const handleDelete = async () => {
-    console.log("EmployeeDetailsDialog: handleDelete triggered for employee ID:", employee.id);
     if (!window.confirm(`Are you sure you want to delete ${employee.full_name}? This action cannot be undone.`)) {
-        return;
+      return;
     }
     try {
       const { error } = await supabase
@@ -41,19 +36,14 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
         .delete()
         .eq('id', employee.id);
 
-      if (error) {
-        console.error('EmployeeDetailsDialog: Error deleting employee:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: 'Employee Deleted',
         description: `${employee.full_name} has been removed.`,
       });
-      console.log("EmployeeDetailsDialog: Employee deleted successfully, calling onDelete prop.");
       onDelete();
     } catch (error: any) {
-      console.error('EmployeeDetailsDialog: Catch block in handleDelete:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to delete employee',
@@ -63,7 +53,6 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
   };
 
   const handleEmployeeUpdate = (formData: EmployeeFormData) => {
-    console.log("EmployeeDetailsDialog: handleEmployeeUpdate called with formData. Employee ID:", employee.id, "Form Data Employee Name:", formData.employee.full_name);
     toast({
       title: 'Changes Saved',
       description: `Details for ${formData.employee.full_name || employee.full_name} updated.`,
@@ -89,13 +78,10 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
       formRef.current.dispatchEvent(
         new Event('submit', { cancelable: true, bubbles: true })
       );
-    } else {
-      console.warn("EmployeeDetailsDialog: formRef.current is null. Cannot trigger submit.");
     }
   };
 
   const handleCancelEdit = () => {
-    console.log("EmployeeDetailsDialog: Edit cancelled. Setting viewMode to 'view'.");
     setViewMode('view');
   };
 
@@ -106,16 +92,11 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
           <DialogTitle>
             {viewMode === 'view' ? 'Employee Details' : 'Edit Employee Details'}
           </DialogTitle>
-          {viewMode === 'view' && (
-            <DialogDescription>
-              View and manage employee information. Click "Edit Employee" to make changes.
-            </DialogDescription>
-          )}
-          {viewMode === 'edit' && (
-            <DialogDescription>
-              Modify the employee's information below.
-            </DialogDescription>
-          )}
+          <DialogDescription>
+            {viewMode === 'view'
+              ? 'View and manage employee information. Click "Edit Employee" to make changes.'
+              : "Modify the employee's information below."}
+          </DialogDescription>
         </DialogHeader>
       </div>
 
@@ -146,10 +127,7 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
             </Button>
             <Button
               type="button"
-              onClick={() => {
-                console.log("EmployeeDetailsDialog: Edit button clicked. Setting viewMode to 'edit'.");
-                setViewMode('edit');
-              }}
+              onClick={() => setViewMode('edit')}
               className="text-base px-6 py-2 rounded-full flex items-center gap-2 sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Pencil className="h-4 w-4" />

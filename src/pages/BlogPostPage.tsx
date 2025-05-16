@@ -249,8 +249,53 @@ const BlogPostPage = () => {
   }
 
   return (
-    <></>
+    <div className="min-h-screen pt-24 pb-12 bg-gray-50">
+      <Helmet>
+        <title>{post.title} | HRray Blog</title>
+        <meta name="description" content={post.meta_description || post.excerpt || ''} />
+      </Helmet>
+  
+      <div className="container px-4 mx-auto">
+        <Card>
+          <CardHeader>
+            <h1 className="text-3xl font-bold mb-2">{post.title}</h1>
+            {renderAuthorInfo()}
+          </CardHeader>
+  
+          {post.cover_image && (
+            <img
+            src={post.cover_image}
+            alt="Cover"
+            className="w-full max-h-[450px] object-contain rounded-t-lg"
+          />
+          )}
+  
+          <CardContent className="prose max-w-none">
+            <div dangerouslySetInnerHTML={{ __html: post.content }} />
+          </CardContent>
+  
+          <CardFooter className="flex flex-wrap gap-4 justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Tag className="h-4 w-4 text-muted-foreground" />
+              {post.tags?.map(tag => (
+                <span key={tag} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2 text-muted-foreground">
+              <Facebook className="h-4 w-4 cursor-pointer" />
+              <Linkedin className="h-4 w-4 cursor-pointer" />
+              <Share2 className="h-4 w-4 cursor-pointer" />
+            </div>
+          </CardFooter>
+        </Card>
+  
+        {/* Optional: Comments section here */}
+      </div>
+    </div>
   );
+  
 };
 
 export default BlogPostPage;

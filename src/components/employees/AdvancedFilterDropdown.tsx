@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   DropdownMenu,
@@ -8,9 +7,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuPortal,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui-custom/Button";
@@ -45,19 +41,14 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
   employees,
   onFiltersChange,
 }) => {
-  // State for tracking filter selection at each level
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedField, setSelectedField] = useState<FieldMeta | null>(null);
   const [activeFilters, setActiveFilters] = useState<FilterSelection[]>([]);
   const { toast } = useToast();
   
-  // Cache the categories and fields for better performance
   const categories = getFieldCategories();
   
-  // Apply filters when activeFilters change
   useEffect(() => {
-    console.log('Active filters changed:', activeFilters);
-    
     if (activeFilters.length === 0) {
       onFiltersChange(employees);
       return;
@@ -70,15 +61,12 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
     }));
     
     const filtered = applyFilters(employees, filterParams);
-    console.log('Filtered employees:', filtered.length);
     onFiltersChange(filtered);
   }, [activeFilters, employees, onFiltersChange]);
 
-  // Add a filter
   const addFilter = (value: string, displayValue: string) => {
     if (!selectedCategory || !selectedField) return;
     
-    // Don't add duplicate filters
     if (activeFilters.some(f => 
       f.category === selectedCategory && 
       f.field === selectedField.name && 
@@ -95,24 +83,19 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
       valueName: displayValue
     };
     
-    console.log('Adding filter:', newFilter);
     setActiveFilters(prev => [...prev, newFilter]);
     
-    // Show toast to confirm filter applied
     toast({
       title: "Filter Applied",
       description: `${selectedField.label}: ${displayValue}`,
     });
     
-    // Reset selection
     setSelectedField(null);
     setSelectedCategory(null);
   };
 
-  // Remove a filter
   const removeFilter = (index: number) => {
     const filterToRemove = activeFilters[index];
-    console.log('Removing filter:', filterToRemove);
     setActiveFilters(prev => prev.filter((_, i) => i !== index));
     
     toast({
@@ -121,9 +104,7 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
     });
   };
 
-  // Clear all filters
   const clearFilters = () => {
-    console.log('Clearing all filters');
     setActiveFilters([]);
     setSelectedCategory(null);
     setSelectedField(null);
@@ -134,7 +115,6 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
     });
   };
 
-  // Get display value for an option (handling both string and object options)
   const getDisplayValue = (value: string, field: FieldMeta): string => {
     if (!field.options) return value;
     
@@ -148,13 +128,10 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
   };
 
   return (
-    <div >
-      <DropdownMenu >
+    <div>
+      <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button 
-            variant="outline" 
-            size="sm" 
-          >
+          <Button variant="outline" size="sm">
             <Filter className="mr-2 h-4 w-4" />
             {activeFilters.length > 0 
               ? `Filters (${activeFilters.length})` 
@@ -164,102 +141,98 @@ export const AdvancedFilterDropdown: React.FC<AdvancedFilterDropdownProps> = ({
         <DropdownMenuPortal>
           <DropdownMenuContent className="w-56 z-50 bg-white" align="end">
 
-          <DropdownMenuLabel>Filter by</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          
-          {!selectedCategory && (
-            // First level - Categories
-            <DropdownMenuGroup>
-              {categories.map(category => (
-                <DropdownMenuItem 
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                >
-                  <span>{formatCategoryName(category)}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuGroup>
-          )}
-          
-          {selectedCategory && !selectedField && (
-            // Second level - Fields
-            <>
-              <DropdownMenuLabel className="flex justify-between items-center">
-                <span>{formatCategoryName(selectedCategory)}</span>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="h-5 text-xs" 
-                  onClick={() => setSelectedCategory(null)}
-                >
-                  Back
-                </Button>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              
-              {getFieldsByCategory(selectedCategory).map(field => (
-                <DropdownMenuItem 
-                  key={field.name}
-                  onClick={() => setSelectedField(field)}
-                >
-                  <span>{field.label}</span>
-                </DropdownMenuItem>
-              ))}
-            </>
-          )}
-          
-          {selectedCategory && selectedField && (
-            // Third level - Values
-            <>
-              <DropdownMenuLabel className="flex justify-between items-center">
-                <span>{selectedField.label}</span>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="h-5 text-xs" 
-                  onClick={() => setSelectedField(null)}
-                >
-                  Back
-                </Button>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              
-              {getFieldOptions(selectedField).map((value, index) => {
-                const displayValue = getDisplayValue(value, selectedField);
-                const isSelected = activeFilters.some(f => 
-                  f.category === selectedCategory && 
-                  f.field === selectedField.name && 
-                  f.value === value
-                );
-                
-                return (
+            <DropdownMenuLabel>Filter by</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            
+            {!selectedCategory && (
+              <DropdownMenuGroup>
+                {categories.map(category => (
                   <DropdownMenuItem 
-                    key={index}
-                    onClick={() => addFilter(value, displayValue)}
-                    className="flex justify-between"
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
                   >
-                    <span>{displayValue}</span>
-                    {isSelected && <Check className="h-4 w-4" />}
+                    <span>{formatCategoryName(category)}</span>
                   </DropdownMenuItem>
-                );
-              })}
-            </>
-          )}
-          
-          {activeFilters.length > 0 && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={clearFilters}>
-                Clear all filters
-              </DropdownMenuItem>
-            </>
-          )}
+                ))}
+              </DropdownMenuGroup>
+            )}
+            
+            {selectedCategory && !selectedField && (
+              <>
+                <DropdownMenuLabel className="flex justify-between items-center">
+                  <span>{formatCategoryName(selectedCategory)}</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="h-5 text-xs" 
+                    onClick={() => setSelectedCategory(null)}
+                  >
+                    Back
+                  </Button>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                
+                {getFieldsByCategory(selectedCategory).map(field => (
+                  <DropdownMenuItem 
+                    key={field.name}
+                    onClick={() => setSelectedField(field)}
+                  >
+                    <span>{field.label}</span>
+                  </DropdownMenuItem>
+                ))}
+              </>
+            )}
+            
+            {selectedCategory && selectedField && (
+              <>
+                <DropdownMenuLabel className="flex justify-between items-center">
+                  <span>{selectedField.label}</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="h-5 text-xs" 
+                    onClick={() => setSelectedField(null)}
+                  >
+                    Back
+                  </Button>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                
+                {getFieldOptions(selectedField).map((value, index) => {
+                  const displayValue = getDisplayValue(value, selectedField);
+                  const isSelected = activeFilters.some(f => 
+                    f.category === selectedCategory && 
+                    f.field === selectedField.name && 
+                    f.value === value
+                  );
+                  
+                  return (
+                    <DropdownMenuItem 
+                      key={index}
+                      onClick={() => addFilter(value, displayValue)}
+                      className="flex justify-between"
+                    >
+                      <span>{displayValue}</span>
+                      {isSelected && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </>
+            )}
+            
+            {activeFilters.length > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={clearFilters}>
+                  Clear all filters
+                </DropdownMenuItem>
+              </>
+            )}
 
           </DropdownMenuContent>
         </DropdownMenuPortal>
       </DropdownMenu>
       
-      {/* Display active filters */}
       {activeFilters.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-2">
           {activeFilters.map((filter, index) => (

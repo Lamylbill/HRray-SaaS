@@ -222,7 +222,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({ employeeId, re
               {filteredDocuments.map(doc => {
                 const isViewDisabled = doc.file_url === '#' || !doc.file_url;
                 const categoryLabel = doc.document_category_key ? DOCUMENT_CATEGORIES_MAP[doc.document_category_key] : 'N/A';
-                const typeLabel = doc.document_category_key && doc.document_type ? getTypeFromValue(categoryLabel, doc.document_type) : 'N/A';
+                const typeLabel = doc.document_category_key && doc.document_type ? getTypeFromValue(doc.document_category_key, doc.document_type) : 'N/A';
                 return (
                   <TableRow key={doc.id} className="grid grid-cols-2 sm:table-row text-xs sm:text-sm">
                     <TableCell className="col-span-1 sm:table-cell">{doc.file_name}</TableCell>

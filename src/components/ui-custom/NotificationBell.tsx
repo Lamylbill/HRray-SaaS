@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Popover,
@@ -38,16 +38,17 @@ export const NotificationBell = ({ className = "" }: { className?: string }) => 
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(20);
 
       if (error) throw error;
-      
+
       const typedNotifications = (data || []).map((notification: any): Notification => ({
         ...notification,
         type: notification.type as 'info' | 'success' | 'warning' | 'error',
       }));
-      
+
       setNotifications(typedNotifications);
       setUnreadCount(typedNotifications.filter(n => !n.read).length);
     } catch (error) {
@@ -63,10 +64,8 @@ export const NotificationBell = ({ className = "" }: { className?: string }) => 
         .eq('id', id);
 
       if (error) throw error;
-      
-      setNotifications(prev => 
-        prev.map(n => n.id === id ? { ...n, read: true } : n)
-      );
+
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
       setUnreadCount(prev => prev - 1);
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -84,10 +83,8 @@ export const NotificationBell = ({ className = "" }: { className?: string }) => 
         .eq('read', false);
 
       if (error) throw error;
-      
-      setNotifications(prev => 
-        prev.map(n => ({ ...n, read: true }))
-      );
+
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
       toast({
         title: "Success",
@@ -115,13 +112,13 @@ export const NotificationBell = ({ className = "" }: { className?: string }) => 
         },
         (payload) => {
           const newNotification = {
-            ...payload.new as Omit<Notification, 'type'>,
-            type: (payload.new as any).type as 'info' | 'success' | 'warning' | 'error'
+            ...(payload.new as Omit<Notification, 'type'>),
+            type: (payload.new as any).type as 'info' | 'success' | 'warning' | 'error',
           };
-          
+
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
-          
+
           toast({
             title: newNotification.title,
             description: newNotification.message,
@@ -137,31 +134,31 @@ export const NotificationBell = ({ className = "" }: { className?: string }) => 
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleDateString('en-SG') + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <div className={`relative cursor-pointer ${className}`}>
-          <Bell className="h-5 w-5" />
+        <div className="flex items-center justify-center h-9 w-9">
+  <Bell className="h-5 w-5" />
+</div>
           {unreadCount > 0 && (
-            <Badge 
-              className="absolute -top-2 -right-2 h-5 min-w-5 p-0 flex items-center justify-center bg-red-500 border-none text-white text-[10px] rounded-full"
-            >
+            <Badge className="absolute -top-2 -right-2 h-5 min-w-5 p-0 flex items-center justify-center bg-red-500 border-none text-white text-[10px] rounded-full">
               {unreadCount > 9 ? '9+' : unreadCount}
             </Badge>
           )}
         </div>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-        <div className="p-2 border-b flex items-center justify-between">
-          <h3 className="font-medium">Notifications</h3>
+      <PopoverContent className="w-96 p-0 rounded-xl shadow-lg" align="end">
+        <div className="p-3 border-b flex items-center justify-between">
+          <h3 className="text-base font-semibold">Notifications</h3>
           {unreadCount > 0 && (
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-8 text-xs"
+              className="h-7 text-xs"
               onClick={markAllAsRead}
             >
               Mark all as read
@@ -169,25 +166,31 @@ export const NotificationBell = ({ className = "" }: { className?: string }) => 
           )}
         </div>
         <ScrollArea className="h-[300px]">
-          {notifications.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">
-              No notifications
+          {notifications.filter(n => !n.read).length === 0 ? (
+            <div className="p-4 text-center text-gray-500 text-sm">
+              No new notifications
             </div>
           ) : (
-            <div className="space-y-1 p-1">
-              {notifications.map(notification => (
+            <div className="space-y-1 p-2">
+              {notifications.filter(n => !n.read).map(notification => (
                 <div 
                   key={notification.id}
-                  className={`p-3 ${notification.read ? 'bg-gray-50' : 'bg-blue-50'} hover:bg-gray-100 cursor-pointer`}
-                  onClick={() => !notification.read && markAsRead(notification.id)}
+                  className="p-2 bg-white border border-gray-100 hover:bg-gray-50 rounded-lg flex flex-col text-xs relative"
                 >
-                  <div className="flex justify-between items-start">
-                    <h4 className="font-medium text-sm">{notification.title}</h4>
-                    <span className="text-xs text-gray-500">
+                  <button
+                    onClick={() => markAsRead(notification.id)}
+                    className="absolute top-1 right-1 text-gray-400 hover:text-red-500 text-xs"
+                    title="Dismiss"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                  <div className="flex justify-between items-start gap-2">
+                    <h4 className="font-semibold text-[13px]">{notification.title}</h4>
+                    <span className="text-[11px] text-gray-400 whitespace-nowrap">
                       {formatDate(notification.created_at)}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-700 mt-1">{notification.message}</p>
+                  <p className="text-[12px] text-gray-700 mt-1">{notification.message}</p>
                 </div>
               ))}
             </div>

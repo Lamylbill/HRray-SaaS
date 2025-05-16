@@ -34,6 +34,8 @@ import { useIsMobile } from '@/hooks/use-mobile'; // Assuming this hook is corre
 import { cn } from '@/lib/utils';
 // Import the getDashboardNavItems function and NavItemType from NavItems
 import { NavItemType, getDashboardNavItems } from './NavItems';
+import { NotificationBell } from '@/components/ui-custom/NotificationBell'; // ⬅️ make sure this path is correct
+
 
 export const DashNavbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -114,18 +116,7 @@ export const DashNavbar: React.FC = () => {
           {isAuthenticated && user ? (
             <>
               {/* Notification Bell */}
-              <div className="relative">
-                <Button
-                  variant="ghost"
-                  size="icon" // Use Shadcn size="icon" for proper padding
-                  className="h-9 w-9 rounded-full text-gray-600 hover:text-blue-700" // Adjusted size/color
-                  aria-label="Notifications"
-                >
-                  <Bell className="h-5 w-5" />
-                  {/* Example: Real notification count would come from state/props */}
-                  <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full border-2 border-white"></span>
-                </Button>
-              </div>
+<NotificationBell className="h-9 w-9" />
 
               {/* User Menu - Styled like LandNavbar */}
               <DropdownMenu>

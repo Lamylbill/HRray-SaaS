@@ -47,11 +47,19 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
       const { data: employees } = await supabase.from('employees').select('id, full_name').in('id', employeeIds);
       const employeeMap = new Map(employees?.map((e) => [e.id, e]));
 
-      // Fix the type mapping here
+      // Ensure proper type casting to match LeaveRequest interface
       const formatted: LeaveRequest[] = leaveRequestsData.map(lr => ({
-        ...lr,
+        id: lr.id,
+        employee_id: lr.employee_id,
         employee: employeeMap.get(lr.employee_id) || { id: lr.employee_id, full_name: 'Unknown Employee' },
-        leave_type: lr.leave_type || { id: '', name: 'Unknown', color: '#808080', is_paid: true },
+        leave_type: lr.leave_type as LeaveType, // Explicit cast to LeaveType
+        start_date: lr.start_date,
+        end_date: lr.end_date,
+        status: lr.status,
+        half_day: lr.half_day,
+        half_day_type: lr.half_day_type,
+        chargeable_duration: lr.chargeable_duration,
+        created_at: lr.created_at
       }));
 
       setAllLeaveRequests(formatted);
@@ -161,7 +169,6 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
       });
     }
     
-    // Apply search term filter if implemented
     return filtered;
   }, [allLeaveRequests, filterLeaveTypeIds, filterStatuses, onlyPending, sortConfig]);
 

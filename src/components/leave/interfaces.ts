@@ -26,7 +26,7 @@ export interface LeaveRequest {
     id: string;
     full_name: string;
   };
-  leave_type: LeaveType;
+  leave_type: LeaveType;  // This ensures leave_type is of type LeaveType, not an array
   start_date: string;
   end_date: string;
   status: string;

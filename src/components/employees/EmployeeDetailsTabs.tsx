@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Employee } from '@/types/employee';
 import { formatPhoneNumber, formatCurrency, formatDate } from '@/utils/formatters';
@@ -8,6 +7,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { DocumentManager } from '@/components/employees/documents/DocumentManager';
 import { TabNav } from '@/components/employees/tabs/TabNav';
 import { ensureStorageBucket, STORAGE_BUCKET } from '@/integrations/supabase/client';
+import { DocumentManagerProps } from '@/components/employees/tabs/DocumentsTab';
 
 interface EmployeeDetailsTabsProps {
   employee: Employee;

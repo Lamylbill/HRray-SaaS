@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { LeaveRequest, LeaveType } from './interfaces';
+import { LeaveRequest, LeaveType, LeaveRecordsViewProps } from './interfaces';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui-custom/Button';
@@ -16,18 +16,18 @@ const STATUS_OPTIONS = ['Pending', 'Approved', 'Rejected'] as const;
 type Status = typeof STATUS_OPTIONS[number];
 type SortableColumn = 'employee.full_name' | 'leave_type.name' | 'start_date' | 'chargeable_duration' | 'status';
 
-type LeaveRecordsViewProps = {
-  availableLeaveTypes: LeaveType[];
-  onlyPending?: boolean;
-  title?: string;
-};
-
-const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ availableLeaveTypes, onlyPending = false, title = 'Leave Records' }) => {
+const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ 
+  availableLeaveTypes,
+  onlyPending = false,
+  title = 'Leave Records',
+  selectedLeaveTypes = [],
+  onLeaveTypeFilter
+}) => {
   const [allLeaveRequests, setAllLeaveRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
-  const [filterLeaveTypeIds, setFilterLeaveTypeIds] = useState<string[]>([]);
+  const [filterLeaveTypeIds, setFilterLeaveTypeIds] = useState<string[]>(selectedLeaveTypes);
   const [filterStatuses, setFilterStatuses] = useState<Status[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: SortableColumn | null; direction: 'ascending' | 'descending' }>({ key: 'status', direction: 'ascending' });
 
@@ -46,6 +46,7 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ availableLeaveTypes
       const { data: employees } = await supabase.from('employees').select('id, full_name').in('id', employeeIds);
       const employeeMap = new Map(employees?.map((e) => [e.id, e]));
 
+      // Fix the type mapping here
       const formatted: LeaveRequest[] = leaveRequestsData.map(lr => ({
         ...lr,
         employee: employeeMap.get(lr.employee_id) || { id: lr.employee_id, full_name: 'Unknown Employee' },
@@ -64,6 +65,13 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ availableLeaveTypes
   useEffect(() => {
     fetchAndFormatLeaveRequests();
   }, [fetchAndFormatLeaveRequests]);
+  
+  // Sync filterLeaveTypeIds with selectedLeaveTypes prop
+  useEffect(() => {
+    if (selectedLeaveTypes) {
+      setFilterLeaveTypeIds(selectedLeaveTypes);
+    }
+  }, [selectedLeaveTypes]);
 
   const handleActionComplete = useCallback(() => {
     fetchAndFormatLeaveRequests();
@@ -76,6 +84,13 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ availableLeaveTypes
     }));
   };
 
+  // Update parent component when filters change (if callback provided)
+  useEffect(() => {
+    if (onLeaveTypeFilter && filterLeaveTypeIds.length) {
+      onLeaveTypeFilter(filterLeaveTypeIds);
+    }
+  }, [filterLeaveTypeIds, onLeaveTypeFilter]);
+
   const formatDate = (date: string) => {
     if (!date) return 'N/A';
     const d = new Date(date);
@@ -83,61 +98,13 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ availableLeaveTypes
   };
 
   const getStatusBadge = (status: string) => {
-    const map = {
+    const map: Record<string, string> = {
       Approved: 'bg-green-100 text-green-800',
       Rejected: 'bg-red-100 text-red-800',
       Pending: 'bg-yellow-100 text-yellow-800',
     };
     return <Badge className={map[status] || 'bg-gray-100 text-gray-800'}>{status}</Badge>;
   };
-
-  const filteredRequests = useMemo(() => {
-    let result = [...allLeaveRequests];
-
-    if (onlyPending) {
-      result = result.filter(r => r.status === 'Pending');
-    }
-    if (filterLeaveTypeIds.length) {
-      result = result.filter(r => filterLeaveTypeIds.includes(r.leave_type.id));
-    }
-    if (filterStatuses.length) {
-      result = result.filter(r => filterStatuses.includes(r.status));
-    }
-
-    const statusOrder = { 'Pending': 1, 'Approved': 2, 'Rejected': 3 };
-
-    if (sortConfig.key) {
-      const direction = sortConfig.direction === 'ascending' ? 1 : -1;
-      result.sort((a, b) => {
-        let aVal, bVal;
-        if (sortConfig.key === 'status') {
-          aVal = statusOrder[a.status] || 99;
-          bVal = statusOrder[b.status] || 99;
-        } else if (sortConfig.key === 'employee.full_name') {
-          aVal = a.employee.full_name.toLowerCase();
-          bVal = b.employee.full_name.toLowerCase();
-        } else if (sortConfig.key === 'leave_type.name') {
-          aVal = a.leave_type.name.toLowerCase();
-          bVal = b.leave_type.name.toLowerCase();
-        } else if (sortConfig.key === 'start_date') {
-          aVal = new Date(a.start_date).getTime();
-          bVal = new Date(b.start_date).getTime();
-        } else {
-          aVal = a[sortConfig.key];
-          bVal = b[sortConfig.key];
-        }
-
-        if (aVal < bVal) return -1 * direction;
-        if (aVal > bVal) return 1 * direction;
-
-        const aStart = new Date(a.start_date).getTime();
-        const bStart = new Date(b.start_date).getTime();
-        return direction * (aStart - bStart);
-      });
-    }
-
-    return result;
-  }, [allLeaveRequests, filterLeaveTypeIds, filterStatuses, sortConfig, onlyPending]);
 
   const renderSortableHeader = (label: string, columnKey: SortableColumn, className?: string) => (
     <TableHead className={`${className} px-2`}>

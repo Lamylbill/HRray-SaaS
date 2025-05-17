@@ -227,8 +227,6 @@ const Leave = () => {
             )}
             {activeTab === 'records' && (
               <LeaveRecordsView 
-                selectedLeaveTypes={selectedLeaveTypes} 
-                onLeaveTypeFilter={handleLeaveTypeFilter}
                 availableLeaveTypes={availableLeaveTypes}
               />
             )}

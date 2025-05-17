@@ -149,7 +149,6 @@ const Leave = () => {
   }, []); // setAddLeaveDialogOpen is stable
 
   if (isLoading) {
-    // Optional: Add a loading spinner for the whole page if auth is loading
     return <div className="min-h-screen flex items-center justify-center">Loading authentication...</div>;
   }
 
@@ -232,8 +231,6 @@ const Leave = () => {
             )}
             {activeTab === 'records' && (
               <LeaveRecordsView 
-                selectedLeaveTypes={selectedLeaveTypes} 
-                onLeaveTypeFilter={handleLeaveTypeFilter}
                 availableLeaveTypes={availableLeaveTypes}
               />
             )}

@@ -1,8 +1,18 @@
+
 import React, { useState, useEffect } from 'react';
 import { DocumentManager } from '@/components/employees/documents/DocumentManager';
 import { ensureStorageBucket, STORAGE_BUCKET } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
+
+// Add isTabbed to DocumentManagerProps interface
+interface DocumentManagerProps {
+  employeeId: string;
+  isReadOnly?: boolean;
+  refreshTrigger?: number;
+  bucketReady?: boolean;
+  isTabbed?: boolean;
+}
 
 interface DocumentsTabProps {
   employeeId: string;
@@ -102,3 +112,6 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
 
   return null;
 };
+
+// Export the DocumentManagerProps interface for use in other files
+export type { DocumentManagerProps };

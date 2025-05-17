@@ -1,90 +1,31 @@
-
-export interface LeaveEvent {
-  id: string;
-  title: string;
-  start: Date;
-  end: Date;
-  type: string;
-  employee: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  color: string;
-}
-
-export interface PublicHoliday {
-  id: string;
-  name: string;
-  date: Date;
-  country: string;
-}
-
-export interface LeaveHistory {
-  id: string;
-  start_date: Date;
-  end_date: Date;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  leave_type: {
-    name: string;
-    color: string;
-  };
-  days: number;
-}
-
 export interface LeaveType {
   id: string;
   name: string;
   color: string;
-  is_paid: boolean;
+  is_paid?: boolean;
 }
 
 export interface LeaveRequest {
   id: string;
+  employee_id: string;
   employee: {
     id: string;
     full_name: string;
   };
-  leave_type: {
-    id: string;
-    name: string;
-    color: string;
-    is_paid?: boolean;
-  };
+  leave_type: LeaveType;
   start_date: string;
   end_date: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  half_day: boolean;
-  half_day_type: 'AM' | 'PM' | null;
-  created_at: string;
+  status: string;
+  half_day?: boolean;
+  half_day_type?: string;
   chargeable_duration?: number;
-}
-
-export type EventStyleProps = React.CSSProperties;
-
-export interface AddLeaveFormProps {
-  onSuccess: () => void;
-  onCancel: () => void;
-  initialDate?: Date | undefined;
-}
-
-export interface LeaveCalendarViewProps {
-  selectedLeaveTypes: string[];
-  onLeaveTypeFilter: (types: string[]) => void;
+  created_at?: string;
 }
 
 export interface LeaveRecordsViewProps {
-  selectedLeaveTypes: string[];
-  onLeaveTypeFilter: (types: string[]) => void;
-  availableLeaveTypes?: LeaveType[];
-}
-
-export interface LeaveQuota {
-  employee_id: string;
-  leave_type_id: string;
-  quota_days: number;
-  taken_days: number;
-  adjustment_days: number;
-}
-
-export interface Employee {
-  id: string;
-  full_name: string;
+  availableLeaveTypes: LeaveType[];
+  onlyPending?: boolean;
+  title?: string;
+  selectedLeaveTypes?: string[];
+  onLeaveTypeFilter?: (types: string[]) => void;
 }

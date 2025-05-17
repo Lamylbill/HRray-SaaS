@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui-custom/Button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { format } from 'date-fns';
 
 interface Notification {
   id: string;
@@ -133,17 +134,16 @@ export const NotificationBell = ({ className = "" }: { className?: string }) => 
   }, [user, toast]);
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-SG') + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return format(new Date(dateString), 'dd-MM-yyyy hh:mm a');
   };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <div className={`relative cursor-pointer ${className}`}>
-        <div className="flex items-center justify-center h-9 w-9">
-  <Bell className="h-5 w-5" />
-</div>
+          <div className="flex items-center justify-center h-9 w-9">
+            <Bell className="h-5 w-5" />
+          </div>
           {unreadCount > 0 && (
             <Badge className="absolute -top-2 -right-2 h-5 min-w-5 p-0 flex items-center justify-center bg-red-500 border-none text-white text-[10px] rounded-full">
               {unreadCount > 9 ? '9+' : unreadCount}

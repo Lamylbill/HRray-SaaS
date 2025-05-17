@@ -1,3 +1,4 @@
+
 export interface LeaveType {
   id: string;
   name: string;
@@ -5,13 +6,23 @@ export interface LeaveType {
   is_paid?: boolean;
 }
 
+export interface Employee {
+  id: string;
+  full_name: string;
+}
+
+export interface LeaveQuota {
+  employee_id: string;
+  leave_type_id: string;
+  quota_days: number;
+  taken_days: number;
+  adjustment_days: number;
+}
+
 export interface LeaveRequest {
   id: string;
   employee_id: string;
-  employee: {
-    id: string;
-    full_name: string;
-  };
+  employee: Employee;
   leave_type: LeaveType;
   start_date: string;
   end_date: string;

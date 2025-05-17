@@ -46,12 +46,23 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
       const { data: employees } = await supabase.from('employees').select('id, full_name').in('id', employeeIds);
       const employeeMap = new Map(employees?.map((e) => [e.id, e]));
 
-      // Fix the type mapping here
-      const formatted: LeaveRequest[] = leaveRequestsData.map(lr => ({
-        ...lr,
-        employee: employeeMap.get(lr.employee_id) || { id: lr.employee_id, full_name: 'Unknown Employee' },
-        leave_type: lr.leave_type || { id: '', name: 'Unknown', color: '#808080', is_paid: true },
-      }));
+      // Correctly format the leave requests and ensure proper typing
+      const formatted: LeaveRequest[] = leaveRequestsData.map(lr => {
+        // Ensure leave_type is treated as a single LeaveType object, not an array
+        const leaveTypeData = lr.leave_type;
+        const leaveType: LeaveType = {
+          id: leaveTypeData.id,
+          name: leaveTypeData.name,
+          color: leaveTypeData.color,
+          is_paid: leaveTypeData.is_paid
+        };
+        
+        return {
+          ...lr,
+          employee: employeeMap.get(lr.employee_id) || { id: lr.employee_id, full_name: 'Unknown Employee' },
+          leave_type: leaveType
+        };
+      });
 
       setAllLeaveRequests(formatted);
     } catch (err) {
@@ -90,6 +101,64 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
       onLeaveTypeFilter(filterLeaveTypeIds);
     }
   }, [filterLeaveTypeIds, onLeaveTypeFilter]);
+
+  // Create the filteredRequests using useMemo to avoid recalculation on every render
+  const filteredRequests = useMemo(() => {
+    // Apply filters
+    let filtered = [...allLeaveRequests];
+    
+    // Filter by status if specified
+    if (filterStatuses.length > 0) {
+      filtered = filtered.filter(request => filterStatuses.includes(request.status as Status));
+    }
+    
+    // Filter by leave type if specified
+    if (filterLeaveTypeIds.length > 0) {
+      filtered = filtered.filter(request => filterLeaveTypeIds.includes(request.leave_type.id));
+    }
+    
+    // Apply "onlyPending" filter if specified
+    if (onlyPending) {
+      filtered = filtered.filter(request => request.status === 'Pending');
+    }
+    
+    // Apply sorting
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        let aValue, bValue;
+        
+        // Handle nested properties
+        if (sortConfig.key === 'employee.full_name') {
+          aValue = a.employee.full_name;
+          bValue = b.employee.full_name;
+        } else if (sortConfig.key === 'leave_type.name') {
+          aValue = a.leave_type.name;
+          bValue = b.leave_type.name;
+        } else {
+          // Handle direct properties
+          aValue = a[sortConfig.key as keyof LeaveRequest];
+          bValue = b[sortConfig.key as keyof LeaveRequest];
+        }
+        
+        // Convert to string if not already for comparison
+        if (aValue === null || aValue === undefined) aValue = '';
+        if (bValue === null || bValue === undefined) bValue = '';
+        
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          return sortConfig.direction === 'ascending' 
+            ? aValue.localeCompare(bValue) 
+            : bValue.localeCompare(aValue);
+        } else {
+          // Handle numeric or date comparison
+          return sortConfig.direction === 'ascending' 
+            ? (aValue > bValue ? 1 : -1) 
+            : (bValue > aValue ? 1 : -1);
+        }
+      });
+    }
+    
+    return filtered;
+  }, [allLeaveRequests, filterStatuses, filterLeaveTypeIds, onlyPending, sortConfig]);
 
   const formatDate = (date: string) => {
     if (!date) return 'N/A';

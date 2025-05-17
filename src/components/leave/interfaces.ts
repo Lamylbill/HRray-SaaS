@@ -1,8 +1,22 @@
+
 export interface LeaveType {
   id: string;
   name: string;
   color: string;
   is_paid?: boolean;
+}
+
+export interface LeaveQuota {
+  employee_id: string;
+  leave_type_id: string;
+  quota_days: number;
+  taken_days: number;
+  adjustment_days: number;
+}
+
+export interface Employee {
+  id: string;
+  full_name: string;
 }
 
 export interface LeaveRequest {

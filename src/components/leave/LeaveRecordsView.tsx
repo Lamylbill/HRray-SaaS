@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { LeaveRequest, LeaveType, LeaveRecordsViewProps } from './interfaces';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -47,19 +46,11 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
       const { data: employees } = await supabase.from('employees').select('id, full_name').in('id', employeeIds);
       const employeeMap = new Map(employees?.map((e) => [e.id, e]));
 
-      // Ensure proper type casting to match LeaveRequest interface
+      // Fix the type mapping here
       const formatted: LeaveRequest[] = leaveRequestsData.map(lr => ({
-        id: lr.id,
-        employee_id: lr.employee_id,
+        ...lr,
         employee: employeeMap.get(lr.employee_id) || { id: lr.employee_id, full_name: 'Unknown Employee' },
-        leave_type: lr.leave_type as LeaveType, // Explicit cast to LeaveType
-        start_date: lr.start_date,
-        end_date: lr.end_date,
-        status: lr.status,
-        half_day: lr.half_day,
-        half_day_type: lr.half_day_type,
-        chargeable_duration: lr.chargeable_duration,
-        created_at: lr.created_at
+        leave_type: lr.leave_type || { id: '', name: 'Unknown', color: '#808080', is_paid: true },
       }));
 
       setAllLeaveRequests(formatted);
@@ -115,63 +106,6 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
     return <Badge className={map[status] || 'bg-gray-100 text-gray-800'}>{status}</Badge>;
   };
 
-  // Calculate filtered requests based on filters
-  const filteredRequests = useMemo(() => {
-    let filtered = [...allLeaveRequests];
-    
-    // Apply leave type filter if specified
-    if (filterLeaveTypeIds.length > 0) {
-      filtered = filtered.filter(req => 
-        filterLeaveTypeIds.includes(req.leave_type.id)
-      );
-    }
-    
-    // Apply status filters if specified
-    if (filterStatuses.length > 0) {
-      filtered = filtered.filter(req => 
-        filterStatuses.includes(req.status as Status)
-      );
-    }
-    
-    // Apply pending-only filter if specified
-    if (onlyPending) {
-      filtered = filtered.filter(req => req.status === 'Pending');
-    }
-    
-    // Apply sorting
-    if (sortConfig.key) {
-      filtered.sort((a, b) => {
-        let aValue, bValue;
-        
-        // Handle nested properties
-        if (sortConfig.key === 'employee.full_name') {
-          aValue = a.employee?.full_name;
-          bValue = b.employee?.full_name;
-        } else if (sortConfig.key === 'leave_type.name') {
-          aValue = a.leave_type?.name;
-          bValue = b.leave_type?.name;
-        } else {
-          aValue = a[sortConfig.key as keyof LeaveRequest];
-          bValue = b[sortConfig.key as keyof LeaveRequest];
-        }
-        
-        // Handle string comparison
-        if (typeof aValue === 'string' && typeof bValue === 'string') {
-          return sortConfig.direction === 'ascending' 
-            ? aValue.localeCompare(bValue) 
-            : bValue.localeCompare(aValue);
-        }
-        
-        // Handle numeric comparison
-        if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
-        if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
-        return 0;
-      });
-    }
-    
-    return filtered;
-  }, [allLeaveRequests, filterLeaveTypeIds, filterStatuses, onlyPending, sortConfig]);
-
   const renderSortableHeader = (label: string, columnKey: SortableColumn, className?: string) => (
     <TableHead className={`${className} px-2`}>
       <Button variant="ghost" onClick={() => requestSort(columnKey)} className="px-1 py-1 h-auto hover:bg-transparent font-semibold text-left" title={`Sort by ${label}`}>
@@ -209,9 +143,9 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
               <TableRow><TableCell colSpan={6} className="text-center text-gray-500">No leave records found.</TableCell></TableRow>
             ) : (
               filteredRequests.map(request => (
-                <TableRow key={request.id} className="grid grid-cols-2 sm:table-row text-xs sm:text-sm">
-                  <TableCell className="col-span-1 sm:table-cell">{request.employee.full_name}</TableCell>
-                  <TableCell className="col-span-1 sm:table-cell">
+                <TableRow key={request.id} className="text-sm">
+                  <TableCell>{request.employee.full_name}</TableCell>
+                  <TableCell>
                     <div className="flex items-center">
                       {request.leave_type.color && (
                         <span className="w-3 h-3 rounded-full mr-2 inline-block" style={{ backgroundColor: request.leave_type.color }}></span>
@@ -219,15 +153,15 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
                       {request.leave_type.name}
                     </div>
                   </TableCell>
-                  <TableCell className="col-span-1 sm:table-cell">
+                  <TableCell>
                     {formatDate(request.start_date)}{request.start_date !== request.end_date && ` - ${formatDate(request.end_date)}`}
                     {request.half_day && ` (${request.half_day_type || ''} Half Day)`}
                   </TableCell>
-                  <TableCell className="col-span-1 sm:table-cell">
+                  <TableCell>
                     {typeof request.chargeable_duration === 'number' ? `${request.chargeable_duration} ${request.chargeable_duration === 1 ? 'day' : 'days'}` : 'N/A'}
                   </TableCell>
-                  <TableCell className="col-span-1 sm:table-cell">{getStatusBadge(request.status)}</TableCell>
-                  <TableCell className="col-span-1 flex justify-end items-center gap-2 sm:table-cell">
+                  <TableCell>{getStatusBadge(request.status)}</TableCell>
+                  <TableCell className="text-center">
                     {request.status === 'Pending' ? (
                       <LeaveActionButtons leaveId={request.id} onActionComplete={handleActionComplete} />
                     ) : (

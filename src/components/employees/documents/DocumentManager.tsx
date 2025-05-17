@@ -58,10 +58,9 @@ interface DocumentManagerProps {
   refreshTrigger?: number;
   isReadOnly?: boolean;
   bucketReady: boolean;
-  isTabbed?: boolean;  // Added the missing isTabbed property
 }
 
-export const DocumentManager: React.FC<DocumentManagerProps> = ({ employeeId, refreshTrigger = 0, isReadOnly = false, bucketReady, isTabbed = false }) => {
+export const DocumentManager: React.FC<DocumentManagerProps> = ({ employeeId, refreshTrigger = 0, isReadOnly = false, bucketReady }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { AnimatedSection } from '@/components/ui-custom/AnimatedSection';
 import { LeaveType } from '@/components/leave/interfaces';
 import LeaveRecordsView from '@/components/leave/LeaveRecordsView';
+import ActivityFeed from '@/components/dashboard/ActivityFeed';
 
 const Dashboard = () => {
   const [employeeCount, setEmployeeCount] = useState<number>(0);
@@ -97,9 +99,7 @@ const Dashboard = () => {
 
             <div className="mt-10">
               <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
-              <div className="bg-white p-6 rounded-lg shadow-sm border">
-                <p className="text-gray-600">No recent activity to display.</p>
-              </div>
+              <ActivityFeed initialPageSize={5} />
             </div>
 
             {availableLeaveTypes.length > 0 && (

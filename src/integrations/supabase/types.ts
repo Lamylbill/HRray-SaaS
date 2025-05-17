@@ -421,6 +421,7 @@ export type Database = {
           file_type: string | null
           id: string
           notes: string | null
+          original_file_name: string | null
           uploaded_at: string
           user_id: string
         }
@@ -434,6 +435,7 @@ export type Database = {
           file_type?: string | null
           id?: string
           notes?: string | null
+          original_file_name?: string | null
           uploaded_at?: string
           user_id: string
         }
@@ -447,6 +449,7 @@ export type Database = {
           file_type?: string | null
           id?: string
           notes?: string | null
+          original_file_name?: string | null
           uploaded_at?: string
           user_id?: string
         }
@@ -1753,6 +1756,54 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      recent_activities: {
+        Row: {
+          activity_type: string
+          category: string | null
+          created_at: string | null
+          employee_id: string | null
+          id: string
+          message: string
+          target_url: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          category?: string | null
+          created_at?: string | null
+          employee_id?: string | null
+          id?: string
+          message: string
+          target_url?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          category?: string | null
+          created_at?: string | null
+          employee_id?: string | null
+          id?: string
+          message?: string
+          target_url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recent_activities_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recent_activities_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_with_documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shift_templates: {
         Row: {

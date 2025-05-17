@@ -48,13 +48,15 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
 
       // Correctly format the leave requests and ensure proper typing
       const formatted: LeaveRequest[] = leaveRequestsData.map(lr => {
-        // Ensure leave_type is treated as a single LeaveType object, not an array
-        const leaveTypeData = lr.leave_type;
+        // Handle the case where leave_type might be an array or object
+        const leaveTypeData = Array.isArray(lr.leave_type) ? lr.leave_type[0] : lr.leave_type;
+        
+        // Create a properly typed LeaveType object
         const leaveType: LeaveType = {
-          id: leaveTypeData.id,
-          name: leaveTypeData.name,
-          color: leaveTypeData.color,
-          is_paid: leaveTypeData.is_paid
+          id: leaveTypeData?.id || '',
+          name: leaveTypeData?.name || 'Unknown',
+          color: leaveTypeData?.color || '#808080',
+          is_paid: leaveTypeData?.is_paid !== undefined ? leaveTypeData.is_paid : true
         };
         
         return {

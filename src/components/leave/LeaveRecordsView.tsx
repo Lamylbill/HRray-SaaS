@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { LeaveRequest, LeaveType, LeaveRecordsViewProps } from './interfaces';
+import { LeaveRequest, LeaveType } from './interfaces';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui-custom/Button';
@@ -16,20 +16,20 @@ const STATUS_OPTIONS = ['Pending', 'Approved', 'Rejected'] as const;
 type Status = typeof STATUS_OPTIONS[number];
 type SortableColumn = 'employee.full_name' | 'leave_type.name' | 'start_date' | 'chargeable_duration' | 'status';
 
-const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ 
-  availableLeaveTypes,
-  onlyPending = false,
-  title = 'Leave Records',
-  selectedLeaveTypes = [],
-  onLeaveTypeFilter
-}) => {
+type LeaveRecordsViewProps = {
+  availableLeaveTypes: LeaveType[];
+  onlyPending?: boolean;
+  title?: string;
+};
+
+const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ availableLeaveTypes, onlyPending = false, title = 'Leave Records' }) => {
   const [allLeaveRequests, setAllLeaveRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
-  const [filterLeaveTypeIds, setFilterLeaveTypeIds] = useState<string[]>(selectedLeaveTypes);
+  const [filterLeaveTypeIds, setFilterLeaveTypeIds] = useState<string[]>([]);
   const [filterStatuses, setFilterStatuses] = useState<Status[]>([]);
-  const [sortConfig, setSortConfig] = useState<{ key: SortableColumn | null; direction: 'ascending' | 'descending' }>({ key: 'status', direction: 'ascending' });
+  const [sortConfig, setSortConfig] = useState<{ key: SortableColumn | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
 
   const fetchAndFormatLeaveRequests = useCallback(async () => {
     if (!user) return;
@@ -46,25 +46,11 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
       const { data: employees } = await supabase.from('employees').select('id, full_name').in('id', employeeIds);
       const employeeMap = new Map(employees?.map((e) => [e.id, e]));
 
-      // Correctly format the leave requests and ensure proper typing
-      const formatted: LeaveRequest[] = leaveRequestsData.map(lr => {
-        // Handle the case where leave_type might be an array or object
-        const leaveTypeData = Array.isArray(lr.leave_type) ? lr.leave_type[0] : lr.leave_type;
-        
-        // Create a properly typed LeaveType object
-        const leaveType: LeaveType = {
-          id: leaveTypeData?.id || '',
-          name: leaveTypeData?.name || 'Unknown',
-          color: leaveTypeData?.color || '#808080',
-          is_paid: leaveTypeData?.is_paid !== undefined ? leaveTypeData.is_paid : true
-        };
-        
-        return {
-          ...lr,
-          employee: employeeMap.get(lr.employee_id) || { id: lr.employee_id, full_name: 'Unknown Employee' },
-          leave_type: leaveType
-        };
-      });
+      const formatted: LeaveRequest[] = leaveRequestsData.map(lr => ({
+        ...lr,
+        employee: employeeMap.get(lr.employee_id) || { id: lr.employee_id, full_name: 'Unknown Employee' },
+        leave_type: Array.isArray(lr.leave_type) ? lr.leave_type[0] : lr.leave_type || { id: '', name: 'Unknown', color: '#808080', is_paid: true },
+      }));
 
       setAllLeaveRequests(formatted);
     } catch (err) {
@@ -78,13 +64,6 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
   useEffect(() => {
     fetchAndFormatLeaveRequests();
   }, [fetchAndFormatLeaveRequests]);
-  
-  // Sync filterLeaveTypeIds with selectedLeaveTypes prop
-  useEffect(() => {
-    if (selectedLeaveTypes) {
-      setFilterLeaveTypeIds(selectedLeaveTypes);
-    }
-  }, [selectedLeaveTypes]);
 
   const handleActionComplete = useCallback(() => {
     fetchAndFormatLeaveRequests();
@@ -97,71 +76,6 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
     }));
   };
 
-  // Update parent component when filters change (if callback provided)
-  useEffect(() => {
-    if (onLeaveTypeFilter && filterLeaveTypeIds.length) {
-      onLeaveTypeFilter(filterLeaveTypeIds);
-    }
-  }, [filterLeaveTypeIds, onLeaveTypeFilter]);
-
-  // Create the filteredRequests using useMemo to avoid recalculation on every render
-  const filteredRequests = useMemo(() => {
-    // Apply filters
-    let filtered = [...allLeaveRequests];
-    
-    // Filter by status if specified
-    if (filterStatuses.length > 0) {
-      filtered = filtered.filter(request => filterStatuses.includes(request.status as Status));
-    }
-    
-    // Filter by leave type if specified
-    if (filterLeaveTypeIds.length > 0) {
-      filtered = filtered.filter(request => filterLeaveTypeIds.includes(request.leave_type.id));
-    }
-    
-    // Apply "onlyPending" filter if specified
-    if (onlyPending) {
-      filtered = filtered.filter(request => request.status === 'Pending');
-    }
-    
-    // Apply sorting
-    if (sortConfig.key) {
-      filtered.sort((a, b) => {
-        let aValue, bValue;
-        
-        // Handle nested properties
-        if (sortConfig.key === 'employee.full_name') {
-          aValue = a.employee.full_name;
-          bValue = b.employee.full_name;
-        } else if (sortConfig.key === 'leave_type.name') {
-          aValue = a.leave_type.name;
-          bValue = b.leave_type.name;
-        } else {
-          // Handle direct properties
-          aValue = a[sortConfig.key as keyof LeaveRequest];
-          bValue = b[sortConfig.key as keyof LeaveRequest];
-        }
-        
-        // Convert to string if not already for comparison
-        if (aValue === null || aValue === undefined) aValue = '';
-        if (bValue === null || bValue === undefined) bValue = '';
-        
-        if (typeof aValue === 'string' && typeof bValue === 'string') {
-          return sortConfig.direction === 'ascending' 
-            ? aValue.localeCompare(bValue) 
-            : bValue.localeCompare(aValue);
-        } else {
-          // Handle numeric or date comparison
-          return sortConfig.direction === 'ascending' 
-            ? (aValue > bValue ? 1 : -1) 
-            : (bValue > aValue ? 1 : -1);
-        }
-      });
-    }
-    
-    return filtered;
-  }, [allLeaveRequests, filterStatuses, filterLeaveTypeIds, onlyPending, sortConfig]);
-
   const formatDate = (date: string) => {
     if (!date) return 'N/A';
     const d = new Date(date);
@@ -169,13 +83,63 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({
   };
 
   const getStatusBadge = (status: string) => {
-    const map: Record<string, string> = {
+    const map = {
       Approved: 'bg-green-100 text-green-800',
       Rejected: 'bg-red-100 text-red-800',
       Pending: 'bg-yellow-100 text-yellow-800',
     };
     return <Badge className={map[status] || 'bg-gray-100 text-gray-800'}>{status}</Badge>;
   };
+
+  const filteredRequests = useMemo(() => {
+    let result = [...allLeaveRequests];
+
+    if (onlyPending) {
+      result = result.filter(r => r.status === 'Pending');
+    }
+    if (filterLeaveTypeIds.length) {
+      result = result.filter(r => filterLeaveTypeIds.includes(r.leave_type.id));
+    }
+    if (filterStatuses.length) {
+      result = result.filter(r => STATUS_OPTIONS.includes(r.status as Status));
+    }
+
+    const statusOrder = { 'Pending': 1, 'Approved': 2, 'Rejected': 3 };
+    const direction = sortConfig.direction === 'ascending' ? 1 : -1;
+
+    result.sort((a, b) => {
+      let aVal, bVal;
+      if (sortConfig.key === 'status') {
+        aVal = statusOrder[a.status] || 99;
+        bVal = statusOrder[b.status] || 99;
+      } else if (sortConfig.key === 'employee.full_name') {
+        aVal = a.employee.full_name.toLowerCase();
+        bVal = b.employee.full_name.toLowerCase();
+      } else if (sortConfig.key === 'leave_type.name') {
+        aVal = a.leave_type.name.toLowerCase();
+        bVal = b.leave_type.name.toLowerCase();
+      } else if (sortConfig.key === 'start_date') {
+        aVal = new Date(a.start_date).getTime();
+        bVal = new Date(b.start_date).getTime();
+      } else if (sortConfig.key === 'chargeable_duration') {
+        aVal = a.chargeable_duration ?? 0;
+        bVal = b.chargeable_duration ?? 0;
+      } else {
+        // Default sort by status if no key
+        aVal = statusOrder[a.status] || 99;
+        bVal = statusOrder[b.status] || 99;
+      }
+
+      if (aVal < bVal) return -1 * direction;
+      if (aVal > bVal) return 1 * direction;
+
+      const aStart = new Date(a.start_date).getTime();
+      const bStart = new Date(b.start_date).getTime();
+      return direction * (aStart - bStart);
+    });
+
+    return result;
+  }, [allLeaveRequests, filterLeaveTypeIds, filterStatuses, sortConfig, onlyPending]);
 
   const renderSortableHeader = (label: string, columnKey: SortableColumn, className?: string) => (
     <TableHead className={`${className} px-2`}>

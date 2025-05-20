@@ -55,29 +55,41 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
 
   const handleEmployeeUpdate = async (formData: EmployeeFormData) => {
     try {
+      console.log("EmployeeDetailsDialog: Updating employee with data:", formData.employee);
+      console.log("EmployeeDetailsDialog: Employment status before update:", employee.employment_status);
+      console.log("EmployeeDetailsDialog: Employment status from form:", formData.employee.employment_status);
+      
       // Ensure we're updating the correct employee
       const updatedEmployee: Employee = {
         ...employee,
         ...formData.employee,
         id: employee.id,
         user_id: employee.user_id,
+        // Explicitly ensure employment_status is included
+        employment_status: formData.employee.employment_status || employee.employment_status
       };
       
+      console.log("EmployeeDetailsDialog: Final payload to be sent to Supabase:", updatedEmployee);
+      
       // Double-check direct update to Supabase
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('employees')
         .update(updatedEmployee)
-        .eq('id', employee.id);
+        .eq('id', employee.id)
+        .select();
         
       if (error) throw error;
+
+      console.log("EmployeeDetailsDialog: Response from Supabase update:", data);
       
       toast({
         title: 'Changes Saved',
         description: `Details for ${formData.employee.full_name || employee.full_name} updated.`,
       });
 
+      // Ensure we pass the actual updated data returned from Supabase
       setViewMode('view');
-      onEdit(updatedEmployee);
+      onEdit(data?.[0] || updatedEmployee);
     } catch (error: any) {
       console.error('Error updating employee:', error);
       toast({

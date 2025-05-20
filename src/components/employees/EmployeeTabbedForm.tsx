@@ -74,12 +74,16 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
   
     try {
       console.log('Data to submit:', data.employee);
+      console.log('Employment status in form data:', data.employee.employment_status);
   
       // Prepare employee data, ensuring all fields from the form are included
       const payload: EmployeeInsertData = {
         user_id: user?.id || '',
-        ...data.employee  // This includes all form fields
+        ...data.employee,  // This includes all form fields
+        employment_status: data.employee.employment_status || null // Explicitly include employment status
       };
+      
+      console.log('Final payload to send to Supabase:', payload);
   
       let result;
       
@@ -88,13 +92,15 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
         result = await supabase
           .from('employees') // Use the base table instead of a view
           .insert(payload)
-          .select('id')
+          .select('id, employment_status')
           .single();
   
         if (result.error) {
           console.error('Error inserting employee:', result.error);
           throw result.error;
         }
+        
+        console.log('Supabase create response:', result);
         
         // Update the employee ID in the form data
         if (result.data) {
@@ -107,11 +113,18 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
           .from('employees') // Use the base table instead of a view
           .update(payload)
           .eq('id', data.employee.id)
-          .select();
+          .select('employment_status');
   
         if (result.error) {
           console.error('Error updating employee:', result.error);
           throw result.error;
+        }
+        
+        console.log('Supabase update response:', result);
+        
+        // Verify the update was successful
+        if (result.data && result.data.length > 0) {
+          console.log('Updated employment status in response:', result.data[0].employment_status);
         }
   
         toast.success('Employee updated successfully');

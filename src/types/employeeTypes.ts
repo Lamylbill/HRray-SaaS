@@ -10,7 +10,7 @@ export interface EmployeeInsertData {
   
   // Special fields with non-standard types
   gross_salary?: number | null;
-  basic_salary?: number | string | null; // Allow both string and number
+  basic_salary?: number | null;
   allowances?: number | null;
   work_hours?: number | null;
   notice_period?: number | null;
@@ -36,9 +36,6 @@ export interface EmployeeInsertData {
   salary_fixed?: number | null;
   salary_gross?: number | null;
   probation_period?: number | null;
-  
-  // Employee status field to ensure it's always included in updates
-  employment_status?: string | null;
 }
 
 // Type for Excel imported data

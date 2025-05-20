@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, forwardRef } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,7 +15,6 @@ import { EmployeeFormData } from '@/types/employee';
 import { TabNav } from './tabs/TabNav';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { EmployeeInsertData } from '@/types/employeeTypes';
 
 export interface EmployeeTabbedFormProps {
   employee?: any;
@@ -74,16 +72,18 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
   
     try {
       console.log('Data to submit:', data.employee);
-      console.log('Employment status in form data:', data.employee.employment_status);
   
-      // Prepare employee data, ensuring all fields from the form are included
-      const payload: EmployeeInsertData = {
-        user_id: user?.id || '',
-        ...data.employee,  // This includes all form fields
-        employment_status: data.employee.employment_status || null // Explicitly include employment status
+      // Prepare employee data with all the required fields
+      const payload = {
+        full_name: data.employee.full_name || '',
+        email: data.employee.email || '',
+        contact_number: data.employee.contact_number || '',
+        gender: data.employee.gender || '',
+        nationality: data.employee.nationality || '',
+        date_of_birth: data.employee.date_of_birth || null,
+        user_id: user?.id || null,
+        employment_status: 'Active',
       };
-      
-      console.log('Final payload to send to Supabase:', payload);
   
       let result;
       
@@ -92,7 +92,7 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
         result = await supabase
           .from('employees') // Use the base table instead of a view
           .insert(payload)
-          .select('id, employment_status')
+          .select('id')
           .single();
   
         if (result.error) {
@@ -100,31 +100,22 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
           throw result.error;
         }
         
-        console.log('Supabase create response:', result);
-        
         // Update the employee ID in the form data
         if (result.data) {
           data.employee.id = result.data.id;
           toast.success('Employee created successfully');
         }
       } else if (mode === 'edit' && data.employee.id) {
-        // For updates, also use the direct table and include all fields from the form
+        // For updates, also use the direct table
         result = await supabase
           .from('employees') // Use the base table instead of a view
           .update(payload)
           .eq('id', data.employee.id)
-          .select('employment_status');
+          .select();
   
         if (result.error) {
           console.error('Error updating employee:', result.error);
           throw result.error;
-        }
-        
-        console.log('Supabase update response:', result);
-        
-        // Verify the update was successful
-        if (result.data && result.data.length > 0) {
-          console.log('Updated employment status in response:', result.data[0].employment_status);
         }
   
         toast.success('Employee updated successfully');

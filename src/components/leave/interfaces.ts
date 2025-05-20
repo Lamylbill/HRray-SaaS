@@ -33,11 +33,26 @@ export interface LeaveRequest {
   chargeable_duration?: number;
 }
 
+// Define the shape of LeaveQuota
+export interface LeaveQuota {
+  employee_id: string;
+  leave_type_id: string;
+  quota_days: number;
+  taken_days: number;
+  adjustment_days: number;
+}
+
+// Define the simple Employee interface for leave functionality
+export interface Employee {
+  id: string;
+  full_name: string;
+}
+
 // Define the shape of DocumentManagerProps
 export interface DocumentManagerProps {
   employeeId: string;
   refreshTrigger?: number;
   isReadOnly?: boolean;
   bucketReady?: boolean;
-  isTabbed?: boolean; // Add this property to fix the type error
+  isTabbed?: boolean; // This prop is used in EmployeeDetailsTabs
 }

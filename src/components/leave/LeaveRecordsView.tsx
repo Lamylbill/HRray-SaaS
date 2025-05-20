@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { LeaveRequest, LeaveType } from './interfaces';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -49,7 +50,14 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ availableLeaveTypes
       const formatted: LeaveRequest[] = leaveRequestsData.map(lr => ({
         ...lr,
         employee: employeeMap.get(lr.employee_id) || { id: lr.employee_id, full_name: 'Unknown Employee' },
-        leave_type: Array.isArray(lr.leave_type) ? lr.leave_type[0] : lr.leave_type || { id: '', name: 'Unknown', color: '#808080', is_paid: true },
+        leave_type: Array.isArray(lr.leave_type) 
+          ? { 
+              id: lr.leave_type[0]?.id || '', 
+              name: lr.leave_type[0]?.name || 'Unknown', 
+              color: lr.leave_type[0]?.color || '#808080', 
+              is_paid: lr.leave_type[0]?.is_paid || true 
+            }
+          : lr.leave_type || { id: '', name: 'Unknown', color: '#808080', is_paid: true },
       }));
 
       setAllLeaveRequests(formatted);

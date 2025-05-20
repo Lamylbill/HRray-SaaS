@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   DialogHeader,
@@ -52,21 +53,39 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
     }
   };
 
-  const handleEmployeeUpdate = (formData: EmployeeFormData) => {
-    toast({
-      title: 'Changes Saved',
-      description: `Details for ${formData.employee.full_name || employee.full_name} updated.`,
-    });
+  const handleEmployeeUpdate = async (formData: EmployeeFormData) => {
+    try {
+      // Ensure we're updating the correct employee
+      const updatedEmployee: Employee = {
+        ...employee,
+        ...formData.employee,
+        id: employee.id,
+        user_id: employee.user_id,
+      };
+      
+      // Double-check direct update to Supabase
+      const { error } = await supabase
+        .from('employees')
+        .update(updatedEmployee)
+        .eq('id', employee.id);
+        
+      if (error) throw error;
+      
+      toast({
+        title: 'Changes Saved',
+        description: `Details for ${formData.employee.full_name || employee.full_name} updated.`,
+      });
 
-    const updatedEmployee: Employee = {
-      ...employee,
-      ...formData.employee,
-      id: employee.id,
-      user_id: employee.user_id,
-    };
-
-    setViewMode('view');
-    onEdit(updatedEmployee);
+      setViewMode('view');
+      onEdit(updatedEmployee);
+    } catch (error: any) {
+      console.error('Error updating employee:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update employee',
+        variant: 'destructive',
+      });
+    }
   };
 
   const initialFormData: EmployeeFormData = {
@@ -105,7 +124,7 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
           key={employee.id}
           initialData={initialFormData}
           employee={employee}
-          mode={viewMode}
+          mode={viewMode === 'view' ? 'view' : 'edit'}
           onSuccess={handleEmployeeUpdate}
           isViewOnly={viewMode === 'view'}
           formRef={formRef}

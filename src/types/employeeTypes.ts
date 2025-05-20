@@ -36,6 +36,9 @@ export interface EmployeeInsertData {
   salary_fixed?: number | null;
   salary_gross?: number | null;
   probation_period?: number | null;
+  
+  // Employee status field to ensure it's always included in updates
+  employment_status?: string | null;
 }
 
 // Type for Excel imported data

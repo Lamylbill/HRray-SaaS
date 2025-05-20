@@ -28,7 +28,6 @@ const Employees = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [fetchTrigger, setFetchTrigger] = useState(0); // New state to trigger refetches
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate('/login');
@@ -37,11 +36,10 @@ const Employees = () => {
   useEffect(() => {
     const fetchEmployees = async () => {
       if (!user) return;
-      console.log("Fetching employees from Supabase...");
       const supabase = getAuthorizedClient();
     
       const { data, error } = await supabase
-        .from('employees')
+        .from('employees_with_documents')
         .select('*')
         .eq('user_id', user.id)
         .order('full_name', { ascending: true });
@@ -50,20 +48,12 @@ const Employees = () => {
         console.error('Error fetching employees:', error);
         return;
       }
-      
-      console.log("Employees fetched:", data?.length);
-      console.log("Sample employment status values:", data?.map(e => e.employment_status).slice(0, 5));
     
       setEmployees(data || []);
     };
 
     fetchEmployees();
-  }, [user, fetchTrigger]); // Added fetchTrigger dependency
-
-  // Function to refresh the employee list
-  const refreshEmployeeList = () => {
-    setFetchTrigger(prev => prev + 1);
-  };
+  }, [user]);
 
   const sortFunctions = {
     name: (a, b, dir) => dir === 'asc' ? a.full_name.localeCompare(b.full_name) : b.full_name.localeCompare(a.full_name),
@@ -89,21 +79,6 @@ const Employees = () => {
       setSortBy(key);
       setSortDirection('asc');
     }
-  };
-
-  const handleEmployeeUpdate = (updatedEmployee) => {
-    console.log("Employee updated:", updatedEmployee);
-    console.log("Updated employment status:", updatedEmployee.employment_status);
-    
-    // Update the employee in the local state
-    setEmployees(prevEmployees => 
-      prevEmployees.map(emp => 
-        emp.id === updatedEmployee.id ? updatedEmployee : emp
-      )
-    );
-    
-    // Also trigger a refetch to ensure data is fresh
-    refreshEmployeeList();
   };
 
   const SortIndicator = ({ column }: { column: string }) =>
@@ -209,41 +184,10 @@ const Employees = () => {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => {
-                                  // Handle view profile action
-                                }}>View Profile</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => {
-                                  // Handle edit details action
-                                }}>Edit Details</DropdownMenuItem>
+                                <DropdownMenuItem>View Profile</DropdownMenuItem>
+                                <DropdownMenuItem>Edit Details</DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => {
-                                  // Update employee status with immediate refresh
-                                  const newStatus = employee.employment_status === 'Active' ? 'Inactive' : 'Active';
-                                  
-                                  const updateStatus = async () => {
-                                    const supabase = getAuthorizedClient();
-                                    
-                                    console.log(`Updating employee ${employee.id} status to ${newStatus}`);
-                                    
-                                    const { data, error } = await supabase
-                                      .from('employees')
-                                      .update({ employment_status: newStatus })
-                                      .eq('id', employee.id)
-                                      .select();
-                                      
-                                    if (error) {
-                                      console.error('Error updating status:', error);
-                                      return;
-                                    }
-                                    
-                                    console.log('Status update response:', data);
-                                    refreshEmployeeList();
-                                  };
-                                  
-                                  updateStatus();
-                                }}>
-                                  {employee.employment_status === 'Active' ? 'Set Inactive' : 'Set Active'}
-                                </DropdownMenuItem>
+                                <DropdownMenuItem>Change Status</DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
                               </DropdownMenuContent>

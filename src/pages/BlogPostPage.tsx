@@ -14,6 +14,7 @@ import { Calendar, Tag, MessageSquare, Share2, Facebook, Linkedin, X } from 'luc
 import { Separator } from '@/components/ui/separator';
 import { Helmet } from 'react-helmet-async';
 import { v4 as uuidv4 } from 'uuid';
+import DOMPurify from 'dompurify';
 
 const BlogPostPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -271,7 +272,7 @@ const BlogPostPage = () => {
           )}
   
           <CardContent className="prose max-w-none">
-            <div dangerouslySetInnerHTML={{ __html: post.content }} />
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }} />
           </CardContent>
   
           <CardFooter className="flex flex-wrap gap-4 justify-between items-center">

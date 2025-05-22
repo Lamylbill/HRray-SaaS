@@ -106,7 +106,7 @@ const BlogPage = () => {
       {isLoading ? (
         <div className="flex flex-col justify-center items-center h-64 space-y-3 text-gray-500 animate-pulse">
           <div className="animate-spin-slow">
-            <LoadingSpinner size="lg" />
+            <LoadingSpinner size="lg" message="Loading the posts..." />
           </div>
           <p className="text-sm">Loading latest blog posts...</p>
         </div>

@@ -104,8 +104,11 @@ const BlogPage = () => {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <LoadingSpinner size="lg" />
+        <div className="flex flex-col justify-center items-center h-64 space-y-3 text-gray-500 animate-pulse">
+          <div className="animate-spin-slow">
+            <LoadingSpinner size="lg" />
+          </div>
+          <p className="text-sm">Loading latest blog posts...</p>
         </div>
       ) : filteredPosts.length === 0 ? (
         <p className="text-center text-gray-500">No blog posts found.</p>

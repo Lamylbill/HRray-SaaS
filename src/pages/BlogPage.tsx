@@ -71,8 +71,11 @@ const BlogPage = () => {
       </Helmet>
 
       {isLoading ? (
-        <div className="flex-grow flex flex-col justify-center items-center py-24 space-y-4 text-gray-500">
-          <LoadingSpinner size="lg" message="Loading latest blog posts..." />
+        <div className="flex-grow flex flex-col justify-center items-center min-h-[60vh] space-y-4 text-gray-500">
+          <div className="animate-spin-slow">
+            <LoadingSpinner size="lg" />
+          </div>
+          <p className="text-sm">Loading latest blog posts...</p>
         </div>
       ) : (
         <>

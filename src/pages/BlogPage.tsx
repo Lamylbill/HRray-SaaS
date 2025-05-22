@@ -94,7 +94,7 @@ const BlogPage = () => {
       </Helmet>
       
       {/* Blog header */}
-      <div className="py-6 md:py-10">
+      <div className="pt-[80px] pb-6 md:pt-[96px] md:pb-10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">Blog</h1>

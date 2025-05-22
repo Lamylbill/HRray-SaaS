@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { blogService } from '@/services/blog.service';
+import { blogService } from '@/integrations/supabase/blog-service';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 import { BlogPost, BlogComment } from '@/integrations/supabase/blog-types';

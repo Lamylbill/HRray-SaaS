@@ -4,12 +4,14 @@ interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
   color?: string;
   className?: string;
+  message?: string;
 }
 
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
   size = 'md', 
   color = 'blue-500',
-  className = ''
+  className = '',
+  message
 }) => {
   const sizeClasses = {
     sm: 'h-4 w-4',
@@ -18,10 +20,13 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   };
 
   return (
-    <div className={`flex justify-center items-center ${className}`}>
+    <div className={`flex flex-col justify-center items-center space-y-2 ${className}`}>
       <div 
         className={`animate-spin-slow rounded-full ${sizeClasses[size]} border-t-2 border-b-2 border-${color}`} 
       />
+      {message && (
+        <p className="text-sm text-gray-500">{message}</p>
+      )}
     </div>
   );
 };

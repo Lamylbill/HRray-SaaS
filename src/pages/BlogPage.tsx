@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 import { BlogPost, BlogCategory } from '@/integrations/supabase/blog-types';
-import { blogService } from '@/services/blog.service';
+import { blogService } from '@/integrations/supabase/blog-service';
 import { useToast } from '@/hooks/use-toast';
 import { Search, Calendar, Tag, User } from 'lucide-react';
 

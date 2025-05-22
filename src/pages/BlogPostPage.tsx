@@ -75,7 +75,7 @@ const BlogPage = () => {
           <div className="animate-spin-slow">
             <LoadingSpinner size="lg" />
           </div>
-          <p className="text-sm">Loading latest blog posts...</p>
+          <p className="text-sm">Loading the blog post...</p>
         </div>
       ) : (
         <>

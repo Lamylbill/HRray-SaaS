@@ -155,7 +155,7 @@ export default {
 				'slide-in-right': 'slide-in-right 0.5s ease-out',
 				'pulse-subtle': 'pulse-subtle 3s infinite ease-in-out',
 				'float': 'float 6s infinite ease-in-out',
-				'spin-slow': 'spin-slow 4s linear infinite'
+				'spin-slow': 'spin-slow 2s linear infinite'
 			},
 			fontFamily: {
 				'sans': ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],

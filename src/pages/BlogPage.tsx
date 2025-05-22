@@ -27,10 +27,12 @@ const BlogPage = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const postResult = await blogService.getPosts(currentPage, POSTS_PER_PAGE, "false", selectedCategory || undefined);
+        const [postResult, catResult] = await Promise.all([
+          blogService.getPosts(currentPage, POSTS_PER_PAGE, "false", selectedCategory || undefined),
+          blogService.getCategories()
+        ]);
         setPosts(postResult.posts);
         setTotalPosts(postResult.total);
-        const catResult = await blogService.getCategories();
         setCategories(catResult);
       } catch (error) {
         console.error('Failed to load blog data:', error);
@@ -116,6 +118,7 @@ const BlogPage = () => {
                   <img
                     src={post.cover_image}
                     alt={post.title}
+                    loading="lazy"
                     className="w-full h-48 object-cover rounded-t-md"
                   />
                 )}

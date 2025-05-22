@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface LoadingSpinnerProps {
@@ -20,7 +19,9 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
   return (
     <div className={`flex justify-center items-center ${className}`}>
-      <div className={`animate-spin rounded-full ${sizeClasses[size]} border-t-2 border-b-2 border-${color}`} />
+      <div 
+        className={`animate-spin-slow rounded-full ${sizeClasses[size]} border-t-2 border-b-2 border-${color}`} 
+      />
     </div>
   );
 };

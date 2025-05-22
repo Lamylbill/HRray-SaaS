@@ -10,7 +10,7 @@ import { BlogPostFormData, BlogCategory } from '@/integrations/supabase/blog-typ
 import { MultiSelect } from '@/components/ui/multi-select';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { blogService } from '@/services/blog.service';
+import { blogService } from '@/integrations/supabase/blog-service';
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 import { Editor } from '@/components/blog/Editor';
 import { DatePicker } from '@/components/ui/date-picker';

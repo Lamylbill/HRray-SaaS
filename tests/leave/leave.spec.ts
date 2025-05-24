@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 // Test that the Leave page loads
-test('Leave page loads correctly', async ({ page }) => {
+test('Leave page loads correctly', async ({ page }) => { 
   await page.goto('https://hrray.netlify.app/leave');
   await expect(page.getByRole('heading', { name: 'Leave', level: 1 })).toBeVisible();
   await expect(page.getByText('Apply for Leave')).toBeVisible();

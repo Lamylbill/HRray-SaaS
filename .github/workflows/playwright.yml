@@ -1,5 +1,22 @@
 name: Run Playwright tests
 
+# Cache node_modules
+- name: Cache node_modules
+  uses: actions/cache@v3
+  with:
+    path: ~/.npm
+    key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+    restore-keys: |
+      ${{ runner.os }}-node-
+
+# Cache Playwright browsers
+- name: Cache Playwright browsers
+  uses: actions/cache@v3
+  with:
+    path: ~/.cache/ms-playwright
+    key: ${{ runner.os }}-playwright
+
+
 on:
   push:
     branches: [ main ]

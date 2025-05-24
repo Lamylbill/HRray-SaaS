@@ -1,16 +1,17 @@
-
 import React from 'react';
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
   color?: string;
   className?: string;
+  message?: string;
 }
 
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
   size = 'md', 
   color = 'blue-500',
-  className = ''
+  className = '',
+  message
 }) => {
   const sizeClasses = {
     sm: 'h-4 w-4',
@@ -19,8 +20,11 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   };
 
   return (
-    <div className={`flex justify-center items-center ${className}`}>
-      <div className={`animate-spin rounded-full ${sizeClasses[size]} border-t-2 border-b-2 border-${color}`} />
+    <div className={`flex flex-col justify-center items-center space-y-2 ${className}`}>
+      <div className={`rounded-full ${sizeClasses[size]} border-t-2 border-b-2 border-${color} animate-spin-slow`} />
+      {message && (
+        <p className="text-sm text-gray-500">{message}</p>
+      )}
     </div>
   );
 };

@@ -37,7 +37,7 @@ const BlogPostPage = () => {
         const postData = await blogService.getPostBySlug(slug);
         if (postData) {
           setPost(postData);
-          document.title = ${postData.title} | HRFlow Blog;
+          document.title = `${postData.title} | HRFlow Blog`;
         } else {
           toast({
             title: 'Not Found',
@@ -213,7 +213,7 @@ const BlogPostPage = () => {
           <div>
             <p className="font-medium">{post.author.full_name || 'Anonymous'}</p>
             <p className="text-sm text-gray-500">
-              {publishedDate && Published on ${formatDate(publishedDate)}}
+              {publishedDate && `Published on ${formatDate(publishedDate)}`}
             </p>
           </div>
         </div>

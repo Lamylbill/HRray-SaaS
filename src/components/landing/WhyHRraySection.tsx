@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShieldCheck, Zap, Globe, BadgeDollarSign, TrendingUp } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const valuePoints = [
   {
@@ -29,21 +30,39 @@ const valuePoints = [
   }
 ];
 
+const fadeIn = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: i * 0.1,
+      duration: 0.6,
+      ease: 'easeOut'
+    }
+  })
+};
+
 const WhyHRraySection = () => {
   return (
-    <section className="py-20 bg-blue-50">
+    <section className="py-20 bg-white">
       <div className="container mx-auto px-4 text-center">
-        <h2 className="text-3xl font-bold mb-10 text-blue-700">Why HRray?</h2>
+        <h2 className="text-3xl font-bold mb-10 text-blue-900">Why HRray?</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
           {valuePoints.map((point, index) => (
-            <div
+            <motion.div
               key={index}
               className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition text-left"
+              variants={fadeIn}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              custom={index}
             >
               <div className="mb-4">{point.icon}</div>
               <h3 className="text-lg font-semibold text-blue-900 mb-2">{point.title}</h3>
-              <p className="text-sm text-blue-700">{point.description}</p>
-            </div>
+              <p className="text-sm text-blue-800">{point.description}</p>
+            </motion.div>
           ))}
         </div>
       </div>

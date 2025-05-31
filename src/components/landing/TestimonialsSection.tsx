@@ -1,43 +1,51 @@
 import React from 'react';
-import { Quote } from 'lucide-react';
+import { Star } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const testimonials = [
   {
-    name: 'Sarah T.',
-    role: 'HR Manager',
-    quote:
-      "HRray has transformed how we manage HR tasks. From leave tracking to payroll, it's seamless and compliant with CPF & MOM."
+    name: 'Amira L.',
+    role: 'Office Manager, Kuala Lumpur',
+    quote: 'HRray helped us automate payroll and leave tracking seamlessly. The Telegram bot is a game-changer!',
+    rating: 5
   },
   {
-    name: 'Daniel L.',
-    role: 'Co-founder',
-    quote:
-      "The Telegram leave bot is a game changer for our team. Our staff love how simple it is to apply for leave."
+    name: 'Daniel T.',
+    role: 'Startup Founder, Singapore',
+    quote: 'No more compliance headaches — HRray makes CPF and IRAS reporting a breeze. Totally worth it.',
+    rating: 5
   },
   {
-    name: 'Mei Yi C.',
-    role: 'Operations Director',
-    quote:
-      "Setup was fast, and the interface is intuitive. The peace of mind knowing we’re IRAS-compliant is priceless."
+    name: 'Michelle K.',
+    role: 'HR Executive, JB',
+    quote: 'User-friendly, affordable, and backed by amazing support. Our HR workflow has never been smoother.',
+    rating: 5
   }
 ];
 
-const TestimonialSection = () => {
+const TestimonialsSection = () => {
   return (
     <section className="py-20 bg-blue-50">
       <div className="container mx-auto px-4 text-center">
-        <h2 className="text-3xl font-bold mb-12 text-blue-900">What Our Users Say</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <h2 className="text-3xl font-bold mb-12 text-blue-900">What our users say</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {testimonials.map((t, index) => (
-            <div
+            <motion.div
               key={index}
-              className="bg-white p-6 rounded-xl shadow-md text-left hover:shadow-lg transition"
+              className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition text-left"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1, duration: 0.6 }}
             >
-              <Quote className="text-blue-300 w-6 h-6 mb-4" />
-              <p className="text-blue-900 italic mb-4">“{t.quote}”</p>
-              <p className="font-semibold text-blue-800">{t.name}</p>
-              <p className="text-sm text-blue-600">{t.role}</p>
-            </div>
+              <div className="flex items-center mb-3">
+                {Array.from({ length: t.rating }).map((_, i) => (
+                  <Star key={i} className="w-4 h-4 text-yellow-400 mr-1" />
+                ))}
+              </div>
+              <p className="text-blue-900 font-medium mb-2">"{t.quote}"</p>
+              <p className="text-sm text-blue-800">— {t.name}, {t.role}</p>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -45,4 +53,4 @@ const TestimonialSection = () => {
   );
 };
 
-export default TestimonialSection;
+export default TestimonialsSection;

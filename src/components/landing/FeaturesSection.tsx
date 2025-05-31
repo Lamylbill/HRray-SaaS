@@ -3,38 +3,37 @@ import { CheckCircle } from 'lucide-react';
 
 const features = [
   {
-    title: 'Employee Self-Service via Telegram',
-    description: 'Let employees apply for leave directly through Telegram, reducing admin load.',
-    icon: <CheckCircle className="text-orange-500" />
+    title: 'Leave Management via Telegram',
+    description: 'Apply and approve leave requests through a smart Telegram bot.',
   },
   {
     title: 'CPF, MOM, IRAS Compliance',
-    description: 'Ensure every payroll and HR process meets Singapore regulations.',
-    icon: <CheckCircle className="text-orange-500" />
+    description: 'Stay compliant with Singapore’s payroll and HR regulations.',
   },
   {
-    title: 'Leave & Attendance Tracking',
-    description: 'Track leave balances and work hours accurately with built-in compliance.',
-    icon: <CheckCircle className="text-orange-500" />
+    title: 'Employee Database',
+    description: 'Centralised record keeping with secure data handling.',
   },
   {
     title: 'Payroll Automation',
-    description: 'Calculate monthly salaries with CPF deductions handled automatically.',
-    icon: <CheckCircle className="text-orange-500" />
+    description: 'Generate payroll with CPF calculations and downloadable payslips.',
   },
 ];
 
 const FeaturesSection = () => {
   return (
-    <section className="py-20 bg-white text-center border-t border-gray-100">
-      <div className="container mx-auto px-4">
-        <h2 className="text-4xl font-bold text-blue-700 mb-12">What HRray Can Do</h2>
+    <section className="py-20 bg-white">
+      <div className="container mx-auto px-6 text-center">
+        <h2 className="text-3xl font-bold text-blue-900 mb-10">Core Features</h2>
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {features.map((feature, idx) => (
-            <div key={idx} className="p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition bg-white">
-              <div className="mb-4 flex justify-center">{feature.icon}</div>
+            <div
+              key={idx}
+              className="p-6 bg-white border border-blue-100 rounded-xl shadow hover:shadow-md transition"
+            >
+              <CheckCircle className="text-orange-500 mb-4 mx-auto w-6 h-6" />
               <h3 className="font-semibold text-lg text-blue-900 mb-2">{feature.title}</h3>
-              <p className="text-sm text-blue-700 leading-relaxed">{feature.description}</p>
+              <p className="text-sm text-blue-800">{feature.description}</p>
             </div>
           ))}
         </div>

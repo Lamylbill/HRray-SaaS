@@ -151,9 +151,9 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
   >
       <nav className="container mx-auto px-6 py-3 flex items-center justify-between" ref={containerRef}>
         <Link to="/" className="flex items-center gap-2 z-50" onClick={handleHomeClick}>
-          <Button variant="ghost" className="gap-0 text-inherit text-left normal-case p-0">
-            <span className="text-blue-800 font-display font-bold text-[30px]">HR</span>
-            <span className="font-display font-bold text-[30px] text-orange-500">ray</span>
+        <Button variant="ghost" className="gap-0 text-inherit text-left normal-case p-0 h-auto">
+  <span className="text-blue-800 font-display font-bold text-[30px]">HR</span>
+  <span className="text-orange-500 font-display font-bold text-[30px]">ray</span>
           </Button>
         </Link>
 
@@ -260,9 +260,9 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
           <div className="flex flex-col h-full p-6">
             <div className="flex items-center justify-between mb-8">
               <Link to="/" className="flex items-center gap-2" onClick={handleHomeClick}>
-                <Button variant="ghost" className="gap-0 text-inherit text-left normal-case p-0">
-                  <span className="text-blue-700 font-display font-bold text-[30px]">HR</span>
-                  <span className="font-display font-bold text-[30px] text-orange-500">ray</span>
+              <Button variant="ghost" className="gap-0 text-inherit text-left normal-case p-0 h-auto">
+  <span className="text-blue-800 font-display font-bold text-[30px]">HR</span>
+  <span className="text-orange-500 font-display font-bold text-[30px]">ray</span>
                 </Button>
               </Link>
               <button onClick={() => setIsMobileMenuOpen(false)} className="text-indigo-800">

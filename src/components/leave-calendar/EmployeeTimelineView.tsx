@@ -1,8 +1,13 @@
+
 import React, { useEffect, useMemo, useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { ChevronDown } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface Employee {
   id: string;
@@ -22,7 +27,7 @@ interface LeaveEvent {
 const EmployeeTimelineView: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [events, setEvents] = useState<LeaveEvent[]>([]);
-  const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -33,7 +38,10 @@ const EmployeeTimelineView: React.FC = () => {
           .select('id, full_name, department')
           .order('full_name');
         if (error) throw error;
-        setEmployees(data || []);
+        const employeeData = data || [];
+        setEmployees(employeeData);
+        // Initially select all employees
+        setSelectedEmployees(employeeData.map(emp => emp.id));
       } catch (err) {
         console.error('Error fetching employees', err);
       }
@@ -73,32 +81,83 @@ const EmployeeTimelineView: React.FC = () => {
     fetchEvents();
   }, []);
 
-  const departments = useMemo(() => {
-    const values = employees.map(e => e.department).filter(Boolean) as string[];
-    return Array.from(new Set(values));
-  }, [employees]);
-
   const resources = useMemo(() => {
-    const filtered = departmentFilter === 'all'
-      ? employees
-      : employees.filter(e => e.department === departmentFilter);
+    const filtered = employees.filter(emp => selectedEmployees.includes(emp.id));
     return filtered.map(emp => ({ id: emp.id, title: emp.full_name }));
-  }, [employees, departmentFilter]);
+  }, [employees, selectedEmployees]);
+
+  const handleEmployeeToggle = (employeeId: string) => {
+    setSelectedEmployees(prev => 
+      prev.includes(employeeId) 
+        ? prev.filter(id => id !== employeeId)
+        : [...prev, employeeId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    setSelectedEmployees(employees.map(emp => emp.id));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedEmployees([]);
+  };
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex gap-2">
-        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-          <SelectTrigger className="w-56">
-            <SelectValue placeholder="Department" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Departments</SelectItem>
-            {departments.map(dep => (
-              <SelectItem key={dep} value={dep}>{dep}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="w-64 justify-between">
+              Staff Selection ({selectedEmployees.length} selected)
+              <ChevronDown className="h-4 w-4 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 p-0" align="start">
+            <div className="p-4">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="font-medium text-sm">Select Staff</h4>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleSelectAll}
+                    className="text-xs h-6 px-2"
+                  >
+                    All
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleDeselectAll}
+                    className="text-xs h-6 px-2"
+                  >
+                    None
+                  </Button>
+                </div>
+              </div>
+              <div className="max-h-64 overflow-y-auto space-y-2">
+                {employees.map(employee => (
+                  <div key={employee.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={employee.id}
+                      checked={selectedEmployees.includes(employee.id)}
+                      onCheckedChange={() => handleEmployeeToggle(employee.id)}
+                    />
+                    <label 
+                      htmlFor={employee.id} 
+                      className="text-sm font-normal cursor-pointer flex-1"
+                    >
+                      {employee.full_name}
+                      {employee.department && (
+                        <span className="text-gray-500 ml-1">({employee.department})</span>
+                      )}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
       <FullCalendar
         plugins={[resourceTimelinePlugin]}
@@ -106,6 +165,25 @@ const EmployeeTimelineView: React.FC = () => {
         resources={resources}
         events={events}
         height="auto"
+        headerToolbar={{
+          left: 'prev,next today',
+          center: 'title',
+          right: ''
+        }}
+        slotLabelFormat={{
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short'
+        }}
+        titleFormat={{
+          year: 'numeric',
+          month: 'long'
+        }}
+        dayHeaderFormat={{
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short'
+        }}
       />
     </div>
   );

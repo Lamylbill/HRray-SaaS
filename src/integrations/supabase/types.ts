@@ -2199,21 +2199,21 @@ export type Database = {
       }
       http: {
         Args: { request: Database["public"]["CompositeTypes"]["http_request"] }
-        Returns: unknown
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_delete: {
         Args:
           | { uri: string }
           | { uri: string; content: string; content_type: string }
-        Returns: unknown
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_get: {
         Args: { uri: string } | { uri: string; data: Json }
-        Returns: unknown
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_head: {
         Args: { uri: string }
-        Returns: unknown
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_header: {
         Args: { field: string; value: string }
@@ -2228,17 +2228,17 @@ export type Database = {
       }
       http_patch: {
         Args: { uri: string; content: string; content_type: string }
-        Returns: unknown
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_post: {
         Args:
           | { uri: string; content: string; content_type: string }
           | { uri: string; data: Json }
-        Returns: unknown
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_put: {
         Args: { uri: string; content: string; content_type: string }
-        Returns: unknown
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_reset_curlopt: {
         Args: Record<PropertyKey, never>

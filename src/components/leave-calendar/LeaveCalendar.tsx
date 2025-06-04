@@ -1,11 +1,15 @@
 
 import React from 'react';
 import { MonthCalendarView } from './MonthCalendarView';
+import EmployeeTimelineView from './EmployeeTimelineView';
 
-const LeaveCalendar: React.FC = () => {
+interface LeaveCalendarProps {
+  view?: 'month' | 'timeline';
+}
+const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ view = 'month' }) => {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      <MonthCalendarView />
+      {view === 'month' ? <MonthCalendarView /> : <EmployeeTimelineView />}
     </div>
   );
 };

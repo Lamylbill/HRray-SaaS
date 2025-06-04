@@ -23,6 +23,7 @@ const Leave = () => {
   const [botLinkDialogOpen, setBotLinkDialogOpen] = useState(false);
   const [botLink, setBotLink] = useState('');
   const [addLeaveDialogOpen, setAddLeaveDialogOpen] = useState(false);
+  const [calendarView, setCalendarView] = useState<'month' | 'timeline'>('month');
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate('/login');
@@ -221,13 +222,31 @@ const Leave = () => {
                 <LinkIcon className="mr-2 h-4 w-4" />
                 Generate Bot Link
               </Button>
+              {activeTab === 'calendar' && (
+                <>
+                  <Button
+                    variant={calendarView === 'month' ? 'secondary' : 'outline'}
+                    size="sm"
+                    onClick={() => setCalendarView('month')}
+                  >
+                    Month
+                  </Button>
+                  <Button
+                    variant={calendarView === 'timeline' ? 'secondary' : 'outline'}
+                    size="sm"
+                    onClick={() => setCalendarView('timeline')}
+                  >
+                    Timeline
+                  </Button>
+                </>
+              )}
             </div>
           </div>
 
           <div className="flex-1 flex flex-col">
             {/* Conditional rendering of views based on activeTab */}
             {activeTab === 'calendar' && (
-              <LeaveCalendar /> // Ensure LeaveCalendar fetches/refreshes data as needed
+              <LeaveCalendar view={calendarView} />
             )}
             {activeTab === 'records' && (
               <LeaveRecordsView 

@@ -1,9 +1,7 @@
-
 import React, { useEffect, useMemo, useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import { getAuthorizedClient } from '@/integrations/supabase/client';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { ChevronDown } from 'lucide-react';
@@ -38,10 +36,8 @@ const EmployeeTimelineView: React.FC = () => {
           .select('id, full_name, department')
           .order('full_name');
         if (error) throw error;
-        const employeeData = data || [];
-        setEmployees(employeeData);
-        // Initially select all employees
-        setSelectedEmployees(employeeData.map(emp => emp.id));
+        setEmployees(data || []);
+        setSelectedEmployees(data?.map(emp => emp.id) || []);
       } catch (err) {
         console.error('Error fetching employees', err);
       }
@@ -51,18 +47,17 @@ const EmployeeTimelineView: React.FC = () => {
       const today = new Date();
       const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
       const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
       try {
         const supabase = getAuthorizedClient();
         const { data, error } = await supabase
           .from('leave_requests')
-          .select(
-            `id, start_date, end_date, employee_id, status,
-            leave_type:leave_type_id (name, color)`
-          )
+          .select(`id, start_date, end_date, employee_id, status, leave_type:leave_type_id (name, color)`)
           .gte('start_date', startDate.toISOString().split('T')[0])
           .lte('end_date', endDate.toISOString().split('T')[0])
           .in('status', ['Approved', 'Pending']);
         if (error) throw error;
+
         const formatted = (data || []).map((ev: any) => ({
           id: ev.id,
           title: ev.leave_type?.name || '',
@@ -87,8 +82,8 @@ const EmployeeTimelineView: React.FC = () => {
   }, [employees, selectedEmployees]);
 
   const handleEmployeeToggle = (employeeId: string) => {
-    setSelectedEmployees(prev => 
-      prev.includes(employeeId) 
+    setSelectedEmployees(prev =>
+      prev.includes(employeeId)
         ? prev.filter(id => id !== employeeId)
         : [...prev, employeeId]
     );
@@ -117,20 +112,10 @@ const EmployeeTimelineView: React.FC = () => {
               <div className="flex justify-between items-center mb-3">
                 <h4 className="font-medium text-sm">Select Staff</h4>
                 <div className="flex gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={handleSelectAll}
-                    className="text-xs h-6 px-2"
-                  >
+                  <Button variant="ghost" size="sm" onClick={handleSelectAll} className="text-xs h-6 px-2">
                     All
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={handleDeselectAll}
-                    className="text-xs h-6 px-2"
-                  >
+                  <Button variant="ghost" size="sm" onClick={handleDeselectAll} className="text-xs h-6 px-2">
                     None
                   </Button>
                 </div>
@@ -143,10 +128,7 @@ const EmployeeTimelineView: React.FC = () => {
                       checked={selectedEmployees.includes(employee.id)}
                       onCheckedChange={() => handleEmployeeToggle(employee.id)}
                     />
-                    <label 
-                      htmlFor={employee.id} 
-                      className="text-sm font-normal cursor-pointer flex-1"
-                    >
+                    <label htmlFor={employee.id} className="text-sm font-normal cursor-pointer flex-1">
                       {employee.full_name}
                       {employee.department && (
                         <span className="text-gray-500 ml-1">({employee.department})</span>
@@ -159,12 +141,30 @@ const EmployeeTimelineView: React.FC = () => {
           </PopoverContent>
         </Popover>
       </div>
+
       <FullCalendar
         plugins={[resourceTimelinePlugin]}
         initialView="resourceTimelineMonth"
+        schedulerLicenseKey="CC-Attribution-NonCommercial-NoDerivatives"
+        height="auto"
         resources={resources}
         events={events}
-        height="auto"
+        resourceAreaHeaderContent="Name"
+        resourceAreaWidth="150px"
+        resourceLabelContent={(arg) => ({
+          html: `<div style="font-weight: normal; font-size: 14px;">${arg.resource.title}</div>`
+        })}
+        eventMinHeight={30}
+        eventOverlap={false}
+        slotEventOverlap={false}
+        eventDidMount={(info) => {
+          info.el.style.margin = '0';
+          info.el.style.padding = '4px 6px';
+          info.el.style.borderRadius = '6px';
+          info.el.style.lineHeight = '1.25';
+          info.el.style.fontSize = '13px';
+          info.el.style.fontWeight = '500';
+        }}
         headerToolbar={{
           left: 'prev,next today',
           center: 'title',

@@ -152,7 +152,7 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
       <nav className="container mx-auto px-6 py-3 flex items-center justify-between" ref={containerRef}>
         <Link to="/" className="flex items-center gap-2 z-50" onClick={handleHomeClick}>
           <Button variant="ghost" className="gap-0 text-inherit text-left normal-case p-0">
-            <span className="text-blue-700 font-display font-bold text-[30px]">HR</span>
+            <span className="text-blue-800 font-display font-bold text-[30px]">HR</span>
             <span className="font-display font-bold text-[30px] text-orange-500">ray</span>
           </Button>
         </Link>
@@ -170,7 +170,7 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
                     className={cn(
                       'inline-flex items-center px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
                       isSectionActive(item.name)
-                        ? 'bg-blue-700 text-white hover:bg-blue-800'
+                        ? 'bg-blue-800 text-white hover:bg-blue-800'
                         : 'text-blue-800 hover:bg-blue-50 hover:text-blue-800'
                     )}
                     aria-label={item.name}

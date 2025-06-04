@@ -62,7 +62,7 @@ export const DashNavbar: React.FC = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center gap-2 z-50" onClick={handleLogoClick}>
               <Button variant="ghost" className="gap-0 text-inherit text-left normal-case p-0 h-auto">
-                <span className="text-blue-700 font-display font-bold text-[30px]">HR</span>
+                <span className="text-blue-800 font-display font-bold text-[30px]">HR</span>
                 <span className="text-orange-500 font-display font-bold text-[30px]">ray</span>
               </Button>
             </Link>
@@ -80,7 +80,7 @@ export const DashNavbar: React.FC = () => {
                         to={item.href}
                         className={cn(
                           'inline-flex items-center justify-center px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200',
-                          isActive ? "bg-blue-700 text-white hover:bg-blue-800" : "text-blue-800 hover:bg-blue-100 hover:text-blue-700"
+                          isActive ? "bg-blue-800 text-white hover:bg-blue-800" : "text-blue-800 hover:bg-blue-100 hover:text-blue-700"
                         )}
                       >
                         {item.icon && <span className="mr-2 h-4 w-4 flex items-center justify-center">{item.icon}</span>}

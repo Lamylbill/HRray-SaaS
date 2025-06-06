@@ -5,7 +5,7 @@ import { Button } from '@/components/ui-custom/Button';
 
 const CallToActionSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
   return (
-    <section className="py-20 bg-orange-50 text-center">
+    <section id="get-started" className="py-20 bg-orange-50 text-center">
       <div className="container mx-auto px-6">
         <h2 className="text-4xl font-bold text-blue-900 mb-6">
           Ready to simplify your HR?

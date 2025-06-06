@@ -45,7 +45,7 @@ const fadeIn = {
 
 const WhyHRraySection = () => {
   return (
-    <section className="py-20 bg-white">
+    <section id="why-hrray" className="py-20 bg-white">
       <div className="container mx-auto px-4 text-center">
         <h2 className="text-3xl font-bold mb-10 text-blue-900">Why HRray?</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">

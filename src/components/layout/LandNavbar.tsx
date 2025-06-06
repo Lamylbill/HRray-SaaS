@@ -11,16 +11,24 @@ import {
   NavigationMenu, NavigationMenuItem, NavigationMenuList
 } from '@/components/ui/navigation-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getNavItems } from './NavItems';
 import { cn } from '@/lib/utils';
 
 interface NavbarProps {
   showLogo?: boolean;
 }
 
+const sectionMap = [
+  { id: 'home', label: 'Home' },
+  { id: 'features', label: 'Core Features' },
+  { id: 'why-hrray', label: 'Why HRray?' },
+  { id: 'roadmap', label: 'Product Roadmap' },
+  { id: 'get-started', label: 'Get Started' },
+  { id: 'blog', label: 'Blog', type: 'route' },
+  { id: 'about', label: 'About' },
+];
+
 export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
   const { isAuthenticated, user, logout } = useAuth();
-  const [isScrolled, setIsScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
@@ -50,133 +58,78 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-
-      const sections = ['home', 'features', 'pricing', 'contact', 'about'];
       const scrollPos = window.scrollY + 120;
-      
-      const pricingTableEl = document.getElementById('pricing-table');
-      const pricingEl = document.getElementById('pricing');
-      
-      if ((pricingTableEl && scrollPos >= pricingTableEl.offsetTop && scrollPos < pricingTableEl.offsetTop + pricingTableEl.offsetHeight) || 
-          (pricingEl && scrollPos >= pricingEl.offsetTop && scrollPos < pricingEl.offsetTop + pricingEl.offsetHeight)) {
-        setActiveSection('pricing');
-      } else {
-        for (const section of sections) {
-          const el = document.getElementById(section);
-          if (el) {
-            const top = el.offsetTop;
-            const bottom = top + el.offsetHeight;
-            if (scrollPos >= top && scrollPos < bottom) {
-              setActiveSection(section);
-              break;
-            }
+      for (const section of sectionMap) {
+        const el = document.getElementById(section.id);
+        if (el) {
+          const top = el.offsetTop;
+          const bottom = top + Math.max(el.offsetHeight, window.innerHeight / 2);
+          if (scrollPos >= top && scrollPos < bottom) {
+            setActiveSection(section.id);
+            break;
           }
         }
       }
     };
-
     window.addEventListener('scroll', handleScroll);
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const publicNavItems = getNavItems();
-
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
-    let sectionId;
-
-    if (id === "/#pricing-table" || id === "#pricing-table" || id === "pricing-table") {
-      sectionId = "pricing-table";
-    } else if (id === '/#pricing' || id === '#pricing' || id === 'pricing') {
-      sectionId = 'pricing-comparison'; 
-    } else if (id.startsWith('/#')) {
-      sectionId = id.substring(2);
-    } else if (id.startsWith('#')) {
-      sectionId = id.substring(1);
-    } else if (id === '/') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      setActiveSection('home');
-      setIsMobileMenuOpen(false);
-      return;
-    } else if (id.startsWith('/')) {
-      navigate(id);
-      setIsMobileMenuOpen(false);
-      return;
-    } else {
-      sectionId = id;
-    }
-
-    const element = document.getElementById(sectionId);
-    if (element) {
-      window.scrollTo({ top: element.offsetTop - 100, behavior: 'smooth' });
-      setActiveSection(sectionId);
+    const el = document.getElementById(id);
+    if (el) {
+      window.scrollTo({ top: el.offsetTop - 100, behavior: 'smooth' });
+      setActiveSection(id);
       setIsMobileMenuOpen(false);
     } else if (location.pathname !== '/') {
       navigate('/');
       setTimeout(() => {
-        const targetElement = document.getElementById(sectionId);
-        if (targetElement) {
-          window.scrollTo({ top: targetElement.offsetTop - 100, behavior: 'smooth' });
-          setActiveSection(sectionId);
+        const delayedEl = document.getElementById(id);
+        if (delayedEl) {
+          window.scrollTo({ top: delayedEl.offsetTop - 100, behavior: 'smooth' });
+          setActiveSection(id);
         }
-      }, 100);
+      }, 500);
     }
-  };
-
-  const handleHomeClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    navigate('/');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setActiveSection('home');
-    setIsMobileMenuOpen(false);
-  };
-
-  const isSectionActive = (section: string) => {
-    if (section.toLowerCase() === 'pricing') {
-      return activeSection === 'pricing' || activeSection === 'pricing-table';
-    }
-    return activeSection === section.toLowerCase();
   };
 
   return (
-    <header
-    className={cn(
-      'fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white shadow-sm border-b border-gray-200'
-      // The isScrolled logic for these specific styles is removed; they are now always applied.
-      // If you still want other changes on scroll (like different background opacity, etc.), 
-      // you can add conditional classes for those, but for shadow and border, they're now static.
-    )}
-  >
-      <nav className="container mx-auto px-6 py-3 flex items-center justify-between" ref={containerRef}>
-        <Link to="/" className="flex items-center gap-2 z-50" onClick={handleHomeClick}>
-        <Button variant="ghost" className="gap-0 text-inherit text-left normal-case p-0 h-auto">
-  <span className="text-blue-800 font-display font-bold text-[30px]">HR</span>
-  <span className="text-orange-500 font-display font-bold text-[30px]">ray</span>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200">
+      <nav className="container mx-auto px-6 py-2.5 flex items-center justify-between min-h-[60px]" ref={containerRef}>
+        <Link to="/" className="flex items-center gap-2 z-50" onClick={(e) => scrollToSection(e, 'home')}>
+          <Button variant="ghost" className="gap-0 text-inherit text-left normal-case p-0 h-auto">
+            <span className="text-blue-800 font-display font-bold text-[30px] leading-none">HR</span>
+            <span className="text-orange-500 font-display font-bold text-[30px] leading-none">ray</span>
           </Button>
         </Link>
 
         <div className={cn('hidden md:flex', isCompact ? 'justify-center w-full' : 'ml-10')}>
           <NavigationMenu>
             <NavigationMenuList>
-              {publicNavItems.map((item) => (
-                <NavigationMenuItem key={item.name}>
+              {sectionMap.map((item) => (
+                <NavigationMenuItem key={item.id}>
                   <a
-                    href={item.href}
-                    onClick={(e) =>
-                      item.name === 'Home' ? handleHomeClick(e) : scrollToSection(e, item.href)
-                    }
+                    href={`#${item.id}`}
+                    onClick={(e) => {
+                      if (item.type === 'route') {
+                        e.preventDefault();
+                        navigate(`/${item.id}`);
+                        setIsMobileMenuOpen(false);
+                      } else {
+                        scrollToSection(e, item.id);
+                      }
+                    }}
+                    
                     className={cn(
                       'inline-flex items-center px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
-                      isSectionActive(item.name)
+                      activeSection === item.id
                         ? 'bg-blue-800 text-white hover:bg-blue-800'
                         : 'text-blue-800 hover:bg-blue-50 hover:text-blue-800'
                     )}
-                    aria-label={item.name}
                   >
-                    {item.icon}
-                    {!isCompact && <span className="ml-2">{item.name}</span>}
+                    {item.label}
                   </a>
                 </NavigationMenuItem>
               ))}
@@ -184,11 +137,11 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
           </NavigationMenu>
         </div>
 
-        <div className="hidden md:flex items-center gap-2 hide_mobile">
+        <div className="hidden md:flex items-center gap-2">
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center space-x-2 focus:outline-none">
+                <button className="flex items-center gap-2 focus:outline-none rounded-md hover:bg-gray-100 px-2">
                   <Avatar className="h-8 w-8">
                     {getUserAvatar() ? (
                       <AvatarImage src={getUserAvatar()} alt="avatar" />
@@ -198,14 +151,10 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
                       </AvatarFallback>
                     )}
                   </Avatar>
-                  <div className="hidden md:block text-left">
-                    <span className="block text-sm font-medium text-gray-700">My Account</span>
-                  </div>
+                  <span className="text-sm font-medium text-gray-700 leading-none">My Account</span>
                   <ChevronDown className="h-4 w-4 text-gray-500" />
                 </button>
               </DropdownMenuTrigger>
-
-
               <DropdownMenuContent align="end" className="w-56 bg-white shadow-lg border border-gray-200 z-50">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -225,12 +174,12 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
           ) : (
             <>
               <Link to="/login">
-                <Button variant="outline" size="sm" className="text-indigo-700 border-indigo-200 hover:bg-indigo-50">
+                <Button variant="outline" size="sm" className="text-blue-800 border-blue-300 hover:bg-blue-50">
                   Log In
                 </Button>
               </Link>
               <Link to="/signup">
-                <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                <Button size="sm" className="bg-blue-800 hover:bg-blue-900 text-white">
                   Sign Up <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </Link>
@@ -242,58 +191,54 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
           variant="ghost"
           size="icon"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="md:hidden text-indigo-800 z-50"
+          className="md:hidden text-blue-800 z-50"
         >
           {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </Button>
+      </nav>
 
-        {isMobileMenuOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity duration-300" onClick={() => setIsMobileMenuOpen(false)} />
-        )}
-
-        <aside
-          className={cn(
-            'fixed top-0 bottom-0 right-0 w-72 bg-white z-50 shadow-lg transition-transform duration-300 transform',
-            isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-          )}
-        >
+      {isMobileMenuOpen && (
+        <aside className="fixed top-0 bottom-0 right-0 w-72 bg-white z-50 shadow-lg transition-transform duration-300 transform translate-x-0 md:hidden">
           <div className="flex flex-col h-full p-6">
             <div className="flex items-center justify-between mb-8">
-              <Link to="/" className="flex items-center gap-2" onClick={handleHomeClick}>
-              <Button variant="ghost" className="gap-0 text-inherit text-left normal-case p-0 h-auto">
-  <span className="text-blue-800 font-display font-bold text-[30px]">HR</span>
-  <span className="text-orange-500 font-display font-bold text-[30px]">ray</span>
+              <Link to="/" className="flex items-center gap-2" onClick={(e) => scrollToSection(e, 'home')}>
+                <Button variant="ghost" className="gap-0 text-inherit text-left normal-case p-0 h-auto">
+                  <span className="text-blue-800 font-display font-bold text-[30px]">HR</span>
+                  <span className="text-orange-500 font-display font-bold text-[30px]">ray</span>
                 </Button>
               </Link>
-              <button onClick={() => setIsMobileMenuOpen(false)} className="text-indigo-800">
+              <button onClick={() => setIsMobileMenuOpen(false)} className="text-blue-800">
                 <X className="h-6 w-6" />
               </button>
             </div>
-
             <nav className="flex flex-col space-y-4">
-              {publicNavItems.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
+              {sectionMap.map((item) => (
+                <a
+                  key={item.id}
+                  href={`#${item.id}`}
                   onClick={(e) => {
-                    item.name === 'Home' ? handleHomeClick(e) : scrollToSection(e, item.href);
-                    setIsMobileMenuOpen(false);
+                    if (item.type === 'route') {
+                      e.preventDefault();
+                      navigate(`/${item.id}`);
+                      setIsMobileMenuOpen(false);
+                    } else {
+                      scrollToSection(e, item.id);
+                    }
                   }}
+                  
                   className={cn(
                     'flex items-center px-4 py-2 rounded-md text-sm font-medium',
-                    isSectionActive(item.name)
+                    activeSection === item.id
                       ? 'bg-blue-700 text-white'
-                      : 'text-indigo-800 hover:bg-indigo-600/10'
+                      : 'text-blue-800 hover:bg-blue-50 hover:text-blue-800'
                   )}
                 >
-                  <span className="mr-3">{item.icon}</span>
-                  {item.name}
-                </Link>
+                  {item.label}
+                </a>
               ))}
-
-              {isAuthenticated ? (
+              {isAuthenticated && (
                 <>
-                  <Link to="/settings" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center px-4 py-2 rounded-md text-sm font-medium text-indigo-800 hover:bg-indigo-600/10">
+                  <Link to="/settings" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center px-4 py-2 rounded-md text-sm font-medium text-blue-800 hover:bg-blue-50">
                     <Settings className="mr-3 h-5 w-5" />
                     Settings
                   </Link>
@@ -302,20 +247,13 @@ export const LandNavbar: React.FC<NavbarProps> = ({ showLogo = true }) => {
                     Log out
                   </button>
                 </>
-              ) : (
-                <>
-                  <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-2 text-indigo-800 hover:bg-indigo-50 rounded-md">
-                    Log In
-                  </Link>
-                  <Link to="/signup" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-2 text-indigo-800 hover:bg-indigo-50 rounded-md">
-                    Sign Up
-                  </Link>
-                </>
               )}
             </nav>
           </div>
         </aside>
-      </nav>
+      )}
     </header>
   );
 };
+
+export default LandNavbar;

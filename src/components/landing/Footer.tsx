@@ -4,7 +4,7 @@ import { Mail, Linkedin, Facebook } from 'lucide-react';
 
 const Footer = () => {
   return (
-    <footer className="bg-white border-t border-blue-100 text-sm text-blue-800">
+    <footer id="about" className="bg-white border-t border-blue-100 text-sm text-blue-800">
       <div className="container mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-3 gap-10">
         <div>
           <h3 className="text-xl font-semibold text-blue-900 mb-4">HRray</h3>

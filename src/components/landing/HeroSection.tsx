@@ -10,7 +10,7 @@ interface HeroSectionProps {
 
 const HeroSection: React.FC<HeroSectionProps> = ({ isAuthenticated }) => {
   return (
-    <section className="pt-36 pb-28 md:pt-44 md:pb-36 px-6 bg-white">
+    <section id="home" className="pt-36 pb-28 md:pt-44 md:pb-36 px-6 bg-white">
       <div className="container mx-auto max-w-7xl grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
         <AnimatedSection className="flex flex-col">
           <div className="inline-flex items-center rounded-full bg-orange-100 px-5 py-2.5 text-sm mb-8 w-auto">

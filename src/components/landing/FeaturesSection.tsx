@@ -22,7 +22,7 @@ const features = [
 
 const FeaturesSection = () => {
   return (
-    <section className="py-20 bg-white">
+    <section id="features" className="py-20 bg-white">
       <div className="container mx-auto px-6 text-center">
         <h2 className="text-3xl font-bold text-blue-900 mb-10">Core Features</h2>
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">

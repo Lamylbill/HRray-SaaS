@@ -1,4 +1,3 @@
-
 import React, { Suspense, useEffect } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -22,7 +21,6 @@ import { DashNavbar } from "@/components/layout/DashNavbar";
 import { LandNavbar } from "@/components/layout/LandNavbar";
 import { LoadingSpinner } from "@/components/ui-custom/LoadingSpinner";
 
-// Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
@@ -44,7 +42,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return isAuthenticated ? <>{children}</> : null;
 };
 
-// Dashboard Layout
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isLeavePage = location.pathname === '/leave';
@@ -67,7 +64,6 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Landing Page Layout
 const LandingPageLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -85,15 +81,12 @@ const LandingPageLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Settings Wrapper
 const SettingsWrapper = () => {
   const location = useLocation();
   const from = location.state?.from || "/dashboard";
-
   return <Settings returnTo={from} />;
 };
 
-// Routes Setup
 const AppRoutes = () => {
   return (
     <Routes>
@@ -105,8 +98,7 @@ const AppRoutes = () => {
       } />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<SignUp />} />
-      
-      {/* Blog routes - Using the LandingPageLayout */}
+
       <Route path="/blog" element={
         <LandingPageLayout>
           <BlogPage />
@@ -117,14 +109,14 @@ const AppRoutes = () => {
           <BlogPostPage />
         </LandingPageLayout>
       } />
-      <Route path="/blog/manage" element={
+      <Route path="/manage-blog" element={
         <BlogEditorRoute>
           <LandingPageLayout>
             <ManageBlogPage />
           </LandingPageLayout>
         </BlogEditorRoute>
       } />
-      
+
       <Route path="/dashboard" element={
         <ProtectedRoute>
           <DashboardLayout>

@@ -9,10 +9,10 @@ export interface AuthContextType {
   login: (email: string, password: string) => Promise<{ error?: { message: string } }>;
   signup: (email: string, password: string, metadata: any) => Promise<{ error?: { message: string } }>;
   logout: () => Promise<void>;
-  signOut: () => Promise<void>; // Adding this alias for compatibility
+  signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateUserProfile: (updates: any) => Promise<void>;
-  isBlogEditor?: boolean; // Added for blog editor verification
+  isBlogEditor?: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,21 +27,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isBlogEditor, setIsBlogEditor] = useState(false);
 
+  const evaluateRoles = (user: User) => {
+    const metadata = user.user_metadata || {};
+    setIsBlogEditor(metadata.isBlogEditor === true);
+  };
+
   useEffect(() => {
     const checkUser = async () => {
       try {
         setIsLoading(true);
         const { data } = await supabase.auth.getUser();
-        
+
         if (data && data.user) {
           setUser(data.user);
           setIsAuthenticated(true);
-          
-          // Check if user has blog editor role (simplified check for now)
-          // In a real implementation, this would check roles from a database
-          if (data.user.email?.includes('admin') || data.user.email?.includes('editor')) {
-            setIsBlogEditor(true);
-          }
+          evaluateRoles(data.user);
         } else {
           setUser(null);
           setIsAuthenticated(false);
@@ -64,11 +64,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (event === 'SIGNED_IN' && session?.user) {
           setUser(session.user);
           setIsAuthenticated(true);
-          
-          // Check if user has blog editor role
-          if (session.user.email?.includes('admin') || session.user.email?.includes('editor')) {
-            setIsBlogEditor(true);
-          }
+          evaluateRoles(session.user);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setIsAuthenticated(false);
@@ -98,13 +94,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (data && data.user) {
         setUser(data.user);
         setIsAuthenticated(true);
-        
-        // Check if user has blog editor role
-        if (data.user.email?.includes('admin') || data.user.email?.includes('editor')) {
-          setIsBlogEditor(true);
-        }
+        evaluateRoles(data.user);
       }
-      
+
       return {};
     } catch (error: any) {
       console.error('Error logging in:', error);
@@ -129,8 +121,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (data && data.user) {
         setUser(data.user);
         setIsAuthenticated(true);
+        evaluateRoles(data.user);
       }
-      
+
       return {};
     } catch (error: any) {
       console.error('Error signing up:', error);
@@ -141,20 +134,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
-      
+
       if (error) {
         throw error;
       }
-      
+
       setUser(null);
       setIsAuthenticated(false);
+      setIsBlogEditor(false);
     } catch (error) {
       console.error('Error signing out:', error);
       throw error;
     }
   };
 
-  // Alias for logout to maintain compatibility
   const signOut = logout;
 
   const resetPassword = async (email: string) => {
@@ -162,7 +155,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
-      
+
       if (error) {
         throw error;
       }
@@ -177,15 +170,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { error } = await supabase.auth.updateUser({
         data: updates,
       });
-      
+
       if (error) {
         throw error;
       }
-      
-      // Refresh user data
+
       const { data } = await supabase.auth.getUser();
       if (data && data.user) {
         setUser(data.user);
+        evaluateRoles(data.user);
       }
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -211,10 +204,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  
+
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  
+
   return context;
 };

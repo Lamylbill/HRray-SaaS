@@ -8,7 +8,6 @@ import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Calendar, Tag, MessageSquare, Share2, Facebook, Linkedin, X } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Helmet } from 'react-helmet-async';
@@ -112,7 +111,7 @@ const BlogPostPage = () => {
     try {
       const userName = user ? (user as any).full_name || 'Anonymous' : 'Anonymous';
       const userEmail = user ? user.email || '' : '';
-      
+
       const newComment = {
         post_id: post.id,
         content: commentContent,
@@ -150,36 +149,6 @@ const BlogPostPage = () => {
     }
   };
 
-  const handleDeleteComment = async (commentId: string) => {
-    if (!user || !user.id) {
-      toast({
-        title: 'Error',
-        description: 'You must be logged in to delete comments.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsDeletingComment(true);
-    try {
-      await blogService.deleteComment(commentId, user.id);
-      setComments(prevComments => prevComments.filter(comment => comment.id !== commentId));
-      toast({
-        title: 'Success',
-        description: 'Comment deleted successfully!',
-      });
-    } catch (error) {
-      console.error('Error deleting comment:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete comment. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsDeletingComment(false);
-    }
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -187,39 +156,6 @@ const BlogPostPage = () => {
       month: 'long',
       day: 'numeric'
     });
-  };
-
-  const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
-
-  const renderAuthorInfo = () => {
-    if (post?.author) {
-      const publishedDate = post.published_at || post.publish_at || post.created_at;
-      
-      return (
-        <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-            {post.author.avatar_url ? (
-              <img 
-                src={post.author.avatar_url} 
-                alt={post.author.full_name || 'Author'} 
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <span className="font-medium text-gray-600">
-                {(post.author.full_name || post.author.id || 'A')[0].toUpperCase()}
-              </span>
-            )}
-          </div>
-          <div>
-            <p className="font-medium">{post.author.full_name || 'Anonymous'}</p>
-            <p className="text-sm text-gray-500">
-              {publishedDate && `Published on ${formatDate(publishedDate)}`}
-            </p>
-          </div>
-        </div>
-      );
-    }
-    return null;
   };
 
   if (isLoadingPost) {
@@ -254,26 +190,30 @@ const BlogPostPage = () => {
         <title>{post.title} | HRray Blog</title>
         <meta name="description" content={post.meta_description || post.excerpt || ''} />
       </Helmet>
-  
+
       <div className="container px-4 mx-auto">
         <Card>
           <CardHeader>
             <h1 className="text-3xl font-bold mb-2">{post.title}</h1>
-            {renderAuthorInfo()}
+            {post.author && (
+              <p className="text-sm text-gray-500">
+                Published on {formatDate(post.published_at || post.created_at)} by {post.author.full_name || 'Anonymous'}
+              </p>
+            )}
           </CardHeader>
-  
+
           {post.cover_image && (
             <img
-            src={post.cover_image}
-            alt="Cover"
-            className="w-full max-h-[450px] object-contain rounded-t-lg"
-          />
+              src={post.cover_image}
+              alt="Cover"
+              className="w-full max-h-[450px] object-contain rounded-t-lg"
+            />
           )}
-  
+
           <CardContent className="prose max-w-none">
             <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }} />
           </CardContent>
-  
+
           <CardFooter className="flex flex-wrap gap-4 justify-between items-center">
             <div className="flex items-center gap-2">
               <Tag className="h-4 w-4 text-muted-foreground" />
@@ -289,13 +229,54 @@ const BlogPostPage = () => {
               <Share2 className="h-4 w-4 cursor-pointer" />
             </div>
           </CardFooter>
+
+          <CardFooter className="justify-start">
+            <Link to="/blog">
+              <Button variant="outline">← Back to Blog</Button>
+            </Link>
+          </CardFooter>
         </Card>
-  
-        {/* Optional: Comments section here */}
+
+        <div className="mt-10">
+          <h2 className="text-xl font-semibold mb-4">Comments</h2>
+
+          {isLoadingComments ? (
+            <div className="text-center py-6 text-gray-500">
+              <LoadingSpinner size="sm" /> Loading comments...
+            </div>
+          ) : (
+            comments.length === 0 ? (
+              <p className="text-gray-500">No comments yet. Be the first to comment!</p>
+            ) : (
+              <div className="space-y-4">
+                {comments.map(comment => (
+                  <div key={comment.id} className="p-4 border rounded-md bg-white">
+                    <p className="text-sm text-gray-800 mb-2">{comment.content}</p>
+                    <div className="text-xs text-gray-500">
+                      {comment.name || 'Anonymous'} · {formatDate(comment.created_at)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+
+          <form onSubmit={handleCommentSubmit} className="mt-6 space-y-4">
+            <Textarea
+              placeholder="Write a comment..."
+              value={commentContent}
+              onChange={(e) => setCommentContent(e.target.value)}
+              rows={4}
+              className="w-full"
+            />
+            <Button type="submit" disabled={isSubmittingComment}>
+              {isSubmittingComment ? 'Submitting...' : 'Submit Comment'}
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   );
-  
 };
 
 export default BlogPostPage;

@@ -3,7 +3,7 @@ import { LeaveRequest, LeaveType } from './interfaces';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui-custom/Button';
-import { Eye, Filter, ArrowUpDown } from 'lucide-react';
+import { Eye, Filter, ArrowUpDown, Users } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { getAuthorizedClient, supabase } from '@/integrations/supabase/client';
 import { LeaveActionButtons } from './LeaveActionButtons';
@@ -11,8 +11,9 @@ import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
-const STATUS_OPTIONS = ['Pending', 'Approved', 'Rejected'] as const;
+const STATUS_OPTIONS = ['Pending', 'Approved', 'Rejected', 'Cancelled', 'Past'] as const;
 type Status = typeof STATUS_OPTIONS[number];
 type SortableColumn = 'employee.full_name' | 'leave_type.name' | 'start_date' | 'chargeable_duration' | 'status';
 
@@ -29,6 +30,9 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ availableLeaveTypes
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [filterLeaveTypeIds, setFilterLeaveTypeIds] = useState<string[]>([]);
   const [filterStatuses, setFilterStatuses] = useState<Status[]>([]);
+  const [filterEmployeeIds, setFilterEmployeeIds] = useState<string[]>([]);
+  const [employeeList, setEmployeeList] = useState<{ id: string, full_name: string }[]>([]);
+  const [isStaffFilterOpen, setIsStaffFilterOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: SortableColumn | null; direction: 'ascending' | 'descending' }>({ key: null, direction: 'ascending' });
 
   const fetchAndFormatLeaveRequests = useCallback(async () => {
@@ -38,19 +42,26 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ availableLeaveTypes
       const authorizedClient = getAuthorizedClient();
       const { data: leaveRequestsData, error } = await authorizedClient
         .from('leave_requests')
-        .select(`id, employee_id, start_date, end_date, status, half_day, half_day_type, created_at, chargeable_duration, leave_type:leave_type_id(id, name, color, is_paid)`)
+        .select(`id, employee_id, start_date, end_date, status, half_day, half_day_type, created_at, chargeable_duration, leave_type:leave_type_id(id, name, color, is_paid)`) 
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       const employeeIds = [...new Set(leaveRequestsData.map(lr => lr.employee_id))];
       const { data: employees } = await supabase.from('employees').select('id, full_name').in('id', employeeIds);
       const employeeMap = new Map(employees?.map((e) => [e.id, e]));
+      setEmployeeList(employees || []);
 
-      const formatted: LeaveRequest[] = leaveRequestsData.map(lr => ({
-        ...lr,
-        employee: employeeMap.get(lr.employee_id) || { id: lr.employee_id, full_name: 'Unknown Employee' },
-        leave_type: Array.isArray(lr.leave_type) ? lr.leave_type[0] : lr.leave_type || { id: '', name: 'Unknown', color: '#808080', is_paid: true },
-      }));
+      const now = new Date();
+      const formatted: LeaveRequest[] = leaveRequestsData.map(lr => {
+        const endDate = new Date(lr.end_date);
+        const isPast = lr.status === 'Approved' && endDate < now;
+        return {
+          ...lr,
+          status: isPast ? 'Past' : lr.status,
+          employee: employeeMap.get(lr.employee_id) || { id: lr.employee_id, full_name: 'Unknown Employee' },
+          leave_type: Array.isArray(lr.leave_type) ? lr.leave_type[0] : lr.leave_type || { id: '', name: 'Unknown', color: '#808080', is_paid: true },
+        };
+      });
 
       setAllLeaveRequests(formatted);
     } catch (err) {
@@ -87,6 +98,8 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ availableLeaveTypes
       Approved: 'bg-green-100 text-green-800',
       Rejected: 'bg-red-100 text-red-800',
       Pending: 'bg-yellow-100 text-yellow-800',
+      Cancelled: 'bg-blue-100 text-blue-800',
+      Past: 'bg-gray-200 text-gray-700'
     };
     return <Badge className={map[status] || 'bg-gray-100 text-gray-800'}>{status}</Badge>;
   };
@@ -97,14 +110,17 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ availableLeaveTypes
     if (onlyPending) {
       result = result.filter(r => r.status === 'Pending');
     }
-    if (filterLeaveTypeIds.length) {
+    if (filterLeaveTypeIds.length > 0) {
       result = result.filter(r => filterLeaveTypeIds.includes(r.leave_type.id));
     }
-    if (filterStatuses.length) {
-      result = result.filter(r => STATUS_OPTIONS.includes(r.status as Status));
+    if (filterStatuses.length > 0) {
+      result = result.filter(r => filterStatuses.includes(r.status as Status));
+    }
+    if (filterEmployeeIds.length > 0) {
+      result = result.filter(r => filterEmployeeIds.includes(r.employee.id));
     }
 
-    const statusOrder = { 'Pending': 1, 'Approved': 2, 'Rejected': 3 };
+    const statusOrder = { 'Pending': 1, 'Approved': 2, 'Rejected': 3, 'Cancelled': 4, 'Past': 5 };
     const direction = sortConfig.direction === 'ascending' ? 1 : -1;
 
     result.sort((a, b) => {
@@ -125,7 +141,6 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ availableLeaveTypes
         aVal = a.chargeable_duration ?? 0;
         bVal = b.chargeable_duration ?? 0;
       } else {
-        // Default sort by status if no key
         aVal = statusOrder[a.status] || 99;
         bVal = statusOrder[b.status] || 99;
       }
@@ -139,36 +154,52 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ availableLeaveTypes
     });
 
     return result;
-  }, [allLeaveRequests, filterLeaveTypeIds, filterStatuses, sortConfig, onlyPending]);
-
-  const renderSortableHeader = (label: string, columnKey: SortableColumn, className?: string) => (
-    <TableHead className={`${className} px-2`}>
-      <Button variant="ghost" onClick={() => requestSort(columnKey)} className="px-1 py-1 h-auto hover:bg-transparent font-semibold text-left" title={`Sort by ${label}`}>
-        {label}
-        <ArrowUpDown className={`ml-1 h-3 w-3 inline-block ${sortConfig.key === columnKey ? 'opacity-100' : 'opacity-30 transition-opacity'}`} />
-      </Button>
-    </TableHead>
-  );
+  }, [allLeaveRequests, filterLeaveTypeIds, filterStatuses, filterEmployeeIds, sortConfig, onlyPending]);
 
   return (
     <div className="bg-white rounded-lg shadow p-4 md:p-6">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
         <h2 className="text-xl font-semibold">{title}</h2>
-        <Button variant="outline" size="sm" onClick={() => setIsFilterDialogOpen(true)} title="Filter leave records">
-          <Filter className="mr-2 h-4 w-4" /> Filters
-        </Button>
+        <div className="flex gap-2">
+          <Popover open={isStaffFilterOpen} onOpenChange={setIsStaffFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Users className="h-4 w-4 mr-2" /> Staff Selection ({filterEmployeeIds.length} selected)
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 max-h-60 overflow-y-auto">
+              {employeeList.map(emp => (
+                <div key={emp.id} className="flex items-center space-x-2 mb-2">
+                  <Checkbox
+                    id={`emp-${emp.id}`}
+                    checked={filterEmployeeIds.includes(emp.id)}
+                    onCheckedChange={(checked) => {
+                      setFilterEmployeeIds(prev =>
+                        checked ? [...prev, emp.id] : prev.filter(id => id !== emp.id)
+                      );
+                    }}
+                  />
+                  <Label htmlFor={`emp-${emp.id}`} className="text-sm cursor-pointer">{emp.full_name}</Label>
+                </div>
+              ))}
+            </PopoverContent>
+          </Popover>
+          <Button variant="outline" size="sm" onClick={() => setIsFilterDialogOpen(true)} title="Filter leave records">
+            <Filter className="mr-2 h-4 w-4" /> Filters
+          </Button>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
         <Table className="w-full">
           <TableHeader>
             <TableRow className="text-sm">
-              {renderSortableHeader('Employee', 'employee.full_name', 'w-[22%]')}
-              {renderSortableHeader('Leave Type', 'leave_type.name', 'w-[20%]')}
-              {renderSortableHeader('Period', 'start_date', 'w-[20%]')}
-              {renderSortableHeader('Duration', 'chargeable_duration', 'w-[15%]')}
-              {renderSortableHeader('Status', 'status', 'w-[13%]')}
-              <TableHead className="text-center w-[10%] px-2">Actions</TableHead>
+              <TableHead>Employee</TableHead>
+              <TableHead>Leave Type</TableHead>
+              <TableHead>Period</TableHead>
+              <TableHead>Duration</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -238,6 +269,7 @@ const LeaveRecordsView: React.FC<LeaveRecordsViewProps> = ({ availableLeaveTypes
                 ))}
               </div>
             </div>
+
             <div>
               <Label className="font-semibold mb-2 block">Statuses</Label>
               <div className="space-y-2 border rounded-md p-2">

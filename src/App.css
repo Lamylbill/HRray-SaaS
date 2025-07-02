@@ -1,16 +1,15 @@
-
+/* Root and Body */
 #root {
   max-width: 1280px;
   margin: 0 auto;
-  text-align: center;
 }
-
 body {
   background-color: #f8f7ff;
   color: #2d2b55;
   font-family: 'Poppins', sans-serif;
 }
 
+/* Logo Animations */
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -23,22 +22,17 @@ body {
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #1d4ED8aa);
 }
-
 @keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg);}
+  to { transform: rotate(360deg);}
 }
-
 @media (prefers-reduced-motion: no-preference) {
   a:nth-of-type(2) .logo {
     animation: logo-spin infinite 20s linear;
   }
 }
 
+/* Card */
 .card {
   padding: 2em;
   background: white;
@@ -47,17 +41,13 @@ body {
   border: none;
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
-
 .card:hover {
   box-shadow: 0 20px 40px rgba(29, 78, 216, 0.15);
   transform: translateY(-5px);
 }
+.read-the-docs { color: #1d4ED8; }
 
-.read-the-docs {
-  color: #1d4ED8;
-}
-
-/* Modern Form Styling */
+/* Forms */
 input, select, textarea {
   border-radius: 1rem;
   border: 1px solid rgba(29, 78, 216, 0.2);
@@ -67,14 +57,11 @@ input, select, textarea {
   width: 100%;
   box-shadow: 0 4px 6px rgba(29, 78, 216, 0.05);
 }
-
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: #1d4ED8;
   box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.15);
 }
-
-/* Label styling */
 label {
   display: block;
   font-weight: 500;
@@ -92,22 +79,13 @@ label {
   margin-right: auto;
   margin-left: auto;
 }
-
 @media (min-width: 640px) {
-  .container-fluid {
-    padding-right: 3rem;
-    padding-left: 3rem;
-  }
+  .container-fluid { padding-right: 3rem; padding-left: 3rem; }
 }
-
 @media (min-width: 1024px) {
-  .container-fluid {
-    padding-right: 4rem;
-    padding-left: 4rem;
-  }
+  .container-fluid { padding-right: 4rem; padding-left: 4rem; }
 }
 
-/* Modern button styles */
 button {
   border-radius: 1rem;
   transition: all 0.3s ease;
@@ -121,16 +99,11 @@ button {
   border: none;
   overflow: hidden;
 }
-
 .modal-header {
   border-bottom: 1px solid rgba(29, 78, 216, 0.1);
   padding: 1.5rem 2rem;
 }
-
-.modal-body {
-  padding: 2rem;
-}
-
+.modal-body { padding: 2rem; }
 .modal-footer {
   border-top: 1px solid rgba(29, 78, 216, 0.1);
   padding: 1.5rem 2rem;
@@ -139,20 +112,17 @@ button {
   gap: 1rem;
 }
 
-/* Table styling */
+/* Tables (NO FullCalendar customisation here) */
 table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  border-radius: 1.5rem;
   overflow: hidden;
   box-shadow: 0 16px 30px rgba(29, 78, 216, 0.1);
 }
-
 thead {
   background-color: rgba(29, 78, 216, 0.05);
 }
-
 th {
   padding: 1.25rem 1.75rem;
   font-weight: 600;
@@ -163,70 +133,31 @@ th {
   letter-spacing: 0.05em;
   border-bottom: 1px solid rgba(29, 78, 216, 0.1);
 }
-
 td {
   padding: 1.25rem 1.75rem;
   border-bottom: 1px solid rgba(29, 78, 216, 0.05);
   vertical-align: middle;
 }
+tr:last-child td { border-bottom: none; }
+tr:nth-child(even) { background-color: rgba(29, 78, 216, 0.02); }
 
-tr:last-child td {
-  border-bottom: none;
-}
-
-tr:nth-child(even) {
-  background-color: rgba(29, 78, 216, 0.02);
-}
-
-tr:hover {
-  background-color: rgba(29, 78, 216, 0.05);
-}
-
-/* Animations */
+/* Animations, blobs, dashboard, etc. — unchanged */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
-
 @keyframes slideUp {
-  from {
-    transform: translateY(40px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
-
 @keyframes slideInRight {
-  from {
-    transform: translateX(40px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  from { transform: translateX(40px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
+.fade-in { animation: fadeIn 0.7s ease-out forwards; }
+.slide-up { animation: slideUp 0.7s ease-out forwards; }
+.slide-in-right { animation: slideInRight 0.7s ease-out forwards; }
 
-.fade-in {
-  animation: fadeIn 0.7s ease-out forwards;
-}
-
-.slide-up {
-  animation: slideUp 0.7s ease-out forwards;
-}
-
-.slide-in-right {
-  animation: slideInRight 0.7s ease-out forwards;
-}
-
-/* New Decorative Elements */
 .blob-shape {
   position: absolute;
   border-radius: 50%;
@@ -234,19 +165,9 @@ tr:hover {
   z-index: -1;
   opacity: 0.5;
 }
-
-.blob-blue {
-  background: rgba(29, 78, 216, 0.3);
-}
-
-.blob-pink {
-  background: rgba(255, 100, 218, 0.3);
-}
-
-.gradient-border {
-  position: relative;
-}
-
+.blob-blue { background: rgba(29, 78, 216, 0.3); }
+.blob-pink { background: rgba(255, 100, 218, 0.3); }
+.gradient-border { position: relative; }
 .gradient-border::before {
   content: "";
   position: absolute;
@@ -256,49 +177,43 @@ tr:hover {
   border-radius: inherit;
   padding: 2px;
 }
-
-/* Modern Shape Decorators */
-.shape-decorator {
-  position: absolute;
-  z-index: -1;
-  opacity: 0.8;
-}
-
-.circle {
-  border-radius: 50%;
-}
-
-.pulse-animation {
-  animation: pulse 3s infinite ease-in-out;
-}
-
+.shape-decorator { position: absolute; z-index: -1; opacity: 0.8; }
+.circle { border-radius: 50%; }
+.pulse-animation { animation: pulse 3s infinite ease-in-out; }
 @keyframes pulse {
   0%, 100% { opacity: 0.6; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.05); }
 }
 
-/* Dashboard font size adjustments */
+/* Dashboard cards */
 .dashboard h1 {
   font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: 1rem;
   line-height: 1.2;
 }
-
 .dashboard .card-title {
   font-size: 0.9rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
   color: #4b5563;
 }
-
 .dashboard .card-number {
   font-size: 1.75rem;
   font-weight: 700;
 }
-
 .dashboard h2 {
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 1rem;
+}
+/* Highlight today's date column in FullCalendar Timeline */
+.fc-timeline-today {
+  background: rgba(253, 186, 116, 0.22) !important;
+  border-left: 3px solid #fb923c !important;
+  box-sizing: border-box !important;
+  transition: background 0.2s;
+}
+.fc-timeline-today-right {
+  border-right: 3px solid #fb923c !important;
 }

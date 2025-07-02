@@ -12,6 +12,7 @@ import LeaveRecordsView from '@/components/leave/LeaveRecordsView';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AddLeaveForm } from '@/components/leave/AddLeaveForm';
 import { LeaveType } from '@/components/leave/interfaces';
+import '../App.css';
 
 const Leave = () => {
   const { isAuthenticated, isLoading, user } = useAuth();

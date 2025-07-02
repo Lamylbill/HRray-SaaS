@@ -13,8 +13,8 @@ const fallbackKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const finalSupabaseUrl = supabaseUrl || fallbackUrl;
 const finalSupabaseAnonKey = supabaseAnonKey || fallbackKey;
 
-console.log('Supabase URL:', finalSupabaseUrl);
-console.log('Using env variables:', !!supabaseUrl);
+//console.log('Supabase URL:', finalSupabaseUrl);
+//console.log('Using env variables:', !!supabaseUrl);
 
 export const supabase = createClient(finalSupabaseUrl, finalSupabaseAnonKey);
 

@@ -45,7 +45,6 @@ export const getCurrentSubscription = async () => {
 // Helper to start checkout
 export const startCheckout = async (plan: "pro" | "plus", billing: "monthly" | "yearly") => {
   try {
-    console.log(`Starting checkout for ${plan} (${billing})`);
     const jwt = await getAuthToken();
     
     if (!jwt) {
@@ -65,7 +64,6 @@ export const startCheckout = async (plan: "pro" | "plus", billing: "monthly" | "
       throw new Error("No checkout URL returned");
     }
     
-    console.log("Redirecting to checkout:", data.url);
     window.location.href = data.url;
     return { success: true };
   } catch (error) {

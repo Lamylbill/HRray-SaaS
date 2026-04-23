@@ -203,10 +203,6 @@ export const formatFileSize = (bytes: number | null | undefined): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-// This is redundant if formatCurrency is used directly.
-// export const formatSalary = (amount: number | string | null | undefined, currency = 'SGD'): string => {
-//   return formatCurrency(amount, currency);
-// };
 
 /**
  * Get initials from a name or email - refined version, can be used as a general utility.

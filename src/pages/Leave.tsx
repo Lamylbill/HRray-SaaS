@@ -97,7 +97,6 @@ const Leave = () => {
 
       setBotLink(generatedLink);
       setBotLinkDialogOpen(true);
-      console.log('Generated bot link with user ID:', user.id);
     } else {
       toast({
         title: "Error",

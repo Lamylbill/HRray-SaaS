@@ -13,9 +13,6 @@ const fallbackKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const finalSupabaseUrl = supabaseUrl || fallbackUrl;
 const finalSupabaseAnonKey = supabaseAnonKey || fallbackKey;
 
-//console.log('Supabase URL:', finalSupabaseUrl);
-//console.log('Using env variables:', !!supabaseUrl);
-
 export const supabase = createClient(finalSupabaseUrl, finalSupabaseAnonKey);
 
 // Instead of returning a Promise, we're returning the client directly
@@ -39,7 +36,6 @@ export async function ensureStorageBucket(bucketName: string): Promise<boolean> 
         return false;
       }
     } else {
-      console.log(`Bucket "${bucketName}" created successfully:`, data);
       return true;
     }
   } catch (err) {

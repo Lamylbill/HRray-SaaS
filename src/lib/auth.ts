@@ -6,7 +6,6 @@ import { supabase, getAuthorizedClient } from '@/integrations/supabase/client';
  */
 export const signIn = async (email: string, password: string) => {
   try {
-    console.log('Attempting sign in with email:', email);
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -22,7 +21,6 @@ export const signIn = async (email: string, password: string) => {
       localStorage.setItem('jwt_token', data.session.access_token);
     }
 
-    console.log('Sign in successful:', data.user?.id);
     return { data };
   } catch (error: any) {
     console.error('Unexpected error during sign in:', error);
@@ -39,8 +37,6 @@ export const signIn = async (email: string, password: string) => {
  */
 export const signUp = async (email: string, password: string, fullName: string) => {
   try {
-    console.log('Attempting sign up with email:', email);
-    
     // Sign up with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -59,7 +55,6 @@ export const signUp = async (email: string, password: string, fullName: string) 
     }
 
     if (data?.user?.identities?.length === 0) {
-      console.log('User already exists with this email');
       return {
         error: {
           message: 'An account with this email already exists. Please log in instead.',
@@ -72,7 +67,6 @@ export const signUp = async (email: string, password: string, fullName: string) 
       localStorage.setItem('jwt_token', data.session.access_token);
     }
 
-    console.log('Sign up successful:', data.user?.id);
     return { data };
   } catch (error: any) {
     console.error('Unexpected error during sign up:', error);

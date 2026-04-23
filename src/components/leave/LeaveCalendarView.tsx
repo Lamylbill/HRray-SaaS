@@ -104,7 +104,6 @@ const LeaveCalendarView: React.FC = () => {
             }))
           : [];
 
-        console.log(`Fetched ${formattedData.length} leave requests for date range:`, { startDateString, endDateString });
         setLeaveRequests(formattedData);
       } catch (error) {
         console.error('Error fetching leave requests:', error);

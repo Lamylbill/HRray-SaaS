@@ -101,7 +101,6 @@ const Leave = () => {
       const generatedLink = `https://t.me/${botUsername}?start=${encodeURIComponent(user.id)}`;
       setBotLink(generatedLink);
       setBotLinkDialogOpen(true);
-      console.log('Generated bot link with user ID:', user.id);
     } else {
       toast({
         title: "Error",

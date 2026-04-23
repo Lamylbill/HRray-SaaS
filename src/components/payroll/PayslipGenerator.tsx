@@ -114,7 +114,6 @@ const PayslipGenerator: React.FC = () => {
           variant: "destructive",
         });
       } else {
-        console.log('Payslip generated successfully:', data);
         toast({
           title: "Payslip Generated",
           description: "Payslip generated successfully!",

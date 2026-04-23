@@ -57,8 +57,7 @@ const Login = () => {
           variant: "destructive",
         });
       } else {
-        console.log("Login successful, redirecting...");
-        navigate('/dashboard'); // Redirect to dashboard after successful login
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error('Login error:', error);

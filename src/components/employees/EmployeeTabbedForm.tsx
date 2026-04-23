@@ -66,12 +66,10 @@ export const EmployeeTabbedForm = forwardRef<HTMLFormElement, EmployeeTabbedForm
   });
 
   const handleSubmit = async (data: EmployeeFormData) => {
-    console.log("EmployeeTabbedForm: handleSubmit triggered. Mode:", mode, "isProcessing:", isProcessing);
     if (isProcessing) return;
     setIsProcessing(true);
-  
+
     try {
-      console.log('Data to submit:', data.employee);
   
       // Prepare employee data with all the required fields
       const payload = {

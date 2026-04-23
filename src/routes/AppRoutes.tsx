@@ -27,7 +27,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      console.log("Not authenticated, redirecting to login");
       navigate("/login", { replace: true });
     }
   }, [isLoading, isAuthenticated, navigate]);

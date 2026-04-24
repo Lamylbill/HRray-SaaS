@@ -46,10 +46,6 @@ const Leave = () => {
     fetchLeaveTypes();
   }, [isAuthenticated, isLoading, navigate]);
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) navigate('/login');
-  }, [isAuthenticated, isLoading, navigate]);
-
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {

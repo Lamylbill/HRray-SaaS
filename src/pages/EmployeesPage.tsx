@@ -4,7 +4,6 @@ import {
   Search, PlusCircle, Download, AlertCircle,
   ListFilter, Grid, Edit, Trash, Check, X as CloseIconLucide // Renamed X
 } from 'lucide-react';
-import * as XLSX from 'xlsx'; // Kept, as your original file had it
 import { Button } from '@/components/ui-custom/Button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -143,7 +142,7 @@ const EmployeesPage = () => {
     setSearchTerm(e.target.value);
   };
 
-  const exportEmployees = useCallback(() => { // Wrapped in useCallback
+  const exportEmployees = useCallback(async () => {
     if (filteredEmployees.length === 0) {
       toast({
         title: "No Data to Export",
@@ -152,7 +151,7 @@ const EmployeesPage = () => {
       });
       return;
     }
-    exportEmployeesToExcel(filteredEmployees);
+    await exportEmployeesToExcel(filteredEmployees);
     toast({
       title: "Export Successful",
       description: "Employees exported successfully.",

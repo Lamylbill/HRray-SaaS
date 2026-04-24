@@ -1,11 +1,9 @@
-
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { Toaster } from '@/components/ui/toaster';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'sonner';
 import { AuthProvider } from './context/AuthContext';
 import AppRoutes from './routes/AppRoutes';
-import { HelmetProvider } from 'react-helmet-async';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -14,77 +12,57 @@ const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: false,
     },
-    mutations: {
-      retry: 0,
-    },
+    mutations: { retry: 0 },
   },
 });
 
-// Error fallback component
-const ErrorFallback = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center p-8 bg-white rounded-lg shadow-lg">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
-        <p className="mb-4">We encountered an error loading the application.</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Refresh the page
-        </button>
-      </div>
-    </div>
-  );
-};
+interface ErrorBoundaryState { hasError: boolean }
 
-// Error boundary class with proper TypeScript interface
-interface AppErrorBoundaryState {
-  hasError: boolean;
-}
-
-interface AppErrorBoundaryProps {
-  children: React.ReactNode;
-}
-
-class AppErrorBoundary extends React.Component<AppErrorBoundaryProps, AppErrorBoundaryState> {
-  constructor(props: AppErrorBoundaryProps) {
+class AppErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  ErrorBoundaryState
+> {
+  constructor(props: { children: React.ReactNode }) {
     super(props);
     this.state = { hasError: false };
   }
-
-  static getDerivedStateFromError(): AppErrorBoundaryState {
+  static getDerivedStateFromError(): ErrorBoundaryState {
     return { hasError: true };
   }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    console.error("App crashed:", error, errorInfo);
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('App error:', error, info);
   }
-
   render() {
     if (this.state.hasError) {
-      return <ErrorFallback />;
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-xl font-semibold text-gray-900 mb-2">Something went wrong</h1>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm"
+            >
+              Reload
+            </button>
+          </div>
+        </div>
+      );
     }
-
     return this.props.children;
   }
 }
 
-function App() {
+export default function App() {
   return (
     <AppErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <AuthProvider>
-            <HelmetProvider>
-              <Toaster />
-              <AppRoutes />
-            </HelmetProvider>
+            <Toaster position="top-right" richColors />
+            <AppRoutes />
           </AuthProvider>
         </BrowserRouter>
       </QueryClientProvider>
     </AppErrorBoundary>
   );
 }
-
-export default App;

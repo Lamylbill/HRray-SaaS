@@ -1,172 +1,49 @@
-import React, { Suspense, useEffect } from "react";
-import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import Layout from '@/components/shared/Layout';
+import LandingPage from '@/pages/LandingPage';
+import LoginPage from '@/features/auth/LoginPage';
+import SignupPage from '@/features/auth/SignupPage';
+import DashboardPage from '@/features/dashboard/DashboardPage';
+import EmployeesPage from '@/features/employees/EmployeesPage';
+import LeavePage from '@/features/leave/LeavePage';
+import PayrollPage from '@/features/payroll/PayrollPage';
+import CompliancePage from '@/features/compliance/CompliancePage';
+import SettingsPage from '@/features/settings/SettingsPage';
 
-import Index from "@/pages/Index";
-import Login from "@/pages/Login";
-import SignUp from "@/pages/SignUp";
-import Dashboard from "@/pages/Dashboard";
-import EmployeesPage from "@/pages/EmployeesPage";
-import Leave from "@/pages/Leave";
-import PayrollPage from "@/pages/PayrollPage";
-import CompliancePage from "@/pages/CompliancePage";
-import Settings from "@/pages/Settings";
-import NotFound from "@/pages/NotFound";
-import BlogPage from "@/pages/BlogPage";
-import BlogPostPage from "@/pages/BlogPostPage";
-import ManageBlogPage from "@/pages/ManageBlogPage";
-import BlogEditorRoute from "./BlogEditorRoute";
-
-import { DashNavbar } from "@/components/layout/DashNavbar";
-import { LandNavbar } from "@/components/layout/LandNavbar";
-import { LoadingSpinner } from "@/components/ui-custom/LoadingSpinner";
-
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate("/login", { replace: true });
-    }
-  }, [isLoading, isAuthenticated, navigate]);
-
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingSpinner size="lg" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
-  return isAuthenticated ? <>{children}</> : null;
-};
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
 
-const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
-  const location = useLocation();
-  const isLeavePage = location.pathname === '/leave';
+export default function AppRoutes() {
+  const { isAuthenticated } = useAuth();
 
-  return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      <DashNavbar />
-      <div className="flex-1 overflow-auto">
-        <div className={`container mx-auto px-6 ${isLeavePage ? '' : 'py-8 pt-20'}`}>
-          <Suspense fallback={
-            <div className="flex items-center justify-center h-[calc(100vh-128px)]">
-              <LoadingSpinner size="lg" />
-            </div>
-          }>
-            {children}
-          </Suspense>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const LandingPageLayout = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <div className="flex flex-col min-h-screen bg-white">
-      <LandNavbar showLogo={true} />
-      <div className="flex-1">
-        <Suspense fallback={
-          <div className="flex items-center justify-center h-[calc(100vh-80px)]">
-            <LoadingSpinner size="lg" />
-          </div>
-        }>
-          {children}
-        </Suspense>
-      </div>
-    </div>
-  );
-};
-
-const SettingsWrapper = () => {
-  const location = useLocation();
-  const from = location.state?.from || "/dashboard";
-  return <Settings returnTo={from} />;
-};
-
-const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={
-        <>
-          <LandNavbar showLogo={true} />
-          <Index />
-        </>
-      } />
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<SignUp />} />
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
+      <Route path="/signup" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <SignupPage />} />
 
-      <Route path="/blog" element={
-        <LandingPageLayout>
-          <BlogPage />
-        </LandingPageLayout>
-      } />
-      <Route path="/blog/post/:slug" element={
-        <LandingPageLayout>
-          <BlogPostPage />
-        </LandingPageLayout>
-      } />
-      <Route path="/manage-blog" element={
-        <BlogEditorRoute>
-          <LandingPageLayout>
-            <ManageBlogPage />
-          </LandingPageLayout>
-        </BlogEditorRoute>
-      } />
+      <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/employees" element={<EmployeesPage />} />
+        <Route path="/leave" element={<LeavePage />} />
+        <Route path="/payroll" element={<PayrollPage />} />
+        <Route path="/compliance" element={<CompliancePage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+      </Route>
 
-      <Route path="/dashboard" element={
-        <ProtectedRoute>
-          <DashboardLayout>
-            <Dashboard />
-          </DashboardLayout>
-        </ProtectedRoute>
-      } />
-      <Route path="/employees" element={
-        <ProtectedRoute>
-          <DashboardLayout>
-            <EmployeesPage />
-          </DashboardLayout>
-        </ProtectedRoute>
-      } />
-      <Route path="/leave" element={
-        <ProtectedRoute>
-          <DashboardLayout>
-            <Leave />
-          </DashboardLayout>
-        </ProtectedRoute>
-      } />
-      <Route path="/payroll" element={
-        <ProtectedRoute>
-          <DashboardLayout>
-            <PayrollPage />
-          </DashboardLayout>
-        </ProtectedRoute>
-      } />
-      <Route path="/compliance" element={
-        <ProtectedRoute>
-          <DashboardLayout>
-            <CompliancePage />
-          </DashboardLayout>
-        </ProtectedRoute>
-      } />
-      <Route path="/activity" element={
-        <ProtectedRoute>
-          <DashboardLayout>
-            <h1 className="text-3xl font-bold mb-6">Activity Log</h1>
-            <p>Track all activities and changes in the system.</p>
-          </DashboardLayout>
-        </ProtectedRoute>
-      } />
-      <Route path="/settings" element={
-        <ProtectedRoute>
-          <SettingsWrapper />
-        </ProtectedRoute>
-      } />
-      <Route path="*" element={<NotFound />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
-};
-
-export default AppRoutes;
+}

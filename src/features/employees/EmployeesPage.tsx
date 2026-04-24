@@ -1,0 +1,131 @@
+import React, { useState } from 'react';
+import { Search, Plus, Download, Upload } from 'lucide-react';
+import { useEmployees, useDeleteEmployee } from './hooks/useEmployees';
+import AddEmployeeModal from './components/AddEmployeeModal';
+import EmployeeDrawer from './components/EmployeeDrawer';
+import { format, parseISO } from 'date-fns';
+
+const STATUS_STYLE: Record<string, string> = {
+  Active:     'bg-green-50 text-green-700',
+  Inactive:   'bg-gray-100 text-gray-500',
+  Terminated: 'bg-red-50 text-red-600',
+  Probation:  'bg-yellow-50 text-yellow-700',
+};
+
+export default function EmployeesPage() {
+  const [search, setSearch] = useState('');
+  const [query, setQuery] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const { data: employees, isLoading } = useEmployees(query || undefined);
+  const deleteEmployee = useDeleteEmployee();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setQuery(search);
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+        <form onSubmit={handleSearch} className="relative flex-1 max-w-sm">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name, email, department…"
+            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+          />
+        </form>
+        <div className="flex gap-2">
+          <button className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+            <Upload size={15} /> Import
+          </button>
+          <button className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+            <Download size={15} /> Export
+          </button>
+          <button
+            onClick={() => setAdding(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <Plus size={15} /> Add employee
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50">
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Employee</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Department</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Job Title</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Start Date</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {isLoading && Array.from({ length: 6 }).map((_, i) => (
+                <tr key={i}>
+                  {Array.from({ length: 5 }).map((_, j) => (
+                    <td key={j} className="px-4 py-3">
+                      <div className="h-4 bg-gray-100 rounded animate-pulse w-24" />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+              {!isLoading && !employees?.length && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-16 text-center text-gray-400">
+                    {query ? 'No employees match your search.' : 'No employees yet. Add your first employee to get started.'}
+                  </td>
+                </tr>
+              )}
+              {employees?.map(emp => (
+                <tr
+                  key={emp.id}
+                  onClick={() => setSelectedId(emp.id)}
+                  className="hover:bg-orange-50/40 cursor-pointer transition-colors"
+                >
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs font-semibold flex-shrink-0">
+                        {emp.full_name?.[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{emp.full_name}</p>
+                        <p className="text-xs text-gray-400">{emp.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">{emp.department ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-600">{emp.job_title ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {emp.date_of_hire ? format(parseISO(emp.date_of_hire), 'dd MMM yyyy') : '—'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLE[emp.employment_status ?? ''] ?? 'bg-gray-100 text-gray-500'}`}>
+                      {emp.employment_status ?? 'Unknown'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {employees?.length ? (
+          <div className="px-4 py-3 border-t border-gray-100 text-xs text-gray-400">
+            {employees.length} employee{employees.length !== 1 ? 's' : ''}
+          </div>
+        ) : null}
+      </div>
+
+      {adding && <AddEmployeeModal onClose={() => setAdding(false)} />}
+      {selectedId && <EmployeeDrawer id={selectedId} onClose={() => setSelectedId(null)} />}
+    </div>
+  );
+}

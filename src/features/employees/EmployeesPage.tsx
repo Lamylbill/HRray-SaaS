@@ -111,7 +111,7 @@ export default function EmployeesPage() {
 
       {/* Table view */}
       {view === 'table' && (
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -145,7 +145,7 @@ export default function EmployeesPage() {
                   <tr
                     key={emp.id}
                     onClick={() => setSelectedId(emp.id)}
-                    className="hover:bg-orange-50/40 cursor-pointer transition-colors"
+                    className="hover:bg-blue-50/40 cursor-pointer transition-colors duration-150 group"
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">

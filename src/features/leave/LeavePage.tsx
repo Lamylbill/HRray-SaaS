@@ -6,9 +6,9 @@ import { format, parseISO } from 'date-fns';
 import LeaveCalendarView from '@/components/leave/LeaveCalendarView';
 
 const STATUS_STYLE: Record<string, string> = {
-  Pending:  'bg-yellow-50 text-yellow-700',
-  Approved: 'bg-green-50 text-green-700',
-  Rejected: 'bg-red-50 text-red-600',
+  Pending:  'bg-amber-50 text-amber-700 ring-1 ring-amber-100',
+  Approved: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100',
+  Rejected: 'bg-red-50 text-red-600 ring-1 ring-red-100',
 };
 
 const TABS = ['All', 'Pending', 'Approved', 'Rejected'];
@@ -79,13 +79,13 @@ export default function LeavePage() {
 
       {/* Calendar view */}
       {view === 'calendar' && (
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <LeaveCalendarView />
         </div>
       )}
 
       {/* List view */}
-      {view === 'list' && <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      {view === 'list' && <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

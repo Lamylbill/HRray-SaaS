@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Users, Calendar, DollarSign, Shield,
-  CheckCircle, ArrowRight, Menu, X
+  CheckCircle, ArrowRight, Menu, X, Tag
 } from 'lucide-react';
+import { blogService } from '@/integrations/supabase/blog-service';
+import { BlogPost } from '@/integrations/supabase/blog-types';
 
 const FEATURES = [
   {
@@ -39,11 +41,18 @@ const COMPLIANCE = [
 export default function LandingPage() {
   const [navOpen, setNavOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    blogService.getPosts(1, 3, 'false').then(result => {
+      setBlogPosts(result.posts || []);
+    }).catch(() => {});
   }, []);
 
   return (
@@ -63,6 +72,7 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm text-gray-600 hover:text-blue-900 transition-colors">Features</a>
             <a href="#compliance" className="text-sm text-gray-600 hover:text-blue-900 transition-colors">Compliance</a>
+            <Link to="/blog" className="text-sm text-gray-600 hover:text-blue-900 transition-colors">Blog</Link>
             <Link to="/login" className="text-sm text-gray-600 hover:text-blue-900 transition-colors">Log in</Link>
             <Link
               to="/signup"
@@ -81,6 +91,7 @@ export default function LandingPage() {
           <div className="md:hidden bg-white border-t border-gray-100 px-6 py-4 flex flex-col gap-4">
             <a href="#features" className="text-sm text-gray-600">Features</a>
             <a href="#compliance" className="text-sm text-gray-600">Compliance</a>
+            <Link to="/blog" className="text-sm text-gray-600">Blog</Link>
             <Link to="/login" className="text-sm text-gray-600">Log in</Link>
             <Link to="/signup" className="px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg text-center">
               Get started free
@@ -169,6 +180,84 @@ export default function LandingPage() {
                 </li>
               ))}
             </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* Blog */}
+      <section id="blog" className="py-20 px-6 bg-gray-50">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-end justify-between mb-12">
+            <div>
+              <div className="inline-block bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full mb-3">
+                From the blog
+              </div>
+              <h2 className="text-3xl font-bold text-blue-900">HR insights for Singapore SMEs</h2>
+            </div>
+            <Link
+              to="/blog"
+              className="hidden md:flex items-center gap-1.5 text-sm font-medium text-orange-500 hover:text-orange-600 transition-colors"
+            >
+              View all articles <ArrowRight size={15} />
+            </Link>
+          </div>
+
+          {blogPosts.length > 0 ? (
+            <div className="grid md:grid-cols-3 gap-6">
+              {blogPosts.map(post => (
+                <Link
+                  key={post.id}
+                  to={`/blog/post/${post.slug}`}
+                  className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200"
+                >
+                  {post.cover_image ? (
+                    <img
+                      src={post.cover_image}
+                      alt={post.title}
+                      loading="lazy"
+                      className="w-full h-44 object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-44 bg-gradient-to-br from-blue-900 to-blue-700 flex items-center justify-center">
+                      <span className="text-white/30 text-5xl font-bold">HR</span>
+                    </div>
+                  )}
+                  <div className="p-5">
+                    <h3 className="font-semibold text-blue-900 text-base leading-snug line-clamp-2 group-hover:text-orange-500 transition-colors mb-2">
+                      {post.title}
+                    </h3>
+                    {post.excerpt && (
+                      <p className="text-sm text-gray-500 line-clamp-2 mb-3">{post.excerpt}</p>
+                    )}
+                    {post.tags && post.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {post.tags.slice(0, 2).map((tag, i) => (
+                          <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-50 text-orange-600 text-xs rounded-full">
+                            <Tag size={10} />{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500 mb-4">Tips, guides, and updates on HR in Singapore.</p>
+              <Link
+                to="/blog"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-900 text-white font-semibold rounded-xl hover:bg-blue-800 transition-colors"
+              >
+                Visit the blog <ArrowRight size={16} />
+              </Link>
+            </div>
+          )}
+
+          <div className="mt-8 text-center md:hidden">
+            <Link to="/blog" className="text-sm font-medium text-orange-500 hover:text-orange-600 transition-colors">
+              View all articles →
+            </Link>
           </div>
         </div>
       </section>

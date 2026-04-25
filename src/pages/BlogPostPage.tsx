@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, Tag, MessageSquare, Share2, Facebook, Linkedin, X } from 'lucide-react';
+import { Calendar, Tag, MessageSquare, Share2, Facebook, Linkedin, X, ArrowLeft } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Helmet } from 'react-helmet-async';
 import { v4 as uuidv4 } from 'uuid';
@@ -158,18 +158,45 @@ const BlogPostPage = () => {
     });
   };
 
+  const BlogNav = () => (
+    <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+      <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link to="/blog" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-900 transition-colors">
+            <ArrowLeft size={15} />
+            <span>Blog</span>
+          </Link>
+          <div className="w-px h-4 bg-gray-200" />
+          <Link to="/" className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-orange-500 rounded-md flex items-center justify-center">
+              <span className="text-white font-bold text-xs">HR</span>
+            </div>
+            <span className="font-bold text-blue-900 text-base">HR<span className="text-orange-500">ray</span></span>
+          </Link>
+        </div>
+        <Link to="/signup" className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors">
+          Get started
+        </Link>
+      </div>
+    </nav>
+  );
+
   if (isLoadingPost) {
     return (
-      <div className="min-h-screen pt-24 pb-12 bg-gray-50 flex justify-center items-start">
-        <LoadingSpinner size="lg" />
+      <div className="min-h-screen bg-gray-50">
+        <BlogNav />
+        <div className="flex justify-center items-start pt-24">
+          <LoadingSpinner size="lg" />
+        </div>
       </div>
     );
   }
 
   if (!post) {
     return (
-      <div className="min-h-screen pt-24 pb-12 bg-gray-50">
-        <div className="container px-4 mx-auto">
+      <div className="min-h-screen bg-gray-50">
+        <BlogNav />
+        <div className="max-w-3xl mx-auto px-6 py-16">
           <Card>
             <CardContent className="py-12 flex flex-col items-center justify-center">
               <h1 className="text-2xl font-bold mb-4">Post Not Found</h1>
@@ -185,13 +212,14 @@ const BlogPostPage = () => {
   }
 
   return (
-    <div className="min-h-screen pt-24 pb-12 bg-gray-50">
+    <div className="min-h-screen pb-12 bg-gray-50">
+      <BlogNav />
       <Helmet>
         <title>{post.title} | HRray Blog</title>
         <meta name="description" content={post.meta_description || post.excerpt || ''} />
       </Helmet>
 
-      <div className="container px-4 mx-auto">
+      <div className="max-w-3xl mx-auto px-6 py-10">
         <Card>
           <CardHeader>
             <h1 className="text-3xl font-bold mb-2">{post.title}</h1>

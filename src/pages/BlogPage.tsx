@@ -4,9 +4,9 @@ import { BlogPost, BlogCategory } from '@/integrations/supabase/blog-types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardFooter, CardTitle } from '@/components/ui/card';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Calendar, Tag } from 'lucide-react';
+import { Calendar, Tag, ArrowLeft } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui-custom/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 
@@ -64,11 +64,41 @@ const BlogPage = () => {
   const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
 
   return (
-    <div className="min-h-screen bg-white flex flex-col justify-start pt-24 px-4 md:px-6 max-w-screen-xl mx-auto">
+    <div className="min-h-screen bg-white">
       <Helmet>
         <title>Blog | HRray</title>
         <meta name="description" content="Latest articles and updates from the HRray team." />
       </Helmet>
+
+      {/* Standalone navbar */}
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link to="/" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-900 transition-colors">
+              <ArrowLeft size={15} />
+              <span>Back</span>
+            </Link>
+            <div className="w-px h-4 bg-gray-200" />
+            <Link to="/" className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-orange-500 rounded-md flex items-center justify-center">
+                <span className="text-white font-bold text-xs">HR</span>
+              </div>
+              <span className="font-bold text-blue-900 text-base">HR<span className="text-orange-500">ray</span></span>
+            </Link>
+          </div>
+          <div className="flex items-center gap-3">
+            {isAuthenticated && isBlogEditor && (
+              <Button size="sm" variant="outline" onClick={() => navigate('/blog/manage')}>Manage</Button>
+            )}
+            <Link to="/login" className="text-sm text-gray-500 hover:text-blue-900 transition-colors">Log in</Link>
+            <Link to="/signup" className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors">
+              Get started
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      <div className="max-w-5xl mx-auto px-6 py-12">
 
       {isLoading ? (
         <div className="flex-grow flex flex-col justify-center items-center min-h-[60vh] space-y-4 text-gray-500">
@@ -196,6 +226,7 @@ const BlogPage = () => {
           )}
         </>
       )}
+      </div>
     </div>
   );
 };

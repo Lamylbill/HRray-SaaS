@@ -3,7 +3,7 @@ import { Plus, Check, X, Calendar, CalendarDays, List } from 'lucide-react';
 import { useLeaveRequests, useLeaveTypes, useCreateLeaveRequest, useUpdateLeaveStatus } from './hooks/useLeave';
 import { useEmployees } from '@/features/employees/hooks/useEmployees';
 import { format, parseISO } from 'date-fns';
-import LeaveCalendarView from '@/components/leave/LeaveCalendarView';
+import LeaveCalendar from '@/components/leave-calendar/LeaveCalendar';
 
 const STATUS_STYLE: Record<string, string> = {
   Pending:  'bg-amber-50 text-amber-700 ring-1 ring-amber-100',
@@ -79,8 +79,8 @@ export default function LeavePage() {
 
       {/* Calendar view */}
       {view === 'calendar' && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <LeaveCalendarView />
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden min-h-[500px]">
+          <LeaveCalendar view="timeline" />
         </div>
       )}
 

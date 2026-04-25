@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Plus, Check, X, Calendar } from 'lucide-react';
+import { Plus, Check, X, Calendar, CalendarDays, List } from 'lucide-react';
 import { useLeaveRequests, useLeaveTypes, useCreateLeaveRequest, useUpdateLeaveStatus } from './hooks/useLeave';
 import { useEmployees } from '@/features/employees/hooks/useEmployees';
 import { format, parseISO } from 'date-fns';
+import LeaveCalendarView from '@/components/leave/LeaveCalendarView';
 
 const STATUS_STYLE: Record<string, string> = {
   Pending:  'bg-yellow-50 text-yellow-700',
@@ -13,6 +14,7 @@ const STATUS_STYLE: Record<string, string> = {
 const TABS = ['All', 'Pending', 'Approved', 'Rejected'];
 
 export default function LeavePage() {
+  const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const [tab, setTab] = useState('All');
   const [applying, setApplying] = useState(false);
 
@@ -28,19 +30,45 @@ export default function LeavePage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
-          {TABS.map(t => (
+        <div className="flex items-center gap-3">
+          {/* View toggle */}
+          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
             <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                tab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              onClick={() => setView('calendar')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors ${
+                view === 'calendar' ? 'bg-blue-900 text-white' : 'text-gray-500 hover:bg-gray-50'
               }`}
             >
-              {t}
+              <CalendarDays size={14} /> Calendar
             </button>
-          ))}
+            <button
+              onClick={() => setView('list')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors ${
+                view === 'list' ? 'bg-blue-900 text-white' : 'text-gray-500 hover:bg-gray-50'
+              }`}
+            >
+              <List size={14} /> List
+            </button>
+          </div>
+
+          {/* Status filter tabs — only shown in list view */}
+          {view === 'list' && (
+            <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+              {TABS.map(t => (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    tab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+
         <button
           onClick={() => setApplying(true)}
           className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors"
@@ -49,7 +77,15 @@ export default function LeavePage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      {/* Calendar view */}
+      {view === 'calendar' && (
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <LeaveCalendarView />
+        </div>
+      )}
+
+      {/* List view */}
+      {view === 'list' && <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -133,7 +169,7 @@ export default function LeavePage() {
             {requests!.length} request{requests!.length !== 1 ? 's' : ''}
           </div>
         )}
-      </div>
+      </div>}
 
       {applying && (
         <ApplyLeaveModal

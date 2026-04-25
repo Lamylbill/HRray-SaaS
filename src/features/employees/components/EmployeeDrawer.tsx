@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Mail, Phone, Building2, Briefcase, Calendar, DollarSign } from 'lucide-react';
+import { X, Mail, Phone, Building2, Briefcase, Calendar, DollarSign, Pencil } from 'lucide-react';
 import { useEmployee } from '../hooks/useEmployees';
 import { format, parseISO } from 'date-fns';
 
@@ -10,9 +10,9 @@ const STATUS_STYLE: Record<string, string> = {
   Probation:  'bg-yellow-50 text-yellow-700',
 };
 
-interface Props { id: string; onClose: () => void }
+interface Props { id: string; onClose: () => void; onEdit?: () => void }
 
-export default function EmployeeDrawer({ id, onClose }: Props) {
+export default function EmployeeDrawer({ id, onClose, onEdit }: Props) {
   const { data: emp, isLoading } = useEmployee(id);
 
   return (
@@ -22,7 +22,17 @@ export default function EmployeeDrawer({ id, onClose }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <h2 className="font-semibold text-gray-900">Employee profile</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><X size={18} /></button>
+          <div className="flex items-center gap-2">
+            {onEdit && (
+              <button
+                onClick={onEdit}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+              >
+                <Pencil size={12} /> Edit
+              </button>
+            )}
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><X size={18} /></button>
+          </div>
         </div>
 
         {isLoading ? (

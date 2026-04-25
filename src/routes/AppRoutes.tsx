@@ -11,6 +11,10 @@ import LeavePage from '@/features/leave/LeavePage';
 import PayrollPage from '@/features/payroll/PayrollPage';
 import CompliancePage from '@/features/compliance/CompliancePage';
 import SettingsPage from '@/features/settings/SettingsPage';
+import BlogPage from '@/pages/BlogPage';
+import BlogPostPage from '@/pages/BlogPostPage';
+import ManageBlogPage from '@/pages/ManageBlogPage';
+import BlogEditorRoute from '@/routes/BlogEditorRoute';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -42,6 +46,10 @@ export default function AppRoutes() {
         <Route path="/compliance" element={<CompliancePage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
+
+      <Route path="/blog" element={<BlogPage />} />
+      <Route path="/blog/post/:slug" element={<BlogPostPage />} />
+      <Route path="/blog/manage" element={<BlogEditorRoute><ManageBlogPage /></BlogEditorRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

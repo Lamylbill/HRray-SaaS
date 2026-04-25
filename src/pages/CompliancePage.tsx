@@ -50,11 +50,9 @@ const CompliancePage: React.FC = () => {
         </Helmet>
         
         <AnimatedSection>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Compliance Management</h1>
-              <p className="mt-1 text-gray-600 text-sm">Monitor and manage regulatory compliance requirements</p>
-            </div>
+          <div className="rounded-xl bg-gradient-to-r from-blue-900 to-blue-700 px-6 py-5 mb-6">
+            <h1 className="text-2xl font-bold text-white">Compliance Management</h1>
+            <p className="mt-1 text-blue-200 text-sm">Monitor and manage regulatory compliance requirements</p>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">

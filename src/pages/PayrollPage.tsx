@@ -79,33 +79,33 @@ const PayrollPage: React.FC = () => {
         </Helmet>
         
         <AnimatedSection>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+          <div className="rounded-xl bg-gradient-to-r from-blue-900 to-blue-700 px-6 py-5 mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Payroll Management</h1>
-              <p className="mt-1 text-gray-600 text-sm">Manage employee compensation and payroll processing</p>
+              <h1 className="text-2xl font-bold text-white">Payroll Management</h1>
+              <p className="mt-1 text-blue-200 text-sm">Manage employee compensation and payroll processing</p>
             </div>
-            
-            <div className="flex items-center gap-2 mt-4 md:mt-0">
-              <Button 
+
+            <div className="flex items-center gap-2">
+              <Button
                 onClick={() => handleTabChange('calculate')}
-                variant="default"
-                className={activeTab === 'calculate' ? 'bg-blue-800' : ''}
+                className="bg-orange-500 hover:bg-orange-600 text-white border-0"
               >
                 <Calculator className="mr-2 h-4 w-4" />
                 Calculate Payroll
               </Button>
-              
-              <Button 
+
+              <Button
                 onClick={() => navigate('/compliance')}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
                 variant="outline"
               >
                 <ShieldCheck className="mr-2 h-4 w-4" />
                 Compliance
               </Button>
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
+                  <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white">
                     More Actions
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>

@@ -276,12 +276,25 @@ const EmployeesPage = () => {
     <AnimatedSection className="h-full flex flex-col">
       <div className="min-h-screen bg-gray-50 pb-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl h-full">
-          {/* Header and Action Buttons */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 pt-6">
-            <div><h1 className="text-2xl font-bold text-gray-900">Employees</h1><p className="mt-1 text-sm text-gray-600">Manage your organization's employees</p></div>
-            <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-2">
-              {selectedEmployees.length > 0 ? ( <><Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50 transition" onClick={showBulkDeleteDialog}><Trash className="mr-2 h-4 w-4" /> Delete Selected ({selectedEmployees.length})</Button><Button variant="outline" size="sm" className='transition' onClick={clearSelection}><CloseIconLucide className="mr-2 h-4 w-4" /> Clear Selection</Button></> )
-               : ( <><ImportEmployeesDialog onImportSuccess={fetchEmployees} /><Button variant="outline" size="sm" className='transition' onClick={exportEmployees}><Download className="mr-2 h-4 w-4" />Export</Button><Button variant="primary" size="sm" className='transition' onClick={handleAddEmployee}><PlusCircle className="mr-2 h-4 w-4" />Add Employee</Button></> )}
+          {/* Page header */}
+          <div className="rounded-xl bg-gradient-to-r from-blue-900 to-blue-700 px-6 py-5 mb-6 mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-white">Employees</h1>
+              <p className="mt-1 text-blue-200 text-sm">Manage your organisation's employees</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              {selectedEmployees.length > 0 ? (
+                <>
+                  <Button variant="outline" size="sm" className="bg-red-500/20 border-red-300/30 text-white hover:bg-red-500/30 transition" onClick={showBulkDeleteDialog}><Trash className="mr-2 h-4 w-4" /> Delete Selected ({selectedEmployees.length})</Button>
+                  <Button variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20 transition" onClick={clearSelection}><CloseIconLucide className="mr-2 h-4 w-4" /> Clear Selection</Button>
+                </>
+              ) : (
+                <>
+                  <ImportEmployeesDialog onImportSuccess={fetchEmployees} />
+                  <Button variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20 transition" onClick={exportEmployees}><Download className="mr-2 h-4 w-4" />Export</Button>
+                  <Button variant="primary" size="sm" className="bg-orange-500 hover:bg-orange-600 text-white border-0 transition" onClick={handleAddEmployee}><PlusCircle className="mr-2 h-4 w-4" />Add Employee</Button>
+                </>
+              )}
             </div>
           </div>
           {/* Search and View Toggle */}

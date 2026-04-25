@@ -158,8 +158,8 @@ export default {
 				'spin-slow': 'spin-slow 2s linear infinite'
 			},
 			fontFamily: {
-				'sans': ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-				'display': ['Montserrat', 'sans-serif'],
+				'sans': ['Plus Jakarta Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+				'display': ['Plus Jakarta Sans', 'sans-serif'],
 			},
 			backgroundImage: {
 				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

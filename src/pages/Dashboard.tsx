@@ -1,11 +1,33 @@
 
 import React, { useState, useEffect } from 'react';
+import { Users, UserCheck, UserMinus, TrendingUp } from 'lucide-react';
 import { getAuthorizedClient } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { AnimatedSection } from '@/components/ui-custom/AnimatedSection';
 import { LeaveType } from '@/components/leave/interfaces';
 import LeaveRecordsView from '@/components/leave/LeaveRecordsView';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
+
+interface StatCardProps {
+  label: string;
+  value: number | string;
+  icon: React.ReactNode;
+  iconBg: string;
+  trend?: string;
+}
+
+const StatCard: React.FC<StatCardProps> = ({ label, value, icon, iconBg, trend }) => (
+  <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex items-center gap-4 hover:shadow-lg transition-shadow duration-200">
+    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
+      {icon}
+    </div>
+    <div className="min-w-0">
+      <p className="text-sm font-medium text-gray-500">{label}</p>
+      <p className="text-2xl font-bold text-gray-900 mt-0.5">{value}</p>
+      {trend && <p className="text-xs text-emerald-600 font-medium mt-0.5">{trend}</p>}
+    </div>
+  </div>
+);
 
 const Dashboard = () => {
   const [employeeCount, setEmployeeCount] = useState<number>(0);
@@ -21,7 +43,6 @@ const Dashboard = () => {
         setIsLoading(false);
         return;
       }
-
       try {
         setIsLoading(true);
         const authorizedClient = getAuthorizedClient();
@@ -67,43 +88,56 @@ const Dashboard = () => {
     fetchLeaveTypes();
   }, [user, isAuthenticated, authLoading]);
 
+  const onLeave = employeeCount - activeEmployees;
+
   return (
     <AnimatedSection className="h-full flex flex-col">
       <div className="min-h-screen bg-gray-50">
         <div className="pb-12">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl h-full">
-            <h1 className="text-2xl font-bold">Dashboard</h1>
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl h-full pt-6">
+
+            {/* Page header */}
+            <div className="rounded-xl bg-gradient-to-r from-blue-900 to-blue-700 px-6 py-5 mb-6">
+              <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+              <p className="mt-1 text-blue-200 text-sm">Your HR overview at a glance</p>
+            </div>
 
             {isLoading ? (
-              <div className="text-center py-8">Loading dashboard data...</div>
+              <div className="text-center py-8 text-gray-500">Loading dashboard data...</div>
             ) : error ? (
-              <div className="bg-red-50 text-red-600 p-4 rounded-md">
+              <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100">
                 Error loading dashboard: {error}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-                <div className="bg-white p-6 rounded-lg shadow-sm border">
-                  <h3 className="text-sm font-medium text-gray-700">Total Employees</h3>
-                  <p className="text-2xl font-bold mt-2">{employeeCount}</p>
-                </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm border">
-                  <h3 className="text-sm font-medium text-gray-700">Active Employees</h3>
-                  <p className="text-2xl font-bold mt-2">{activeEmployees}</p>
-                </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm border">
-                  <h3 className="text-sm font-medium text-gray-700">On Leave</h3>
-                  <p className="text-2xl font-bold mt-2">{employeeCount - activeEmployees}</p>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
+                <StatCard
+                  label="Total Employees"
+                  value={employeeCount}
+                  icon={<Users className="h-6 w-6 text-blue-700" />}
+                  iconBg="bg-blue-100"
+                />
+                <StatCard
+                  label="Active Employees"
+                  value={activeEmployees}
+                  icon={<UserCheck className="h-6 w-6 text-emerald-700" />}
+                  iconBg="bg-emerald-100"
+                />
+                <StatCard
+                  label="Currently on Leave"
+                  value={onLeave}
+                  icon={<UserMinus className="h-6 w-6 text-amber-700" />}
+                  iconBg="bg-amber-100"
+                />
               </div>
             )}
 
-            <div className="mt-10">
-              <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
+            <div className="mb-10">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
               <ActivityFeed initialPageSize={5} />
             </div>
 
             {availableLeaveTypes.length > 0 && (
-              <div className="mt-10">
+              <div>
                 <LeaveRecordsView
                   availableLeaveTypes={availableLeaveTypes}
                   onlyPending
